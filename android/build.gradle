@@ -1,0 +1,110 @@
+// Gradle build for the Myaza KYC RN SDK's Android native piece — the Google ML Kit
+// face detector, now a VisionCamera v5 **Nitro** HybridObject (was a v4
+// FrameProcessorPlugin). Mirrors react-native-nitro-modules' Android build pattern:
+// the nitrogen-generated C++ specs are compiled into a shared lib (KycSdkReactNative)
+// via CMake, and the Kotlin impl (HybridMyazaFaceDetector) backs it.
+//
+// ML Kit stays Android-only (Gradle) — no GoogleMLKit CocoaPod on iOS — so the SDK
+// still builds on Apple-Silicon iOS simulators (iOS uses Apple Vision).
+
+buildscript {
+  ext.kotlin_version = ext.has('kotlinVersion') ? ext.kotlinVersion : '1.9.24'
+  repositories {
+    google()
+    mavenCentral()
+  }
+  dependencies {
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+  }
+}
+
+def reactNativeArchitectures() {
+  def value = rootProject.getProperties().get("reactNativeArchitectures")
+  return value ? value.split(",") : ["armeabi-v7a", "x86", "x86_64", "arm64-v8a"]
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+// Adds the nitrogen-generated Kotlin sources (HybridMyazaFaceDetectorSpec, FaceResult, …).
+apply from: '../nitrogen/generated/android/KycSdkReactNative+autolinking.gradle'
+
+def safeExtGet(prop, fallback) {
+  rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+}
+
+android {
+  namespace 'co.myazahq.kyc.rn'
+  compileSdk safeExtGet('compileSdkVersion', 34)
+  ndkVersion safeExtGet('ndkVersion', '27.1.12297006')
+
+  defaultConfig {
+    minSdk safeExtGet('minSdkVersion', 24)
+    targetSdk safeExtGet('targetSdkVersion', 34)
+
+    externalNativeBuild {
+      cmake {
+        cppFlags "-frtti -fexceptions -Wall -Wextra -fstack-protector-all"
+        arguments "-DANDROID_STL=c++_shared"
+        abiFilters(*reactNativeArchitectures())
+      }
+    }
+  }
+
+  externalNativeBuild {
+    cmake {
+      path "CMakeLists.txt"
+    }
+  }
+
+  buildFeatures {
+    prefab true
+    buildConfig true
+  }
+
+  // Don't bundle the shared libs already provided by the host app / RN.
+  packagingOptions {
+    excludes = [
+      "META-INF",
+      "META-INF/**",
+      "**/libc++_shared.so",
+      "**/libfbjni.so",
+      "**/libjsi.so",
+      "**/libreactnative.so",
+      "**/libreactnativejni.so",
+    ]
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+  }
+
+  kotlinOptions {
+    jvmTarget = '17'
+  }
+}
+
+repositories {
+  google()
+  mavenCentral()
+}
+
+dependencies {
+  implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+  implementation 'com.facebook.react:react-android'
+
+  // Nitro core — provides the HybridObject base + the NitroModules prefab the
+  // generated CMake links against (find_package(react-native-nitro-modules)).
+  implementation project(':react-native-nitro-modules')
+
+  // VisionCamera — provides the Nitro `HybridFrameSpec` + `NativeFrame` (ImageProxy)
+  // the detector reads, plus its C++ prefab (headers for the generated spec).
+  // `implementation` (not compileOnly) so the prefab is consumable by our CMake.
+  implementation project(':react-native-vision-camera')
+
+  // CameraX core — for the ImageProxy / ExperimentalGetImage APIs.
+  compileOnly 'androidx.camera:camera-core:1.3.4'
+
+  // Google ML Kit face detection — Android only. Same version as the Flutter SDK.
+  implementation 'com.google.mlkit:face-detection:16.1.6'
+}

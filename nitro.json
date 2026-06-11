@@ -1,0 +1,16 @@
+{
+  "$schema": "https://nitro.margelo.com/nitro.schema.json",
+  "cxxNamespace": ["myazakyc"],
+  "ios": { "iosModuleName": "KycSdkReactNative" },
+  "android": {
+    "androidNamespace": ["myazakyc"],
+    "androidCxxLibName": "KycSdkReactNative"
+  },
+  "autolinking": {
+    "MyazaFaceDetector": {
+      "ios": { "language": "swift", "implementationClassName": "HybridMyazaFaceDetector" },
+      "android": { "language": "kotlin", "implementationClassName": "HybridMyazaFaceDetector" }
+    }
+  },
+  "ignorePaths": ["**/node_modules"]
+}

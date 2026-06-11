@@ -1,0 +1,12 @@
+# Android build artifacts (native module — these regenerate on every build)
+android/.gradle/
+android/build/
+android/.cxx/
+android/local.properties
+
+# iOS build artifacts
+ios/build/
+ios/Pods/
+
+# Nitro/codegen scratch (generated is committed; caches are not)
+*.log
