@@ -14,7 +14,7 @@ export type DeviceType = 'mobile' | 'tablet' | 'desktop' | 'unknown';
  * Single source of truth for the SDK version — also used by `services/api.ts`
  * for the `X-SDK-Version` header. Keep in sync with `package.json`.
  */
-export const SDK_VERSION = '2.0.0';
+export const SDK_VERSION = '2.0.1';
 
 export interface ReactNativeDeviceMetadata {
   sdkType: 'react-native';
