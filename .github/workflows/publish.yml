@@ -1,0 +1,51 @@
+# Lives in the PUBLIC repo myazahq/kyc-sdk-react-native. The monorepo sync
+# preserves this repo's .github/, so it survives every release sync.
+# The RN package ships its TS source + native code (no build step).
+# Required secret: NPM_TOKEN (npm automation token).
+name: Publish @myazahq/kyc-sdk-react-native to npm
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - name: Setup Node.js 20 (npm registry auth)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Publish to npm (skip if this version already exists)
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          echo "Resolved package: $NAME@$VERSION"
+          PUBLISHED=$(npm view "$NAME@$VERSION" version 2>/dev/null || true)
+          if [ -n "$PUBLISHED" ]; then
+            echo "✓ $NAME@$VERSION is already on npm — skipping publish."
+            exit 0
+          fi
+          echo "Publishing $NAME@$VERSION to npm…"
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
