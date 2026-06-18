@@ -209,7 +209,7 @@ base URL) from the API key prefix, the single source of truth:
 
 | Prefix     | Environment | Base URL                          |
 | ---------- | ----------- | --------------------------------- |
-| `pk_test_` | sandbox     | `https://sandbox.identity.myaza.app` |
+| `pk_test_` | sandbox     | `https://identity.myaza.app`      |
 | `pk_live_` | production  | `https://identity.myaza.app`      |
 
 An unrecognized or malformed key throws at setup (it never silently defaults).

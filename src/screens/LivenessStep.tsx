@@ -29,7 +29,7 @@ import {
 } from '../config/captureSettings';
 import { Icon } from '../components/Icon';
 import { useToast } from '../components/toast';
-import { CameraPermissionView, CameraUnavailableView } from '../components/CameraPermissionView';
+import { CameraPermissionView, CameraUnavailableView, CameraPermissionPrimingView } from '../components/CameraPermissionView';
 import { LivenessAvatar } from './LivenessAvatar';
 import { detectFaceOnFrame } from '../liveness/visionCameraFaceDetector';
 import {
@@ -85,10 +85,14 @@ export function LivenessStep(): React.ReactElement {
   });
   const videoRecorder = useVideoRecorder(videoOutput, !!device);
 
-  const [perm, setPerm] = useState<'checking' | 'granted' | 'denied'>(
-    hasPermission ? 'granted' : 'checking',
+  // 'priming' shows the "Allow camera access" screen BEFORE the OS prompt
+  // (Stripe-style); the prompt only fires (→ 'requesting') once the user taps
+  // "Grant access". `perm` is driven by the async requestPermission result, not
+  // synchronously from `hasPermission` — otherwise the window while the OS prompt
+  // is open (hasPermission still false) would read as "denied" and fire onError.
+  const [perm, setPerm] = useState<'priming' | 'requesting' | 'granted' | 'denied'>(
+    hasPermission ? 'granted' : 'priming',
   );
-  const askedRef = useRef(false);
   const permReportedRef = useRef(false);
 
   // Camera-availability grace (a simulator has no front camera).
@@ -98,20 +102,26 @@ export function LivenessStep(): React.ReactElement {
     return () => clearTimeout(t);
   }, []);
   const cameraUnavailable = cameraGrace && !device;
+  const showPrimer = perm === 'priming' && !!device;
   const permissionDenied = perm === 'denied' && !!device;
 
+  // Reflect an externally-granted permission.
   useEffect(() => {
-    if (hasPermission) {
-      setPerm('granted');
-      return;
-    }
-    if (askedRef.current) return;
-    askedRef.current = true;
+    if (hasPermission) setPerm('granted');
+  }, [hasPermission]);
+
+  // Fire the real OS prompt only after the user taps "Grant access" (or retry).
+  useEffect(() => {
+    if (perm !== 'requesting') return;
+    let cancelled = false;
     void (async () => {
       const granted = await requestPermission();
-      setPerm(granted ? 'granted' : 'denied');
+      if (!cancelled) setPerm(granted ? 'granted' : 'denied');
     })();
-  }, [hasPermission, requestPermission]);
+    return () => {
+      cancelled = true;
+    };
+  }, [perm, requestPermission]);
 
   useEffect(() => {
     if (permissionDenied && !permReportedRef.current) {
@@ -270,15 +280,11 @@ export function LivenessStep(): React.ReactElement {
   if (cameraUnavailable) {
     return <CameraUnavailableView />;
   }
+  if (showPrimer) {
+    return <CameraPermissionPrimingView onGrant={() => setPerm('requesting')} />;
+  }
   if (permissionDenied) {
-    return (
-      <CameraPermissionView
-        onRetry={() => {
-          askedRef.current = false;
-          setPerm('checking');
-        }}
-      />
-    );
+    return <CameraPermissionView onRetry={() => setPerm('requesting')} />;
   }
 
   // ── Review (selfie captured) ─────────────────────────────────────────────────

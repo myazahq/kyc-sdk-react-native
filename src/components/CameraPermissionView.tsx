@@ -21,11 +21,14 @@ interface ScaffoldProps {
   message: string;
   /** When true (default), vertically centers; false flows top-down below a heading. */
   centered?: boolean;
+  /** Accent color for the icon + its circle (defaults to the error tint). */
+  tint?: string;
   children: React.ReactNode; // action buttons
 }
 
-function CameraErrorScaffold({ icon, title, message, centered = true, children }: ScaffoldProps): React.ReactElement {
+function CameraErrorScaffold({ icon, title, message, centered = true, tint, children }: ScaffoldProps): React.ReactElement {
   const { colors } = useTheme();
+  const accent = tint ?? colors.error;
   return (
     <View
       style={
@@ -39,12 +42,12 @@ function CameraErrorScaffold({ icon, title, message, centered = true, children }
           width: 80,
           height: 80,
           borderRadius: radius.full,
-          backgroundColor: `${colors.error}1A`,
+          backgroundColor: `${accent}1A`,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Icon name={icon} size={38} color={colors.error} />
+        <Icon name={icon} size={38} color={accent} />
       </View>
       <View style={{ height: spacing.lg }} />
       <MyazaText variant="heading2" style={{ textAlign: 'center' }}>
@@ -92,6 +95,39 @@ export function CameraPermissionView({ message, onRetry, onUpload, centered = tr
           <MyazaButton label="Upload a photo instead" variant="ghost" leadingIcon="upload" onPress={onUpload} />
         </>
       ) : null}
+    </CameraErrorScaffold>
+  );
+}
+
+// ── Permission primer (before the OS prompt) ─────────────────────────────────
+
+const DEFAULT_PRIMING_MESSAGE =
+  'When prompted, allow camera access to continue your verification.';
+
+export interface CameraPermissionPrimingViewProps {
+  message?: string;
+  /** Fires when the user taps "Grant access" — triggers the real OS prompt. */
+  onGrant: () => void;
+  centered?: boolean;
+}
+
+/**
+ * "Allow camera access" priming screen, shown right before the native OS camera
+ * permission prompt (mirrors Stripe Identity). The actual `requestPermission()`
+ * only fires once the user taps "Grant access". Distinct from
+ * `CameraPermissionView`, which is shown *after* a denial.
+ */
+export function CameraPermissionPrimingView({ message, onGrant, centered = true }: CameraPermissionPrimingViewProps): React.ReactElement {
+  const { colors } = useTheme();
+  return (
+    <CameraErrorScaffold
+      icon="camera"
+      title="Allow camera access"
+      message={message ?? DEFAULT_PRIMING_MESSAGE}
+      centered={centered}
+      tint={colors.primary}
+    >
+      <MyazaButton label="Grant access" onPress={onGrant} />
     </CameraErrorScaffold>
   );
 }

@@ -19,8 +19,8 @@ describe('detectEnvironment', () => {
 
 describe('resolveBaseUrl', () => {
   it('uses the hardcoded sandbox/production URLs and ignores devUrl', () => {
-    expect(resolveBaseUrl('pk_test_abc')).toBe('https://sandbox.identity.myaza.app');
-    expect(resolveBaseUrl('pk_test_abc', 'http://example.test')).toBe('https://sandbox.identity.myaza.app');
+    expect(resolveBaseUrl('pk_test_abc')).toBe('https://identity.myaza.app');
+    expect(resolveBaseUrl('pk_test_abc', 'http://example.test')).toBe('https://identity.myaza.app');
     expect(resolveBaseUrl('pk_live_abc')).toBe('https://identity.myaza.app');
   });
 
@@ -53,7 +53,7 @@ describe('normalizeDevAssetUrl', () => {
       'https://cdn.myaza.app/logo.png',
     );
     // https base (sandbox/prod) → never rewrites, even a localhost asset.
-    expect(normalizeDevAssetUrl('http://localhost:3001/logo.png', 'https://sandbox.identity.myaza.app')).toBe(
+    expect(normalizeDevAssetUrl('http://localhost:3001/logo.png', 'https://identity.myaza.app')).toBe(
       'http://localhost:3001/logo.png',
     );
   });

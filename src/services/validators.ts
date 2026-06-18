@@ -34,6 +34,9 @@ function matchesPattern(value: string, pattern: RegExp, label: string, hint: str
 const validators: Record<string, (value: string) => ValidationResult> = {
   // Nigeria
   bvn: (v) => digitsExact(v, 11, 'BVN'),
+  'bvn-premium': (v) => digitsExact(v, 11, 'BVN'),
+  // Tax ID lookups are keyed off the person's NIN — the typed number is a NIN.
+  'tax-id': (v) => digitsExact(v, 11, 'NIN'),
   nin: (v) => digitsExact(v, 11, 'NIN'),
   vnin: (v) => {
     if (v.length !== 16) {

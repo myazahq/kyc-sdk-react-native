@@ -8,6 +8,8 @@ import type { IdTypesByCountry } from '../types/config';
 export const ID_TYPES: IdTypesByCountry = {
   NG: [
     { key: 'bvn',             label: 'BVN',                            digits: 11,                    requiresDocumentCapture: false },
+    { key: 'bvn-premium',     label: 'BVN Premium',                    digits: 11,                    requiresDocumentCapture: false },
+    { key: 'tax-id',          label: 'Tax ID', inputLabel: 'NIN',      digits: 11,                    requiresDocumentCapture: false },
     { key: 'nin',             label: 'NIN',                            digits: 11,                    requiresDocumentCapture: false },
     { key: 'vnin',            label: 'Virtual NIN (vNIN)',             digits: 16,                    requiresDocumentCapture: false },
     { key: 'passport',        label: 'International Passport',          pattern: /^[A-Z]\d{8}$/,       requiresDocumentCapture: true, scanSides: 'front_only'     },

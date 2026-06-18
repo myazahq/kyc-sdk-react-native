@@ -6,7 +6,7 @@ import type { KYCSubmission, KYCError } from './verification';
 
 export type SupportedCountry = 'NG' | 'GH' | 'KE' | 'ZA' | 'CI';
 
-export type NigeriaIdType = 'bvn' | 'nin' | 'vnin' | 'passport' | 'drivers-license' | 'pvc';
+export type NigeriaIdType = 'bvn' | 'bvn-premium' | 'nin' | 'vnin' | 'tax-id' | 'passport' | 'drivers-license' | 'pvc';
 export type GhanaIdType = 'ghana-card' | 'voters' | 'drivers-license' | 'ssnit' | 'passport';
 export type KenyaIdType = 'national-id' | 'passport';
 export type SouthAfricaIdType = 'national-id';
@@ -31,6 +31,11 @@ export type IdTypeForCountry<C extends SupportedCountry> =
 export interface IdTypeDefinition {
   key: IdType;
   label: string;
+  /**
+   * What the user actually types when it differs from the ID's name — e.g.
+   * Tax ID lookups are keyed off the person's NIN, so the input asks for a NIN.
+   */
+  inputLabel?: string;
   digits?: number;
   pattern?: RegExp;
   /** Whether this ID type requires photographing/uploading a physical document. */

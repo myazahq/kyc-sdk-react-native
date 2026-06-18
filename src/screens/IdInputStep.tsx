@@ -14,10 +14,12 @@ import { MyazaButton } from '../components/MyazaButton';
 // IdInputScreen. Client-side format validation only; no OCR pre-fill. The step
 // title/description live in the header.
 
-function hintFor(def: { label: string; digits?: number } | null): string {
+function hintFor(def: { label: string; inputLabel?: string; digits?: number } | null): string {
   if (!def) return 'Enter your ID number';
-  if (def.digits != null) return `Enter ${def.digits}-digit ${def.label}`;
-  return `Enter your ${def.label}`;
+  // e.g. Tax ID is looked up by the person's NIN — ask for what they type.
+  const label = def.inputLabel ?? def.label;
+  if (def.digits != null) return `Enter ${def.digits}-digit ${label}`;
+  return `Enter your ${label}`;
 }
 
 export function IdInputStep(): React.ReactElement {
@@ -59,7 +61,7 @@ export function IdInputStep(): React.ReactElement {
     <View>
       {def ? (
         <MyazaText variant="label" style={{ marginBottom: spacing.sm }}>
-          {def.label}
+          {def.inputLabel ?? def.label}
         </MyazaText>
       ) : null}
       <MyazaInput

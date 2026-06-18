@@ -17,7 +17,7 @@ import { MyazaButton } from '../components/MyazaButton';
 import { useToast } from '../components/toast';
 import { MyazaPulseLoader } from '../components/MyazaPulseLoader';
 import { CameraViewfinder } from '../components/CameraViewfinder';
-import { CameraPermissionView, CameraUnavailableView } from '../components/CameraPermissionView';
+import { CameraPermissionView, CameraUnavailableView, CameraPermissionPrimingView } from '../components/CameraPermissionView';
 import { DocumentCropper } from '../components/DocumentCropper';
 import { Icon } from '../components/Icon';
 
@@ -100,9 +100,13 @@ export function DocumentCaptureStep(): React.ReactElement {
   // `perm` is derived from the ASYNC requestPermission result, not synchronously
   // from `hasPermission` — otherwise the brief window while the OS prompt is open
   // (hasPermission still false) would read as "denied" and fire onError early.
+  // 'priming' shows the "Allow camera access" screen BEFORE the OS prompt
+  // (Stripe-style); the prompt only fires (→ 'requesting') once the user taps
+  // "Grant access".
   const { hasPermission, requestPermission } = useCameraPermission();
-  const [perm, setPerm] = useState<'checking' | 'granted' | 'denied'>(hasPermission ? 'granted' : 'checking');
-  const askedRef = useRef(false);
+  const [perm, setPerm] = useState<'priming' | 'requesting' | 'granted' | 'denied'>(
+    hasPermission ? 'granted' : 'priming',
+  );
   const permReportedRef = useRef(false);
 
   // ── Camera availability ─────────────────────────────────────────────────────
@@ -123,19 +127,25 @@ export function DocumentCaptureStep(): React.ReactElement {
   // No camera hardware at all → "Camera not available" (regardless of what the
   // permission API says — on a camera-less sim it may even report denied).
   const cameraUnavailable = cameraGrace && !device;
+  const showPrimer = perm === 'priming' && !!device;
 
+  // Reflect an externally-granted permission.
   useEffect(() => {
-    if (hasPermission) {
-      setPerm('granted');
-      return;
-    }
-    if (askedRef.current) return;
-    askedRef.current = true;
+    if (hasPermission) setPerm('granted');
+  }, [hasPermission]);
+
+  // Fire the real OS prompt only after the user taps "Grant access" (or retry).
+  useEffect(() => {
+    if (perm !== 'requesting') return;
+    let cancelled = false;
     void (async () => {
       const granted = await requestPermission();
-      setPerm(granted ? 'granted' : 'denied');
+      if (!cancelled) setPerm(granted ? 'granted' : 'denied');
     })();
-  }, [hasPermission, requestPermission]);
+    return () => {
+      cancelled = true;
+    };
+  }, [perm, requestPermission]);
 
   // A *genuine* permission denial requires a camera to exist but be blocked. On a
   // camera-less sim the OS may report denied — that's "not available", not a
@@ -156,8 +166,7 @@ export function DocumentCaptureStep(): React.ReactElement {
   }, [permissionDenied, config.onError]);
 
   const retryPermission = useCallback(() => {
-    askedRef.current = false;
-    setPerm('checking');
+    setPerm('requesting');
   }, []);
 
   // ── Capture → compress → store for the current side ────────────────────────
@@ -300,6 +309,18 @@ export function DocumentCaptureStep(): React.ReactElement {
         <>
           {cropper}
           <CameraUnavailableView onUpload={pickFromGallery} />
+        </>
+      );
+    }
+    if (showPrimer) {
+      // Primer before the OS prompt — camera not started yet.
+      return (
+        <>
+          {cropper}
+          <CameraPermissionPrimingView
+            message="When prompted, allow camera access to photograph your document."
+            onGrant={() => setPerm('requesting')}
+          />
         </>
       );
     }
