@@ -3,8 +3,13 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import {
   BadgeCheck,
   BookUser,
+  Building2,
+  Calendar,
   Camera,
   CameraOff,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Car,
   Check,
   CircleAlert,
@@ -13,19 +18,35 @@ import {
   Fingerprint,
   FileText,
   IdCard,
+  Image as ImageIcon,
   Landmark,
   Lightbulb,
   Globe,
+  Mail,
+  Maximize2,
   Lock,
+  MessageCircle,
+  MessageSquare,
   Moon,
   MoveLeft,
+  Nfc,
+  Smartphone,
   RefreshCw,
   ScanFace,
   ScanLine,
+  Search,
+  Zap,
+  ZapOff,
   ShieldCheck,
   Sun,
+  Timer,
   Upload,
   UserRound,
+  UserRoundPlus,
+  Link2,
+  Copy,
+  Share2,
+  UsersRound,
   VideoOff,
   Vote,
   X,
@@ -47,12 +68,29 @@ export type IconName =
   | 'lock'
   | 'alert'
   | 'refresh'
+  | 'maximize'
+  | 'calendar'
+  | 'image'
+  | 'chevron-left'
+  | 'chevron-right'
+  | 'chevron-down'
   // consent hero + process steps
   | 'shield'
   | 'badge-check'
+  | 'building-2'
   | 'user'
+  | 'user-plus'
+  | 'users'
   | 'scan-line'
   | 'scan-face'
+  | 'nfc'
+  | 'search'
+  | 'zap'
+  | 'link'
+  | 'copy'
+  | 'share'
+  | 'zap-off'
+  | 'timer'
   // id-type glyphs
   | 'fingerprint'
   | 'credit-card'
@@ -68,7 +106,13 @@ export type IconName =
   | 'camera-off'
   | 'video-off'
   | 'upload'
-  | 'lightbulb';
+  | 'x'
+  | 'lightbulb'
+  // contact verification (OTP channels + step footer)
+  | 'mail'
+  | 'smartphone'
+  | 'message-square'
+  | 'message-circle';
 
 // Maps each name to its Lucide component. Names mirror the Flutter SDK exactly:
 //   shieldCheck · badgeCheck · userRound · scanLine · scanFace · fingerprint ·
@@ -83,11 +127,28 @@ const ICONS: Record<IconName, LucideIcon> = {
   lock: Lock,
   alert: CircleAlert,
   refresh: RefreshCw,
+  maximize: Maximize2,
+  calendar: Calendar,
+  image: ImageIcon,
+  'chevron-left': ChevronLeft,
+  'chevron-right': ChevronRight,
+  'chevron-down': ChevronDown,
   shield: ShieldCheck,
   'badge-check': BadgeCheck,
+  'building-2': Building2,
   user: UserRound,
+  'user-plus': UserRoundPlus,
+  link: Link2,
+  copy: Copy,
+  share: Share2,
+  users: UsersRound,
   'scan-line': ScanLine,
   'scan-face': ScanFace,
+  nfc: Nfc,
+  search: Search,
+  zap: Zap,
+  'zap-off': ZapOff,
+  timer: Timer,
   fingerprint: Fingerprint,
   'credit-card': CreditCard,
   globe: Globe,
@@ -102,7 +163,12 @@ const ICONS: Record<IconName, LucideIcon> = {
   'camera-off': CameraOff,
   'video-off': VideoOff,
   upload: Upload,
+  x: X,
   lightbulb: Lightbulb,
+  mail: Mail,
+  smartphone: Smartphone,
+  'message-square': MessageSquare,
+  'message-circle': MessageCircle,
 };
 
 export interface IconProps {

@@ -44,7 +44,25 @@ data class FaceResult(
   val faceCount: Double,
   @DoNotStrip
   @Keep
-  val brightness: Double
+  val brightness: Double,
+  @DoNotStrip
+  @Keep
+  val faceCenterX: Double,
+  @DoNotStrip
+  @Keep
+  val faceCenterY: Double,
+  @DoNotStrip
+  @Keep
+  val trackingId: Double,
+  @DoNotStrip
+  @Keep
+  val faceR: Double,
+  @DoNotStrip
+  @Keep
+  val faceG: Double,
+  @DoNotStrip
+  @Keep
+  val faceB: Double
 ) {
   /* primary constructor */
 
@@ -60,6 +78,12 @@ data class FaceResult(
       && Objects.deepEquals(this.faceSizeRatio, other.faceSizeRatio)
       && Objects.deepEquals(this.faceCount, other.faceCount)
       && Objects.deepEquals(this.brightness, other.brightness)
+      && Objects.deepEquals(this.faceCenterX, other.faceCenterX)
+      && Objects.deepEquals(this.faceCenterY, other.faceCenterY)
+      && Objects.deepEquals(this.trackingId, other.trackingId)
+      && Objects.deepEquals(this.faceR, other.faceR)
+      && Objects.deepEquals(this.faceG, other.faceG)
+      && Objects.deepEquals(this.faceB, other.faceB)
   }
 
   override fun hashCode(): Int {
@@ -72,7 +96,13 @@ data class FaceResult(
       rightEyeOpenProbability,
       faceSizeRatio,
       faceCount,
-      brightness
+      brightness,
+      faceCenterX,
+      faceCenterY,
+      trackingId,
+      faceR,
+      faceG,
+      faceB
     ).contentDeepHashCode()
   }
 
@@ -84,8 +114,8 @@ data class FaceResult(
     @Keep
     @Suppress("unused")
     @JvmStatic
-    private fun fromCpp(headEulerAngleX: Double, headEulerAngleY: Double, headEulerAngleZ: Double, smilingProbability: Double, leftEyeOpenProbability: Double, rightEyeOpenProbability: Double, faceSizeRatio: Double, faceCount: Double, brightness: Double): FaceResult {
-      return FaceResult(headEulerAngleX, headEulerAngleY, headEulerAngleZ, smilingProbability, leftEyeOpenProbability, rightEyeOpenProbability, faceSizeRatio, faceCount, brightness)
+    private fun fromCpp(headEulerAngleX: Double, headEulerAngleY: Double, headEulerAngleZ: Double, smilingProbability: Double, leftEyeOpenProbability: Double, rightEyeOpenProbability: Double, faceSizeRatio: Double, faceCount: Double, brightness: Double, faceCenterX: Double, faceCenterY: Double, trackingId: Double, faceR: Double, faceG: Double, faceB: Double): FaceResult {
+      return FaceResult(headEulerAngleX, headEulerAngleY, headEulerAngleZ, smilingProbability, leftEyeOpenProbability, rightEyeOpenProbability, faceSizeRatio, faceCount, brightness, faceCenterX, faceCenterY, trackingId, faceR, faceG, faceB)
     }
   }
 }

@@ -66,6 +66,20 @@ function toFaceData(raw: FaceResult | null): LivenessFaceData | null {
     faceSizeRatio: raw.faceSizeRatio,
     faceCount: raw.faceCount,
     brightness: raw.brightness,
+    // −1 is the natives' "not available" sentinel (iOS Vision has no tracking
+    // id; neither reports a centre for the no-face frame). Map it to undefined
+    // so the continuity guard sees an absent signal rather than a real value of
+    // −1 sitting outside the 0–1 range.
+    faceCenterX: raw.faceCenterX >= 0 ? raw.faceCenterX : undefined,
+    faceCenterY: raw.faceCenterY >= 0 ? raw.faceCenterY : undefined,
+    trackingId: raw.trackingId >= 0 ? raw.trackingId : undefined,
+    // −1 is the native "could not sample" sentinel; mapping it to undefined
+    // keeps "unknown" out of the arithmetic, where it would read as pure black
+    // and manufacture a colour shift.
+    faceRgb:
+      raw.faceR >= 0 && raw.faceG >= 0 && raw.faceB >= 0
+        ? ([raw.faceR, raw.faceG, raw.faceB] as const)
+        : undefined,
   };
 }
 

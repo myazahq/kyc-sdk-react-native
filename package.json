@@ -1,10 +1,11 @@
 {
   "name": "@myazahq/kyc-sdk-react-native",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "description": "Myaza KYC SDK for React Native (Expo) — ID verification, liveness detection, and document capture",
+  "author": "Flitstack Technologies Inc.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/myazahq/kyc-sdk-react-native.git"
+    "url": "git+https://github.com/myazahq/kyc-sdk-react-native.git"
   },
   "homepage": "https://github.com/myazahq/kyc-sdk-react-native#readme",
   "bugs": {
@@ -16,17 +17,25 @@
     "src",
     "android",
     "ios",
+    "nitrogen/generated",
     "app.plugin.js",
     "expo-module.config.json",
     "react-native.config.js",
-    "KycSdkReactNative.podspec"
+    "KycSdkReactNative.podspec",
+    "!src/__tests__",
+    "!**/build",
+    "!**/.cxx",
+    "!**/.gradle",
+    "!ios/Pods",
+    "!**/*.xcworkspace",
+    "!**/*.xcuserdatad"
   ],
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "jest",
+    "test": "NODE_OPTIONS=--openssl-legacy-provider jest",
     "specs": "nitrogen"
   },
   "keywords": [
@@ -56,8 +65,11 @@
     "@expo/vector-icons": "^14.0.4",
     "country-flag-icons": "^1.6.17",
     "expo-application": "~56.0.3",
+    "libphonenumber-js": "^1.13.8",
     "expo-crypto": "~56.0.4",
+    "expo-clipboard": "~56.0.0",
     "expo-device": "~56.0.4",
+    "expo-document-picker": "~56.0.4",
     "expo-font": "~56.0.5",
     "expo-glass-effect": "~56.0.4",
     "expo-image-manipulator": "~56.0.17",

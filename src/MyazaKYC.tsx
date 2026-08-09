@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Platform } from 'react-native';
 
 // iOS presents the flow as a swipe-down card sheet (the RN equivalent of
@@ -12,7 +12,10 @@ const MODAL_PRESENTATION = Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen';
 const MODAL_ANIMATION = 'slide';
 
 import type { KYCStep, MyazaKYCConfig, SupportedCountry } from './types/config';
-import { KycRuntimeProvider, useKycStore } from './components/runtime';
+import { KycRuntimeProvider, MyazaThemeProvider } from './components/runtime';
+import { WorkflowGate } from './components/WorkflowGate';
+import { useWorkflowMount } from './components/useWorkflowMount';
+import { safeReportError } from './services/errors';
 import { KycFlow, type BackResult } from './components/KycFlow';
 import { MyazaButton } from './components/MyazaButton';
 
@@ -62,10 +65,13 @@ export function MyazaKYC<C extends SupportedCountry = SupportedCountry>(
   // The provider wraps BOTH the trigger and the modal so the built-in trigger
   // button can read the theme. The store is created once and `reset()` on each
   // open for a fresh run.
+  // The theme provider wraps the trigger so the built-in button is branded
+  // before anything is resolved; the flow's own provider (with the resolved
+  // workflow's appearance) is mounted inside the modal by the gate.
   return (
-    <KycRuntimeProvider config={config}>
+    <MyazaThemeProvider appearance={config.appearance}>
       <MyazaKYCTrigger config={config} label={children} disabled={disabled} />
-    </KycRuntimeProvider>
+    </MyazaThemeProvider>
   );
 }
 
@@ -78,23 +84,49 @@ function MyazaKYCTrigger({
   label?: string;
   disabled?: boolean;
 }): React.ReactElement {
-  const store = useKycStore();
-  const [open, setOpen] = useState(false);
+  const [wantOpen, setWantOpen] = useState(false);
   // Idempotent close — the X button, Android back, and iOS swipe-down dismiss can
   // each fire; `onClose` must run at most once per open.
   const closedRef = useRef(true);
   const backRef = useRef<(() => BackResult) | null>(null);
 
+  // Resolution happens HERE, outside the modal, and starts on mount rather than
+  // on press. The modal is only presented once it has settled, so its very
+  // first frame carries the workflow's own appearance instead of coming up in
+  // the default brand and recolouring underneath the user.
+  const { state, retry, refresh } = useWorkflowMount(config);
+  const settled = state.status !== 'resolving';
+  const open = wantOpen && settled;
+
+  // Reported only once the user has actually tried to start. Prefetching must
+  // not fire a consumer's error handler for a flow they never opened.
+  const reportedRef = useRef(false);
+  useEffect(() => {
+    if (!wantOpen || state.status !== 'error' || reportedRef.current) return;
+    reportedRef.current = true;
+    safeReportError(config.onError, state.error);
+  }, [wantOpen, state, config]);
+
+  const retryFlow = useCallback(() => {
+    reportedRef.current = false;
+    retry();
+  }, [retry]);
+
+  // Each open mounts a fresh gate → provider → store, so there is no state to
+  // reset; the previous run's store is discarded with its provider.
   const openFlow = useCallback(() => {
     closedRef.current = false;
-    store.getState().reset();
-    setOpen(true);
-  }, [store]);
+    // Re-resolve on every open: the mount-time prefetch is a warm-up, not a
+    // cache, so a workflow published since the app started is still picked up.
+    reportedRef.current = false;
+    refresh();
+    setWantOpen(true);
+  }, [refresh]);
 
   const close = useCallback(() => {
     if (closedRef.current) return;
     closedRef.current = true;
-    setOpen(false);
+    setWantOpen(false);
     config.onClose?.();
   }, [config]);
 
@@ -113,6 +145,10 @@ function MyazaKYCTrigger({
       <MyazaButton
         label={label ?? defaultTriggerLabel(config)}
         disabled={disabled}
+        // Pressed, but the workflow has not arrived yet. Without this the press
+        // would look ignored — gating the modal on a resolved config trades a
+        // wrong colour for a dead button unless the wait is shown.
+        loading={wantOpen && !settled}
         fullWidth={false}
         onPress={openFlow}
       />
@@ -125,7 +161,15 @@ function MyazaKYCTrigger({
         onRequestClose={onRequestClose}
         onDismiss={blockDismiss ? undefined : close}
       >
-        {open ? <KycFlow onClose={close} backRef={backRef} /> : null}
+        {open ? (
+          <WorkflowGate config={config} state={state} onRetry={retryFlow} onClose={close}>
+            {(mount) => (
+              <KycRuntimeProvider config={mount.config} serverConfig={mount.serverConfig}>
+                <KycFlow onClose={close} backRef={backRef} />
+              </KycRuntimeProvider>
+            )}
+          </WorkflowGate>
+        ) : null}
       </Modal>
     </>
   );
@@ -142,6 +186,15 @@ export interface UseMyazaKYCReturn {
   open: () => void;
   close: () => void;
   isOpen: boolean;
+  /**
+   * Opening was requested but the workflow has not resolved yet.
+   *
+   * Show a spinner on your trigger while this is true. The modal is deliberately
+   * withheld until the config has settled so it opens in the right brand rather
+   * than recolouring underneath the user — which means the press has to be
+   * acknowledged somewhere, or it looks ignored.
+   */
+  isPreparing: boolean;
   currentStep: KYCStep | null;
   /** Render this once in your component tree (RN has no implicit portal). */
   MyazaKYCModal: React.FC;
@@ -150,7 +203,7 @@ export interface UseMyazaKYCReturn {
 export function useMyazaKYC<C extends SupportedCountry = SupportedCountry>(
   config: MyazaKYCConfig<C>,
 ): UseMyazaKYCReturn {
-  const [isOpen, setIsOpen] = useState(false);
+  const [wantOpen, setWantOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState<KYCStep | null>(null);
   const closedRef = useRef(true);
 
@@ -164,14 +217,23 @@ export function useMyazaKYC<C extends SupportedCountry = SupportedCountry>(
   configRef.current = config;
   const backRef = useRef<(() => BackResult) | null>(null);
 
+  // `refresh` is defined further down (it needs `wrappedConfig`), so it is
+  // reached through a ref rather than reordering the component around it.
+  const refreshRef = useRef<() => void>(() => undefined);
+  // Only reported once the consumer has actually tried to start — prefetching
+  // must not fire their error handler for a flow they never opened.
+  const reportedRef = useRef(false);
   const open = useCallback(() => {
     closedRef.current = false;
-    setIsOpen(true);
+    // Re-resolve on every open — see the trigger above.
+    reportedRef.current = false;
+    refreshRef.current();
+    setWantOpen(true);
   }, []);
   const close = useCallback(() => {
     if (closedRef.current) return;
     closedRef.current = true;
-    setIsOpen(false);
+    setWantOpen(false);
     setCurrentStep(null);
     configRef.current.onClose?.();
   }, []);
@@ -195,6 +257,24 @@ export function useMyazaKYC<C extends SupportedCountry = SupportedCountry>(
     [],
   );
 
+  // Resolution runs outside the modal and starts on mount, so the modal's first
+  // frame already carries the workflow's appearance.
+  const { state, retry, refresh } = useWorkflowMount(wrappedConfig);
+  refreshRef.current = refresh;
+  const settled = state.status !== 'resolving';
+  const presenting = wantOpen && settled;
+
+  useEffect(() => {
+    if (!wantOpen || state.status !== 'error' || reportedRef.current) return;
+    reportedRef.current = true;
+    safeReportError(configRef.current.onError, state.error);
+  }, [wantOpen, state]);
+
+  const retryFlow = useCallback(() => {
+    reportedRef.current = false;
+    retry();
+  }, [retry]);
+
   // disableClose blocks user-initiated dismissal — only the returned close()
   // can dismiss. Present full-screen (no iOS swipe-down). The Android hardware
   // back goes through onRequestClose, which walks the flow back a step (or
@@ -212,7 +292,7 @@ export function useMyazaKYC<C extends SupportedCountry = SupportedCountry>(
   const MyazaKYCModal = useCallback<React.FC>(
     () => (
       <Modal
-        visible={isOpen}
+        visible={presenting}
         animationType={MODAL_ANIMATION}
         presentationStyle={blockDismiss ? 'fullScreen' : MODAL_PRESENTATION}
         statusBarTranslucent
@@ -220,16 +300,29 @@ export function useMyazaKYC<C extends SupportedCountry = SupportedCountry>(
         onRequestClose={onRequestClose}
         onDismiss={blockDismiss ? undefined : close}
       >
-        {/* Fresh provider/store per open. */}
-        {isOpen ? (
-          <KycRuntimeProvider config={wrappedConfig}>
-            <KycFlow onClose={close} backRef={backRef} />
-          </KycRuntimeProvider>
+        {/* Fresh gate/provider/store per open. */}
+        {presenting ? (
+          <WorkflowGate config={wrappedConfig} state={state} onRetry={retryFlow} onClose={close}>
+            {(mount) => (
+              <KycRuntimeProvider config={mount.config} serverConfig={mount.serverConfig}>
+                <KycFlow onClose={close} backRef={backRef} />
+              </KycRuntimeProvider>
+            )}
+          </WorkflowGate>
         ) : null}
       </Modal>
     ),
-    [wrappedConfig, isOpen, close, blockDismiss, onRequestClose],
+    [wrappedConfig, presenting, state, retryFlow, close, blockDismiss, onRequestClose],
   );
 
-  return { open, close, isOpen, currentStep, MyazaKYCModal };
+  // `isOpen` stays the consumer's intent, not the presentation state — a
+  // trigger disabled on it must stay disabled through the preparing window.
+  return {
+    open,
+    close,
+    isOpen: wantOpen,
+    isPreparing: wantOpen && !settled,
+    currentStep,
+    MyazaKYCModal,
+  };
 }

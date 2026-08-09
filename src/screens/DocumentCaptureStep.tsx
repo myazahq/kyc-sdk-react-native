@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Image, Pressable, View } from 'react-native';
+import { Image, Platform, Pressable, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
+import { initialWindowMetrics } from 'react-native-safe-area-context';
 
 import { radius, spacing } from '../config/theme';
 import { ID_TYPES, documentGuideAspect, getScanSides } from '../config/idTypes';
@@ -11,14 +12,18 @@ import { compressDocumentImage, compressVideo, cropCardRegion } from '../service
 import { MAX_VIDEO_BYTES } from '../config/captureSettings';
 import { KYCError } from '../types/verification';
 import type { DocumentCapturePhase } from '../store/kycStore';
-import { useKyc, useKycConfig, useTheme } from '../components/runtime';
+import { useEffectiveCountry, useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
 import { MyazaText } from '../components/Typography';
 import { MyazaButton } from '../components/MyazaButton';
 import { useToast } from '../components/toast';
 import { MyazaPulseLoader } from '../components/MyazaPulseLoader';
-import { CameraViewfinder } from '../components/CameraViewfinder';
+import { CameraPhase } from './document/CameraPhase';
 import { CameraPermissionView, CameraUnavailableView, CameraPermissionPrimingView } from '../components/CameraPermissionView';
+import { ReadyPrimer } from '../components/ReadyPrimer';
+import { READY_DOCUMENT } from '../components/readyPrimerContent';
 import { DocumentCropper } from '../components/DocumentCropper';
+import { DocumentReview } from '../components/DocumentReview';
+import { scanMrzFromImage } from '../mrz/textRecognizer';
 import { Icon } from '../components/Icon';
 
 // Document capture — the RN mirror of the Flutter/web DocumentCaptureStep.
@@ -61,6 +66,16 @@ export function documentCaptureMeta(
   }
 }
 
+/** Bound on how long Continue waits for the supplementary document video. */
+const DOC_VIDEO_WAIT_MS = 8000;
+
+/** Home-indicator / nav-bar clearance for the full-screen camera's controls. */
+function cameraBottomInset(): number {
+  const sa = initialWindowMetrics?.insets;
+  if (Platform.OS === 'android') return (sa?.bottom ?? 0) + 12;
+  return sa?.bottom || 34;
+}
+
 export function DocumentCaptureStep(): React.ReactElement {
   const { colors } = useTheme();
   const toast = useToast();
@@ -68,7 +83,12 @@ export function DocumentCaptureStep(): React.ReactElement {
   const selectedIdType = useKyc((s) => s.selectedIdType);
   const api = useKyc((s) => s.api);
   const setMediaId = useKyc((s) => s.setMediaId);
+  const setMrzScan = useKyc((s) => s.setMrzScan);
+  const mrzScan = useKyc((s) => s.mrzScan);
+  const country = useEffectiveCountry();
   const setDocumentCapturePhase = useKyc((s) => s.setDocumentCapturePhase);
+  const setImmersiveCapture = useKyc((s) => s.setImmersiveCapture);
+  const store = useKycStore();
   const nextStep = useKyc((s) => s.nextStep);
 
   const allowUpload = config.allowDocumentUpload !== false;
@@ -95,6 +115,7 @@ export function DocumentCaptureStep(): React.ReactElement {
   useEffect(() => {
     setDocumentCapturePhase(phase);
   }, [phase, setDocumentCapturePhase]);
+
 
   // ── Camera permission ──────────────────────────────────────────────────────
   // `perm` is derived from the ASYNC requestPermission result, not synchronously
@@ -127,7 +148,23 @@ export function DocumentCaptureStep(): React.ReactElement {
   // No camera hardware at all → "Camera not available" (regardless of what the
   // permission API says — on a camera-less sim it may even report denied).
   const cameraUnavailable = cameraGrace && !device;
+  // Gate the camera path on the user acknowledging the primer. Shown once for
+  // the step, not per side — repeating it before the back of a card would be
+  // noise, not a warning.
+  const [ready, setReady] = useState(false);
   const showPrimer = perm === 'priming' && !!device;
+  // Tell the shell when the full-bleed camera is on screen. Scoped tightly:
+  // only the live preview earns the whole display — the ready primer, the
+  // permission screens, the previews and the review all keep their chrome.
+  //
+  // No unmount cleanup: KycFlow already scopes the flag to this step, and a
+  // cleanup here would fire during any remount and fight the effect that had
+  // just raised it.
+  const cameraLive =
+    (phase === 'front' || phase === 'back') && ready && perm === 'granted' && !!device;
+  useEffect(() => {
+    setImmersiveCapture(cameraLive);
+  }, [cameraLive, setImmersiveCapture]);
 
   // Reflect an externally-granted permission.
   useEffect(() => {
@@ -176,6 +213,22 @@ export function DocumentCaptureStep(): React.ReactElement {
       setUploadError(null);
       try {
         const compressed = await compressDocumentImage(rawUri);
+        // Read the MRZ off the FRONT while we have it. It is the key that
+        // unlocks the chip, and taking it from the photo the user just captured
+        // is what spares them scanning the same passport a second time.
+        // Best-effort in every sense: most documents have no MRZ, and one that
+        // does not read simply leaves the chip step to ask.
+        if (phase !== 'back') {
+          void scanMrzFromImage(compressed)
+            .then((scan) => {
+              if (scan) setMrzScan(scan);
+            })
+            // Explicit, even though the scanner already swallows its own
+            // errors: this sits inside the capture path, and the claim above
+            // that it is best-effort has to hold for anything that can reject
+            // — including a future change to the store setter.
+            .catch(() => undefined);
+        }
         if (phase === 'back') {
           setBackUri(compressed);
           setPhase('review');
@@ -187,7 +240,7 @@ export function DocumentCaptureStep(): React.ReactElement {
         setBusy(false);
       }
     },
-    [phase, isTwoSided],
+    [phase, isTwoSided, setMrzScan],
   );
 
   // Gallery upload: pick the raw photo (no native editor), then open the SDK's
@@ -196,13 +249,16 @@ export function DocumentCaptureStep(): React.ReactElement {
   // (mirrors Flutter's cropCardRegion), then store. Gallery photos skip this —
   // they're already cropped by the interactive cropper.
   const captureFromCamera = useCallback(
-    async (rawUri: string, videoPath: string | null) => {
+    async (rawUri: string, videoPath: string | null, viewAr: number) => {
       setBusy(true);
       try {
         // Stash the side's video (best-effort) before cropping/storing the still.
         if (phase === 'back') backVideoRef.current = videoPath;
         else frontVideoRef.current = videoPath;
-        const carded = await cropCardRegion(rawUri, guideAspect).catch(() => rawUri);
+        // viewAr is the MEASURED preview box — full-screen capture shows a far
+        // taller slice than the framed 3:4 box the old constant assumed, which
+        // is why reviews came back wider than what the user framed.
+        const carded = await cropCardRegion(rawUri, guideAspect, viewAr).catch(() => rawUri);
         await storeCapture(carded);
       } finally {
         setBusy(false);
@@ -223,6 +279,18 @@ export function DocumentCaptureStep(): React.ReactElement {
   }, []);
 
   // Best-effort document video upload — never blocks or fails the flow.
+  /**
+   * How long the flow will WAIT for a document video before moving on.
+   *
+   * The clip is supplementary evidence, but transcoding a 4K recording and
+   * pushing it over a phone hotspot is slow — and it used to be awaited with no
+   * bound, so the step sat on a spinner indefinitely after the photo had
+   * already uploaded fine. The user could not reach the chip step at all.
+   *
+   * The upload is NOT cancelled at the deadline: it keeps running in the
+   * background and still records its media id if it lands, usually well before
+   * submission. Only the WAIT is bounded.
+   */
   const uploadDocVideo = useCallback(
     async (
       videoPath: string | null,
@@ -230,15 +298,21 @@ export function DocumentCaptureStep(): React.ReactElement {
       mediaKey: 'documentFrontVideo' | 'documentBackVideo',
     ) => {
       if (!videoPath) return;
-      try {
-        // Transcode the raw 4K recording down to a small evidence clip first.
-        const small = await compressVideo(videoPath);
-        const id = await withRetry(() => api.upload({ uri: small, type: 'video/mp4' }, type, MAX_VIDEO_BYTES));
-        setMediaId(mediaKey, id);
-      } catch {
-        /* supplementary — verification proceeds without the document video
-           (dropped if it failed to upload or exceeded the 5MB ceiling) */
-      }
+      const work = (async () => {
+        try {
+          // Transcode the raw 4K recording down to a small evidence clip first.
+          const small = await compressVideo(videoPath);
+          const id = await withRetry(() => api.upload({ uri: small, type: 'video/mp4' }, type, MAX_VIDEO_BYTES));
+          setMediaId(mediaKey, id);
+        } catch {
+          /* supplementary — verification proceeds without the document video
+             (dropped if it failed to upload or exceeded the 5MB ceiling) */
+        }
+      })();
+      await Promise.race([
+        work,
+        new Promise<void>((resolve) => setTimeout(resolve, DOC_VIDEO_WAIT_MS)),
+      ]);
     },
     [api, setMediaId],
   );
@@ -312,6 +386,17 @@ export function DocumentCaptureStep(): React.ReactElement {
         </>
       );
     }
+    if (!ready) {
+      // "Here's what happens next", BEFORE the OS prompt — and shown even when
+      // permission is already granted, since it is about what the step asks of
+      // the user rather than about access.
+      return (
+        <>
+          {cropper}
+          <ReadyPrimer content={READY_DOCUMENT} onReady={() => setReady(true)} />
+        </>
+      );
+    }
     if (showPrimer) {
       // Primer before the OS prompt — camera not started yet.
       return (
@@ -334,56 +419,35 @@ export function DocumentCaptureStep(): React.ReactElement {
       );
     }
     const isBack = phase === 'back';
+
     return (
-      <View>
+      <>
         {cropper}
-        {/* Required pill: ID label + side badge + step label (two-sided) */}
-        <RequiredPill
-          documentLabel={documentLabel}
-          sideBadge={isTwoSided ? (isBack ? 'Back Side' : 'Front Side') : undefined}
-          stepLabel={isTwoSided ? (isBack ? 'Step 2 of 2' : 'Step 1 of 2') : undefined}
-        />
-        {isBack ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm, marginBottom: spacing.xs }}>
-            <Icon name="credit-card" size={14} color={colors.primary} />
-            <View style={{ width: 4 }} />
-            <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '500' }}>
-              Flip the card over and scan the other side
-            </MyazaText>
-          </View>
-        ) : null}
-        <View style={{ height: spacing.md }} />
-        <CameraViewfinder
+        <CameraPhase
+          isBack={isBack}
+          cameraLive={cameraLive}
           active={perm === 'granted'}
-          side={isBack ? 'back' : 'front'}
           documentLabel={documentLabel}
           guideAspect={guideAspect}
-          onCapture={(uri, videoPath) => void captureFromCamera(uri, videoPath)}
+          isTwoSided={isTwoSided}
           busy={busy}
+          allowUpload={allowUpload}
+          country={country}
+          idType={selectedIdType ?? undefined}
+          mrzAlreadyCaptured={!!mrzScan}
+          onMrz={setMrzScan}
+          onCapture={(uri, videoPath, viewAr) => void captureFromCamera(uri, videoPath, viewAr)}
+          onUpload={pickFromGallery}
+          onBack={() => store.getState().previousStep()}
+          // The camera is a TRUE full-screen modal now, so it runs under the
+          // home indicator and has to clear the real inset — the smaller value
+          // that suited the inset sheet leaves the shutter under the gesture bar.
+          bottomInset={cameraBottomInset()}
         />
-        {!busy ? (
-          <>
-            <View style={{ height: spacing.md }} />
-            <MyazaText variant="bodySmall" style={{ textAlign: 'center' }}>
-              Tap the button to capture manually
-            </MyazaText>
-            {allowUpload ? (
-              <Pressable onPress={pickFromGallery} style={{ marginTop: spacing.sm }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                  <MyazaText variant="bodySmall">Having trouble? </MyazaText>
-                  <Icon name="upload" size={14} color={colors.primary} />
-                  <View style={{ width: 4 }} />
-                  <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '700' }}>
-                    Upload a photo instead
-                  </MyazaText>
-                </View>
-              </Pressable>
-            ) : null}
-          </>
-        ) : null}
-      </View>
+      </>
     );
   }
+
 
   // ── Front preview (two-sided) ──────────────────────────────────────────────
   if (phase === 'front-preview') {
@@ -404,84 +468,44 @@ export function DocumentCaptureStep(): React.ReactElement {
 
   // ── Review ─────────────────────────────────────────────────────────────────
   return (
-    <View>
-      <DocImage uri={frontUri!} label={isTwoSided ? 'Front' : undefined} uploading={uploading} />
-      <MyazaButton label="Retake" variant="ghost" leadingIcon="refresh" onPress={() => retake('front')} disabled={uploading} />
-      {isTwoSided && backUri ? (
+    <DocumentReview
+      frontUri={frontUri!}
+      backUri={isTwoSided ? backUri : null}
+      aspect={guideAspect}
+      isBusy={uploading}
+      busyOverlay={
+        // Standard upload loader — a dark scrim + the pulse-ring loader, drawn
+        // INSIDE the preview frame, mirroring the web/Flutter SDKs (and the
+        // liveness selfie review).
+        <View
+          style={{
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(0,0,0,0.45)',
+          }}
+        >
+          <MyazaPulseLoader size={48} />
+        </View>
+      }
+      onRetakeFront={() => retake('front')}
+      onRetakeBack={() => retake('back')}
+      footer={
         <>
-          <View style={{ height: spacing.md }} />
-          <DocImage uri={backUri} label="Back" uploading={uploading} />
-          <MyazaButton label="Retake Back" variant="ghost" leadingIcon="refresh" onPress={() => retake('back')} disabled={uploading} />
-        </>
-      ) : null}
-
-      {retryInfo && uploading ? (
-        <MyazaText variant="bodySmall" color={colors.warning} style={{ textAlign: 'center', marginTop: spacing.sm }}>
-          {`Upload failed — retrying (${retryInfo.attempt}/${retryInfo.total})…`}
-        </MyazaText>
-      ) : null}
-
-      <View style={{ height: spacing.md }} />
-      {uploadError ? (
-        // The error message is shown as a top toast; keep a retry action here.
-        <MyazaButton label="Try Again" onPress={handleContinue} loading={uploading} />
-      ) : (
-        <MyazaButton label="Continue" onPress={handleContinue} loading={uploading} />
-      )}
-    </View>
-  );
-}
-
-// "Required: {label}" pill with optional side badge + step label — mirrors the
-// Flutter SDK's _RequiredPill on the capture screen.
-function RequiredPill({
-  documentLabel,
-  sideBadge,
-  stepLabel,
-}: {
-  documentLabel: string;
-  sideBadge?: string;
-  stepLabel?: string;
-}): React.ReactElement {
-  const { colors } = useTheme();
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-      <View
-        style={{
-          flex: 1,
-          flexDirection: 'row',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          borderWidth: 1,
-          borderColor: `${colors.primary}33`,
-          backgroundColor: `${colors.primary}0D`,
-          borderRadius: radius.md,
-          paddingHorizontal: spacing.sm + 4,
-          paddingVertical: spacing.sm,
-        }}
-      >
-        <Icon name="credit-card" size={16} color={colors.primary} />
-        <View style={{ width: 8 }} />
-        <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '600' }}>
-          Required:{' '}
-        </MyazaText>
-        <MyazaText variant="bodySmall" color={colors.primary} style={{ flexShrink: 1 }}>
-          {documentLabel}
-        </MyazaText>
-        {sideBadge ? (
-          <View style={{ backgroundColor: `${colors.primary}26`, borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 2, marginLeft: 8 }}>
-            <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '600', fontSize: 11 }}>
-              {sideBadge}
+          {retryInfo && uploading ? (
+            <MyazaText variant="bodySmall" color={colors.warning} style={{ textAlign: 'center', marginBottom: spacing.sm }}>
+              {`Upload failed — retrying (${retryInfo.attempt}/${retryInfo.total})…`}
             </MyazaText>
-          </View>
-        ) : null}
-      </View>
-      {stepLabel ? (
-        <MyazaText variant="bodySmall" color={colors.textMuted} style={{ marginLeft: spacing.sm }}>
-          {stepLabel}
-        </MyazaText>
-      ) : null}
-    </View>
+          ) : null}
+          {uploadError ? (
+            // The error message is shown as a top toast; keep a retry action here.
+            <MyazaButton label="Try Again" onPress={handleContinue} loading={uploading} />
+          ) : (
+            <MyazaButton label="Continue" onPress={handleContinue} loading={uploading} />
+          )}
+        </>
+      }
+    />
   );
 }
 

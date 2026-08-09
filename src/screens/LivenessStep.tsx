@@ -16,7 +16,8 @@ import { withRetry } from '../services/retry';
 import { mapToKycError, safeReportError } from '../services/errors';
 import { compressSelfieImage, compressVideo } from '../services/mediaCompress';
 import { KYCError } from '../types/verification';
-import { useKyc, useKycConfig, useTheme } from '../components/runtime';
+import { useStore } from 'zustand';
+import { useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
 import { MyazaText } from '../components/Typography';
 import { MyazaButton } from '../components/MyazaButton';
 import { MyazaPulseLoader } from '../components/MyazaPulseLoader';
@@ -30,8 +31,26 @@ import {
 import { Icon } from '../components/Icon';
 import { useToast } from '../components/toast';
 import { CameraPermissionView, CameraUnavailableView, CameraPermissionPrimingView } from '../components/CameraPermissionView';
+import { ReadyPrimer } from '../components/ReadyPrimer';
+import { READY_LIVENESS } from '../components/readyPrimerContent';
 import { LivenessAvatar } from './LivenessAvatar';
 import { detectFaceOnFrame } from '../liveness/visionCameraFaceDetector';
+import { buildLivenessIntegrity } from '../liveness/integritySignals';
+import { DEFAULT_LIVENESS_CONFIG } from '../liveness/types';
+import { useFlashSequence } from './useFlashSequence';
+import { useFlashHole } from './useFlashHole';
+import {
+  FRESH_FACE_TIMEOUT_MS,
+  INSTRUCTION_HEIGHT,
+  LightingBanner,
+  ProgressDots,
+  SelfiePreview,
+  StyleAbsFill,
+  resolveGuidance,
+  useSelfieUpload,
+  LivenessComplete,
+  LivenessFailed,
+} from './liveness';
 import {
   lightingGuidanceText,
   positionGuidanceText,
@@ -63,6 +82,7 @@ export function LivenessStep(): React.ReactElement {
   const config = useKycConfig();
   const api = useKyc((s) => s.api);
   const setMediaId = useKyc((s) => s.setMediaId);
+  const setCaptureIntegrity = useKyc((s) => s.setCaptureIntegrity);
   const nextStep = useKyc((s) => s.nextStep);
 
   const device = useCameraDevice('front');
@@ -102,6 +122,8 @@ export function LivenessStep(): React.ReactElement {
     return () => clearTimeout(t);
   }, []);
   const cameraUnavailable = cameraGrace && !device;
+  // Gate the whole camera path on the user acknowledging the primer.
+  const [ready, setReady] = useState(false);
   const showPrimer = perm === 'priming' && !!device;
   const permissionDenied = perm === 'denied' && !!device;
 
@@ -134,56 +156,19 @@ export function LivenessStep(): React.ReactElement {
     if (!permissionDenied) permReportedRef.current = false;
   }, [permissionDenied, config.onError]);
 
-  // ── Selfie capture + eager upload state (mirrors Flutter _handleComplete) ───
-  const [selfieUri, setSelfieUri] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [retryInfo, setRetryInfo] = useState<{ attempt: number; total: number } | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const selfieIdRef = useRef<string | null>(null);
-  // Holds the finished liveness-video path (from the recorder) so the review-screen
-  // "Try Again" can re-upload it. The recorder itself lives in useVideoRecorder.
-  const videoPathRef = useRef<string | null>(null);
-
-  const uploadSelfieAndVideo = useCallback(
-    async (selfie: string, videoPath: string | null) => {
-      setUploading(true);
-      setUploadError(null);
-      setRetryInfo(null);
-      const onRetry = (attempt: number, total: number) => setRetryInfo({ attempt, total });
-      try {
-        const selfieId = await withRetry(
-          () => api.upload({ uri: selfie, type: 'image/jpeg' }, 'selfie'),
-          { onRetry },
-        );
-        selfieIdRef.current = selfieId;
-        setMediaId('selfie', selfieId);
-        // Liveness video is best-effort — a failure here must not block the user.
-        if (videoPath) {
-          try {
-            // Transcode the raw recording down to a small evidence clip first.
-            const small = await compressVideo(videoPath);
-            const videoId = await withRetry(
-              () => api.upload({ uri: small, type: 'video/mp4' }, 'liveness_video', MAX_VIDEO_BYTES),
-              { onRetry },
-            );
-            setMediaId('livenessVideo', videoId);
-          } catch {
-            /* keep the selfie, drop the video (incl. if it exceeded the 5MB cap) */
-          }
-        }
-        setRetryInfo(null);
-        setUploading(false);
-      } catch (err) {
-        setRetryInfo(null);
-        setUploading(false);
-        const kycError = mapToKycError(err, 'upload');
-        setUploadError(kycError.message);
-        toast.show({ variant: 'error', title: 'Upload failed', message: kycError.message });
-        safeReportError(config.onError, kycError);
-      }
-    },
-    [api, setMediaId, config.onError, toast],
-  );
+  // Selfie + liveness-video upload (see ./liveness/useSelfieUpload).
+  const upload = useSelfieUpload();
+  const {
+    selfieUri,
+    setSelfieUri,
+    uploading,
+    retryInfo,
+    uploadError,
+    setUploadError,
+    selfieIdRef,
+    videoPathRef,
+    uploadSelfieAndVideo,
+  } = upload;
 
   // ── Liveness state machine ─────────────────────────────────────────────────
   // `handleCapture` is created after `liveness` (it calls liveness.markComplete),
@@ -191,7 +176,16 @@ export function LivenessStep(): React.ReactElement {
   const captureRef = useRef<() => void>(() => {});
   const liveness = useLiveness({
     voiceGuidance: config.voiceGuidance,
+    // Silent until the primer is dismissed and the camera is actually up. The
+    // machine is constructed behind the primer, so without this it talks to a
+    // user who has not started yet.
+    announce: ready && !showPrimer,
     onReadyToCapture: () => captureRef.current(),
+    config: {
+      ...DEFAULT_LIVENESS_CONFIG,
+      mode: config.livenessMode ?? 'gestures',
+      flashSequenceLength: config.flashSequenceLength,
+    },
   });
 
   const handleCapture = useCallback(async () => {
@@ -206,10 +200,46 @@ export function LivenessStep(): React.ReactElement {
       await new Promise((r) => setTimeout(r, SELFIE_SETTLE_MS));
       // v5: capture the selfie via the photo output (no camera ref). filePath is
       // a plain fs path — prepend file:// for the uploader/compressor.
+      // A different face appeared while the machine was in `capturing`. The
+      // verdict was recorded rather than shown (nothing may re-lay out mid
+      // capture), so it is acted on here — BEFORE the shutter, so no still of a
+      // stranger is ever taken, let alone uploaded.
+      // Live read. `liveness.integrityBroken` is a snapshot from the render
+      // this callback was created in — i.e. from BEFORE the flash — so a face
+      // swapped or added during the sequence was recorded and then never seen
+      // here.
+      if (liveness.isCompromised()) {
+        liveness.reportIntegrityFailure();
+        return;
+      }
+      // Nobody in frame? Do not photograph an empty room.
+      //
+      // The flash can leave the face briefly undetectable, so this waits for a
+      // FRESH detection now that the overlay is gone rather than trusting a
+      // timestamp from before it started — a stale stamp from just before the
+      // user walked away passes any recency check, which is precisely how a
+      // blank selfie got captured and submitted as a passing liveness result.
+      //
+      // Losing the face is not a failure, just an abandoned attempt: drop back
+      // to positioning with the camera still running, so the user re-frames and
+      // the gate fires again with no teardown and no permission re-prompt.
+      if (!(await liveness.awaitFreshFace(FRESH_FACE_TIMEOUT_MS))) {
+        liveness.reset();
+        return;
+      }
       const file = await photoOutput.capturePhotoToFile({ flashMode: 'off' }, {});
       const raw = `file://${file.filePath}`;
       const compressed = await compressSelfieImage(raw).catch(() => raw);
       setSelfieUri(compressed);
+      // Recorded at capture, not at submit: by then the liveness hook is gone
+      // and its flash result with it.
+      setCaptureIntegrity({
+        liveness: buildLivenessIntegrity(
+          config.livenessMode ?? 'gestures',
+          liveness.faceGlitches,
+          liveness.flashResult,
+        ),
+      });
       liveness.markComplete();
       // Stop the liveness video (best-effort) and start the eager upload. The
       // recorder resolves the finished file path (or null if nothing recorded);
@@ -220,7 +250,7 @@ export function LivenessStep(): React.ReactElement {
     } catch {
       liveness.reset();
     }
-  }, [device, liveness, uploadSelfieAndVideo, photoOutput, videoRecorder]);
+  }, [device, liveness, uploadSelfieAndVideo, photoOutput, videoRecorder, setCaptureIntegrity, config.livenessMode]);
 
   useEffect(() => {
     captureRef.current = () => void handleCapture();
@@ -242,19 +272,60 @@ export function LivenessStep(): React.ReactElement {
   // with `runOnJS(...)` INSIDE the worklet (the canonical react-native-worklets
   // pattern) rather than pre-wrapped — pre-wrapping produced a "non-worklet
   // function" error when called from the frame-processor worklet.
+  // The most recent face-region RGB, for the flash sequence. A ref rather than
+  // state: this updates every frame, and re-rendering the camera preview at
+  // frame rate would be both wasteful and — during a flash — actively harmful,
+  // since the overlay's cutout is measured once.
+  const faceRgbRef = useRef<readonly [number, number, number] | null>(null);
+
   const handleFace = useCallback((data: LivenessFaceData | null) => {
     const l = livenessRef.current;
     if (!data) {
+      faceRgbRef.current = null;
       l.onNoFace();
       return;
     }
+    faceRgbRef.current = data.faceRgb ?? null;
     // Low-light gate (thresholds mirror Flutter's _BrightnessSampler: <62 dark,
     // >200 bright). Feeds the lighting warning + speech and blocks challenges so
     // gestures don't misbehave in poor light.
     l.setLighting(data.brightness < 62 ? 'dark' : data.brightness > 200 ? 'bright' : null);
     if (data.faceCount > 0) l.onFace(data);
-    else l.onNoFace();
+    else {
+      faceRgbRef.current = null;
+      l.onNoFace();
+    }
   }, []);
+
+
+  // Hoisted above this component's several early returns — it is a hook, and
+  // calling it further down (next to the circle it measures, where it reads
+  // better) would make it conditional on which branch rendered.
+  const { ref: flashHoleRef, hole: flashHole } = useFlashHole(liveness.phase === 'flash');
+
+  const { flashColor } = useFlashSequence({
+    active: liveness.shouldFlash,
+    // Stop painting the moment a second face appears or the face is swapped:
+    // finishing the sequence would produce a reflection measurement for a face
+    // that is no longer the subject.
+    shouldContinue: () => !livenessRef.current.isCompromised(),
+    sequenceLength: config.flashSequenceLength,
+    readFaceRgb: () => faceRgbRef.current,
+    onComplete: (result) => livenessRef.current.completeFlash(result),
+  });
+
+  // Published to the sheet root rather than drawn in this step: an overlay here
+  // lights only the padded body, and the screen IS the light source. The sheet
+  // root is still the SAME tree as the preview, so the cutout and the preview
+  // scale together under any UIKit transform.
+  const flashStore = useKycStore();
+  const setFlashPaint = useStore(flashStore, (st) => st.setFlashPaint);
+  const isFlashing = liveness.phase === 'flash';
+  useEffect(() => {
+    setFlashPaint(isFlashing ? { color: flashColor, hole: flashHole } : null);
+  }, [isFlashing, flashColor, flashHole, setFlashPaint]);
+  // Clear on unmount so a colour can never outlive the step.
+  useEffect(() => () => setFlashPaint(null), [setFlashPaint]);
 
   const frameOutput = useFrameOutput({
     // ML Kit (Android) and Apple Vision both consume YUV efficiently.
@@ -280,6 +351,13 @@ export function LivenessStep(): React.ReactElement {
   if (cameraUnavailable) {
     return <CameraUnavailableView />;
   }
+  // "Here's what happens next", BEFORE the OS prompt — and shown even when
+  // permission is already granted, because it is about what the step will ask
+  // of the user, not about access. Opening the camera unannounced is what makes
+  // people fumble the first attempt.
+  if (!ready) {
+    return <ReadyPrimer content={READY_LIVENESS} onReady={() => setReady(true)} />;
+  }
   if (showPrimer) {
     return <CameraPermissionPrimingView onGrant={() => setPerm('requesting')} />;
   }
@@ -290,67 +368,23 @@ export function LivenessStep(): React.ReactElement {
   // ── Review (selfie captured) ─────────────────────────────────────────────────
   if (liveness.phase === 'complete' && selfieUri) {
     return (
-      <View>
-        <SelfiePreview uri={selfieUri} uploading={uploading && !uploadError} />
-        {retryInfo && uploading ? (
-          <MyazaText variant="bodySmall" color={colors.warning} style={{ textAlign: 'center', marginTop: spacing.sm }}>
-            {`Upload failed — retrying (${retryInfo.attempt}/${retryInfo.total})…`}
-          </MyazaText>
-        ) : null}
-        <View style={{ height: spacing.md }} />
-        {uploadError ? (
-          // The error message itself is shown as a top toast; keep a retry action.
-          <MyazaButton
-            label="Try Again"
-            loading={uploading}
-            onPress={() => void uploadSelfieAndVideo(selfieUri, videoPathRef.current)}
-          />
-        ) : (
-          <View style={{ flexDirection: 'row', gap: spacing.md }}>
-            <View style={{ flex: 1 }}>
-              <MyazaButton
-                label="Retake"
-                variant="outline"
-                leadingIcon="refresh"
-                disabled={uploading}
-                onPress={() => {
-                  setSelfieUri(null);
-                  setUploadError(null);
-                  selfieIdRef.current = null;
-                  videoPathRef.current = null;
-                  liveness.reset();
-                }}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <MyazaButton
-                label="Continue"
-                loading={uploading}
-                disabled={uploading || !selfieIdRef.current}
-                onPress={nextStep}
-              />
-            </View>
-          </View>
-        )}
-      </View>
+      <LivenessComplete
+        selfieUri={selfieUri}
+        upload={upload}
+        onRetake={() => {
+          setSelfieUri(null);
+          setUploadError(null);
+          selfieIdRef.current = null;
+          videoPathRef.current = null;
+          liveness.reset();
+        }}
+        onContinue={nextStep}
+      />
     );
   }
 
-  // ── Failed (timeout / face lost) — mirrors the Flutter failed view: a centred
-  //    red message and a full-width "Try Again" button (no icon). ───────────────
   if (liveness.phase === 'failed') {
-    return (
-      <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xl, gap: spacing.lg }}>
-        <MyazaText variant="bodyMedium" color={colors.error} style={{ textAlign: 'center', fontWeight: '500' }}>
-          {liveness.failureReason === 'timeout'
-            ? "Time's up. Let's try again."
-            : 'Face lost. Please try again.'}
-        </MyazaText>
-        <View style={{ alignSelf: 'stretch' }}>
-          <MyazaButton label="Try Again" onPress={liveness.reset} />
-        </View>
-      </View>
-    );
+    return <LivenessFailed reason={liveness.failureReason} onRetry={liveness.reset} />;
   }
 
   // ── Live camera (circular) + ring state machine + guidance ──────────────────
@@ -391,15 +425,23 @@ export function LivenessStep(): React.ReactElement {
   const CIRCLE = Math.min(Dimensions.get('window').width - spacing.md * 4, 300);
   const lighting = liveness.lightingGuidance;
 
+  // Rendered INSIDE the sheet, so the SDK header and the "powered by" footer
+  // stay visible throughout — only the flash itself goes full-screen.
   return (
     <View style={{ alignItems: 'center', gap: spacing.md }}>
       {/* Instruction text — above the circle */}
-      <MyazaText variant="heading3" style={{ textAlign: 'center', minHeight: 26 }} color={instrColor}>
-        {guidance.text}
+      <MyazaText
+        variant="heading3"
+        style={{ textAlign: 'center', minHeight: INSTRUCTION_HEIGHT }}
+        color={instrColor}
+      >
+        {phase === 'flash' ? '' : guidance.text}
       </MyazaText>
 
       {/* Circular camera with a thick colour-state ring */}
       <View
+        ref={flashHoleRef}
+        collapsable={false}
         style={{
           width: CIRCLE,
           height: CIRCLE,
@@ -478,144 +520,10 @@ export function LivenessStep(): React.ReactElement {
       {lighting ? <LightingBanner text={lightingGuidanceText(lighting)} /> : null}
 
       {/* Numbered progress dots with connectors */}
-      <ProgressDots total={liveness.totalCount} completed={liveness.completedCount} active={phase === 'challenge' || phase === 'positioning'} />
+      <ProgressDots total={liveness.totalCount} completed={liveness.completedCount} active={phase === 'challenge' || phase === 'positioning' || phase === 'flash'} />
 
       {/* Gesture demo avatar */}
       {liveness.activeChallenge ? <LivenessAvatar challenge={liveness.activeChallenge} /> : null}
-    </View>
-  );
-}
-
-const StyleAbsFill = { position: 'absolute' as const, top: 0, left: 0, right: 0, bottom: 0 };
-
-// Lighting warning — 1:1 with the Flutter `_LightingWarningBanner`: amber-50 bg,
-// amber-200 border, amber-800 lightbulb + text, fading/sliding in (~300ms).
-const AMBER_50 = '#FFFBEB';
-const AMBER_200 = '#FDE68A';
-const AMBER_800 = '#92400E';
-
-function LightingBanner({ text }: { text: string }): React.ReactElement {
-  const anim = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.timing(anim, { toValue: 1, duration: 300, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
-  }, [anim]);
-  return (
-    <Animated.View
-      style={{
-        alignSelf: 'stretch',
-        opacity: anim,
-        transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [-8, 0] }) }],
-      }}
-    >
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'flex-start',
-          gap: spacing.sm,
-          borderRadius: radius.sm,
-          borderWidth: 1,
-          borderColor: AMBER_200,
-          backgroundColor: AMBER_50,
-          paddingHorizontal: spacing.sm + 4,
-          paddingVertical: 10,
-        }}
-      >
-        <Icon name="lightbulb" size={16} color={AMBER_800} />
-        <MyazaText variant="bodySmall" color={AMBER_800} style={{ flexShrink: 1, lineHeight: 17 }}>
-          {text}
-        </MyazaText>
-      </View>
-    </Animated.View>
-  );
-}
-
-/** The single guidance string + tone to show under the camera. */
-function resolveGuidance(l: ReturnType<typeof useLiveness>): { text: string; tone: 'normal' | 'error' } {
-  if (l.multipleFaces) return { text: l.instruction, tone: 'error' };
-  // Lighting is shown in its own banner (below), not as the main instruction.
-  if (l.phase === 'positioning' && !l.faceDetected) {
-    return { text: 'Position your face in the circle', tone: 'normal' };
-  }
-  if (l.positionGuidance) return { text: positionGuidanceText(l.positionGuidance), tone: 'error' };
-  if (l.wrongGesture) return { text: 'Wrong gesture — follow the prompt', tone: 'error' };
-  return { text: l.instruction, tone: 'normal' };
-}
-
-// Numbered progress steps with connectors — mirrors the web/Flutter SDKs:
-// passed = solid green + checkmark, active = green-outlined number, pending =
-// grey number. `active` marks the current (completed-th) step as in-progress.
-function ProgressDots({
-  total,
-  completed,
-  active,
-}: {
-  total: number;
-  completed: number;
-  active: boolean;
-}): React.ReactElement {
-  const { colors } = useTheme();
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-      {Array.from({ length: total }).map((_, i) => {
-        const state: 'passed' | 'active' | 'pending' =
-          i < completed ? 'passed' : i === completed && active ? 'active' : 'pending';
-        return (
-          <React.Fragment key={i}>
-            <View
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 14,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: state === 'passed' ? colors.success : state === 'active' ? colors.background : colors.gray300,
-                borderWidth: state === 'active' ? 2 : 0,
-                borderColor: colors.success,
-              }}
-            >
-              {state === 'passed' ? (
-                <Svg width={14} height={14} viewBox="0 0 24 24">
-                  <Path d="M5 13l4 4L19 7" fill="none" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
-                </Svg>
-              ) : (
-                <MyazaText variant="bodySmall" color={state === 'active' ? colors.success : colors.textMuted} style={{ fontWeight: '700' }}>
-                  {String(i + 1)}
-                </MyazaText>
-              )}
-            </View>
-            {i < total - 1 ? (
-              <View style={{ width: 28, height: 2, backgroundColor: i < completed ? colors.success : colors.gray300 }} />
-            ) : null}
-          </React.Fragment>
-        );
-      })}
-    </View>
-  );
-}
-
-function SelfiePreview({ uri, uploading }: { uri: string; uploading?: boolean }): React.ReactElement {
-  const { colors } = useTheme();
-  const S = 200;
-  return (
-    <View style={{ alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch' }}>
-      <View style={{ width: S, height: S, borderRadius: S / 2, borderWidth: 4, backgroundColor: '#111111', borderColor: `${colors.primary}33`, overflow: 'hidden' }}>
-        {/* borderRadius repeated on the Image — iOS doesn't reliably clip an Image
-            child to a rounded parent (same fix as the header brand bar). */}
-        <Image source={{ uri }} style={{ width: '100%', height: '100%', borderRadius: S / 2 }} resizeMode="cover" />
-        {/* Standard upload loader inside the preview circle (mirrors web/Flutter). */}
-        {uploading ? (
-          <View style={[StyleAbsFill, { backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }]}>
-            <MyazaPulseLoader size={64} />
-          </View>
-        ) : null}
-      </View>
-      <View style={{ height: spacing.md }} />
-      <MyazaText variant="heading3" style={{ textAlign: 'center' }}>
-        Looking good!
-      </MyazaText>
-      <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ textAlign: 'center' }}>
-        Tap Continue to submit, or Retake to try again.
-      </MyazaText>
     </View>
   );
 }

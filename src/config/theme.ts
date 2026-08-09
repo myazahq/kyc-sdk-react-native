@@ -82,7 +82,38 @@ export const DARK_COLORS: MyazaColorScheme = {
 
 export type ThemeMode = 'light' | 'dark';
 
-export const radius = { xs: 8, sm: 12, md: 16, lg: 20, xl: 24, full: 999 } as const;
+// The shipped scale, and the basis every override derives from.
+const DEFAULT_RADIUS = { xs: 8, sm: 12, md: 16, lg: 20, xl: 24, full: 999 };
+
+/**
+ * MUTABLE, so `appearance.borderRadius` can scale it.
+ *
+ * A mutable module object is a real trade-off, taken deliberately: 43 call sites
+ * read `radius.md` directly, and threading it through context buys nothing here
+ * — exactly one KYC flow is on screen at a time, and the scale is set once from
+ * the resolved config before that flow renders. The alternative is a 43-site
+ * refactor carrying far more risk.
+ */
+export const radius = { ...DEFAULT_RADIUS };
+
+/**
+ * `sm` (12) is the base — what buttons, inputs and cards use — so it is the rung
+ * a consumer is choosing when they say "our corners are 4px". The scale moves
+ * proportionally, keeping a card rounder than an input at every setting.
+ *
+ * `full` is deliberately untouched: it renders avatars and the camera circle,
+ * and scaling it turns circles into squircles.
+ */
+export function applyRadiusScale(base?: number): void {
+  const b = base == null || !Number.isFinite(base) ? DEFAULT_RADIUS.sm : Math.min(Math.max(base, 0), 32);
+  const ratio = b / DEFAULT_RADIUS.sm;
+  radius.xs = DEFAULT_RADIUS.xs * ratio;
+  radius.sm = DEFAULT_RADIUS.sm * ratio;
+  radius.md = DEFAULT_RADIUS.md * ratio;
+  radius.lg = DEFAULT_RADIUS.lg * ratio;
+  radius.xl = DEFAULT_RADIUS.xl * ratio;
+  radius.full = DEFAULT_RADIUS.full;
+}
 export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 } as const;
 export const sizing = {
   buttonHeight: 48,
@@ -173,7 +204,12 @@ export function applyAppearance(
 
 /** Resolves the active color scheme for a mode + appearance override. */
 export function resolveColors(mode: ThemeMode, appearance?: KYCAppearance): MyazaColorScheme {
-  return applyAppearance(mode === 'dark' ? DARK_COLORS : LIGHT_COLORS, appearance);
+  // The appearance is applied ON TOP of the active base scheme, so without the
+  // dark overrides an org's LIGHT background simply overwrote the dark one and
+  // the theme toggle stopped working for any branded flow.
+  const forMode =
+    mode === 'dark' && appearance?.dark ? { ...appearance, ...appearance.dark } : appearance;
+  return applyAppearance(mode === 'dark' ? DARK_COLORS : LIGHT_COLORS, forMode);
 }
 
 /**

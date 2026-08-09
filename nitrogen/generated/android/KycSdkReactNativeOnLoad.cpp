@@ -15,7 +15,10 @@
 #include <fbjni/fbjni.h>
 #include <NitroModules/HybridObjectRegistry.hpp>
 
+#include "JHybridMyazaEmrtdSpec.hpp"
 #include "JHybridMyazaFaceDetectorSpec.hpp"
+#include "JHybridMyazaRectDetectorSpec.hpp"
+#include "JHybridMyazaTextRecognizerSpec.hpp"
 #include <NitroModules/DefaultConstructableObject.hpp>
 
 namespace margelo::nitro::myazakyc {
@@ -34,19 +37,64 @@ struct JHybridMyazaFaceDetectorSpecImpl: public jni::JavaClass<JHybridMyazaFaceD
     return javaPart->getJHybridMyazaFaceDetectorSpec();
   }
 };
+struct JHybridMyazaTextRecognizerSpecImpl: public jni::JavaClass<JHybridMyazaTextRecognizerSpecImpl, JHybridMyazaTextRecognizerSpec::JavaPart> {
+  static constexpr auto kJavaDescriptor = "Lcom/margelo/nitro/myazakyc/HybridMyazaTextRecognizer;";
+  static std::shared_ptr<JHybridMyazaTextRecognizerSpec> create() {
+    static const auto constructorFn = javaClassStatic()->getConstructor<JHybridMyazaTextRecognizerSpecImpl::javaobject()>();
+    jni::local_ref<JHybridMyazaTextRecognizerSpec::JavaPart> javaPart = javaClassStatic()->newObject(constructorFn);
+    return javaPart->getJHybridMyazaTextRecognizerSpec();
+  }
+};
+struct JHybridMyazaEmrtdSpecImpl: public jni::JavaClass<JHybridMyazaEmrtdSpecImpl, JHybridMyazaEmrtdSpec::JavaPart> {
+  static constexpr auto kJavaDescriptor = "Lcom/margelo/nitro/myazakyc/HybridMyazaEmrtd;";
+  static std::shared_ptr<JHybridMyazaEmrtdSpec> create() {
+    static const auto constructorFn = javaClassStatic()->getConstructor<JHybridMyazaEmrtdSpecImpl::javaobject()>();
+    jni::local_ref<JHybridMyazaEmrtdSpec::JavaPart> javaPart = javaClassStatic()->newObject(constructorFn);
+    return javaPart->getJHybridMyazaEmrtdSpec();
+  }
+};
+struct JHybridMyazaRectDetectorSpecImpl: public jni::JavaClass<JHybridMyazaRectDetectorSpecImpl, JHybridMyazaRectDetectorSpec::JavaPart> {
+  static constexpr auto kJavaDescriptor = "Lcom/margelo/nitro/myazakyc/HybridMyazaRectDetector;";
+  static std::shared_ptr<JHybridMyazaRectDetectorSpec> create() {
+    static const auto constructorFn = javaClassStatic()->getConstructor<JHybridMyazaRectDetectorSpecImpl::javaobject()>();
+    jni::local_ref<JHybridMyazaRectDetectorSpec::JavaPart> javaPart = javaClassStatic()->newObject(constructorFn);
+    return javaPart->getJHybridMyazaRectDetectorSpec();
+  }
+};
 
 void registerAllNatives() {
   using namespace margelo::nitro;
   using namespace margelo::nitro::myazakyc;
 
   // Register native JNI methods
+  margelo::nitro::myazakyc::JHybridMyazaEmrtdSpec::CxxPart::registerNatives();
   margelo::nitro::myazakyc::JHybridMyazaFaceDetectorSpec::CxxPart::registerNatives();
+  margelo::nitro::myazakyc::JHybridMyazaRectDetectorSpec::CxxPart::registerNatives();
+  margelo::nitro::myazakyc::JHybridMyazaTextRecognizerSpec::CxxPart::registerNatives();
 
   // Register Nitro Hybrid Objects
   HybridObjectRegistry::registerHybridObjectConstructor(
     "MyazaFaceDetector",
     []() -> std::shared_ptr<HybridObject> {
       return JHybridMyazaFaceDetectorSpecImpl::create();
+    }
+  );
+  HybridObjectRegistry::registerHybridObjectConstructor(
+    "MyazaTextRecognizer",
+    []() -> std::shared_ptr<HybridObject> {
+      return JHybridMyazaTextRecognizerSpecImpl::create();
+    }
+  );
+  HybridObjectRegistry::registerHybridObjectConstructor(
+    "MyazaEmrtd",
+    []() -> std::shared_ptr<HybridObject> {
+      return JHybridMyazaEmrtdSpecImpl::create();
+    }
+  );
+  HybridObjectRegistry::registerHybridObjectConstructor(
+    "MyazaRectDetector",
+    []() -> std::shared_ptr<HybridObject> {
+      return JHybridMyazaRectDetectorSpecImpl::create();
     }
   );
 }

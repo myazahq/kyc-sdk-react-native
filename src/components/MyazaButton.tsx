@@ -85,13 +85,25 @@ export function MyazaButton({
       {loading ? (
         <ActivityIndicator color={effectiveFg} size="small" />
       ) : (
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        // `flexShrink: 1` on the ROW and the label: a Text in a row that cannot
+        // shrink does not wrap, it OVERFLOWS and gets clipped. That was
+        // invisible with the bundled font and cut "Continue" to "Continu" the
+        // moment an org picked a wider one. A button label must never be
+        // truncated by a branding choice, hence the shrink-to-fit as well.
+        <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1 }}>
           {leadingIcon ? (
             <View style={{ marginRight: 8 }}>
               <Icon name={leadingIcon} size={18} color={effectiveFg} />
             </View>
           ) : null}
-          <MyazaText variant="button" color={effectiveFg}>
+          <MyazaText
+            variant="button"
+            color={effectiveFg}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}
+            style={{ flexShrink: 1 }}
+          >
             {label}
           </MyazaText>
         </View>

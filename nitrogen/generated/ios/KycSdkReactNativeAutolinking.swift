@@ -23,4 +23,40 @@ public final class KycSdkReactNativeAutolinking {
   public static func isMyazaFaceDetectorRecyclable() -> Bool {
     return HybridMyazaFaceDetector.self is any RecyclableView.Type
   }
+  
+  public static func createMyazaTextRecognizer() -> bridge.std__shared_ptr_HybridMyazaTextRecognizerSpec_ {
+    let hybridObject = HybridMyazaTextRecognizer()
+    return { () -> bridge.std__shared_ptr_HybridMyazaTextRecognizerSpec_ in
+      let __cxxWrapped = hybridObject.getCxxWrapper()
+      return __cxxWrapped.getCxxPart()
+    }()
+  }
+  
+  public static func isMyazaTextRecognizerRecyclable() -> Bool {
+    return HybridMyazaTextRecognizer.self is any RecyclableView.Type
+  }
+  
+  public static func createMyazaEmrtd() -> bridge.std__shared_ptr_HybridMyazaEmrtdSpec_ {
+    let hybridObject = HybridMyazaEmrtd()
+    return { () -> bridge.std__shared_ptr_HybridMyazaEmrtdSpec_ in
+      let __cxxWrapped = hybridObject.getCxxWrapper()
+      return __cxxWrapped.getCxxPart()
+    }()
+  }
+  
+  public static func isMyazaEmrtdRecyclable() -> Bool {
+    return HybridMyazaEmrtd.self is any RecyclableView.Type
+  }
+  
+  public static func createMyazaRectDetector() -> bridge.std__shared_ptr_HybridMyazaRectDetectorSpec_ {
+    let hybridObject = HybridMyazaRectDetector()
+    return { () -> bridge.std__shared_ptr_HybridMyazaRectDetectorSpec_ in
+      let __cxxWrapped = hybridObject.getCxxWrapper()
+      return __cxxWrapped.getCxxPart()
+    }()
+  }
+  
+  public static func isMyazaRectDetectorRecyclable() -> Bool {
+    return HybridMyazaRectDetector.self is any RecyclableView.Type
+  }
 }

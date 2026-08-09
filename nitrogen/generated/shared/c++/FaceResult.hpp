@@ -48,10 +48,16 @@ namespace margelo::nitro::myazakyc {
     double faceSizeRatio     SWIFT_PRIVATE;
     double faceCount     SWIFT_PRIVATE;
     double brightness     SWIFT_PRIVATE;
+    double faceCenterX     SWIFT_PRIVATE;
+    double faceCenterY     SWIFT_PRIVATE;
+    double trackingId     SWIFT_PRIVATE;
+    double faceR     SWIFT_PRIVATE;
+    double faceG     SWIFT_PRIVATE;
+    double faceB     SWIFT_PRIVATE;
 
   public:
     FaceResult() = default;
-    explicit FaceResult(double headEulerAngleX, double headEulerAngleY, double headEulerAngleZ, double smilingProbability, double leftEyeOpenProbability, double rightEyeOpenProbability, double faceSizeRatio, double faceCount, double brightness): headEulerAngleX(headEulerAngleX), headEulerAngleY(headEulerAngleY), headEulerAngleZ(headEulerAngleZ), smilingProbability(smilingProbability), leftEyeOpenProbability(leftEyeOpenProbability), rightEyeOpenProbability(rightEyeOpenProbability), faceSizeRatio(faceSizeRatio), faceCount(faceCount), brightness(brightness) {}
+    explicit FaceResult(double headEulerAngleX, double headEulerAngleY, double headEulerAngleZ, double smilingProbability, double leftEyeOpenProbability, double rightEyeOpenProbability, double faceSizeRatio, double faceCount, double brightness, double faceCenterX, double faceCenterY, double trackingId, double faceR, double faceG, double faceB): headEulerAngleX(headEulerAngleX), headEulerAngleY(headEulerAngleY), headEulerAngleZ(headEulerAngleZ), smilingProbability(smilingProbability), leftEyeOpenProbability(leftEyeOpenProbability), rightEyeOpenProbability(rightEyeOpenProbability), faceSizeRatio(faceSizeRatio), faceCount(faceCount), brightness(brightness), faceCenterX(faceCenterX), faceCenterY(faceCenterY), trackingId(trackingId), faceR(faceR), faceG(faceG), faceB(faceB) {}
 
   public:
     friend bool operator==(const FaceResult& lhs, const FaceResult& rhs) = default;
@@ -75,7 +81,13 @@ namespace margelo::nitro {
         JSIConverter<double>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "rightEyeOpenProbability"))),
         JSIConverter<double>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "faceSizeRatio"))),
         JSIConverter<double>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "faceCount"))),
-        JSIConverter<double>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "brightness")))
+        JSIConverter<double>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "brightness"))),
+        JSIConverter<double>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "faceCenterX"))),
+        JSIConverter<double>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "faceCenterY"))),
+        JSIConverter<double>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "trackingId"))),
+        JSIConverter<double>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "faceR"))),
+        JSIConverter<double>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "faceG"))),
+        JSIConverter<double>::fromJSI(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "faceB")))
       );
     }
     static inline jsi::Value toJSI(jsi::Runtime& runtime, const margelo::nitro::myazakyc::FaceResult& arg) {
@@ -89,6 +101,12 @@ namespace margelo::nitro {
       obj.setProperty(runtime, PropNameIDCache::get(runtime, "faceSizeRatio"), JSIConverter<double>::toJSI(runtime, arg.faceSizeRatio));
       obj.setProperty(runtime, PropNameIDCache::get(runtime, "faceCount"), JSIConverter<double>::toJSI(runtime, arg.faceCount));
       obj.setProperty(runtime, PropNameIDCache::get(runtime, "brightness"), JSIConverter<double>::toJSI(runtime, arg.brightness));
+      obj.setProperty(runtime, PropNameIDCache::get(runtime, "faceCenterX"), JSIConverter<double>::toJSI(runtime, arg.faceCenterX));
+      obj.setProperty(runtime, PropNameIDCache::get(runtime, "faceCenterY"), JSIConverter<double>::toJSI(runtime, arg.faceCenterY));
+      obj.setProperty(runtime, PropNameIDCache::get(runtime, "trackingId"), JSIConverter<double>::toJSI(runtime, arg.trackingId));
+      obj.setProperty(runtime, PropNameIDCache::get(runtime, "faceR"), JSIConverter<double>::toJSI(runtime, arg.faceR));
+      obj.setProperty(runtime, PropNameIDCache::get(runtime, "faceG"), JSIConverter<double>::toJSI(runtime, arg.faceG));
+      obj.setProperty(runtime, PropNameIDCache::get(runtime, "faceB"), JSIConverter<double>::toJSI(runtime, arg.faceB));
       return obj;
     }
     static inline bool canConvert(jsi::Runtime& runtime, const jsi::Value& value) {
@@ -108,6 +126,12 @@ namespace margelo::nitro {
       if (!JSIConverter<double>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "faceSizeRatio")))) return false;
       if (!JSIConverter<double>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "faceCount")))) return false;
       if (!JSIConverter<double>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "brightness")))) return false;
+      if (!JSIConverter<double>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "faceCenterX")))) return false;
+      if (!JSIConverter<double>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "faceCenterY")))) return false;
+      if (!JSIConverter<double>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "trackingId")))) return false;
+      if (!JSIConverter<double>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "faceR")))) return false;
+      if (!JSIConverter<double>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "faceG")))) return false;
+      if (!JSIConverter<double>::canConvert(runtime, obj.getProperty(runtime, PropNameIDCache::get(runtime, "faceB")))) return false;
       return true;
     }
   };

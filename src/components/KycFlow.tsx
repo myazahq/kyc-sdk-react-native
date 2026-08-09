@@ -2,31 +2,26 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
-import { ID_TYPES, requiresDocumentCapture } from '../config/idTypes';
+import { buildStepOrder } from '../config/stepOrder';
+import { stepOrderOptions } from '../store/kycStore';
 import { KYCError } from '../types/verification';
 import { safeReportError } from '../services/errors';
 import type { KYCStep, SupportedCountry } from '../types/config';
-import { useKyc, useKycConfig, useKycStore, useTheme } from './runtime';
+import { useEffectiveCountry, useKyc, useKycConfig, useKycStore, useTheme } from './runtime';
+import { COUNTRY_SEARCH_THRESHOLD } from '../screens/CountrySelectStep';
 import { KycSheet } from './KycSheet';
+import { FatalConfigError } from './flow/FatalConfigError';
 import { ToastProvider } from './toast';
 import { MyazaText } from './Typography';
 import { MyazaButton } from './MyazaButton';
 import { Icon } from './Icon';
-import { ConsentStep } from '../screens/ConsentStep';
-import { IdTypeStep } from '../screens/IdTypeStep';
-import { IdInputStep } from '../screens/IdInputStep';
-import { DocumentCaptureStep, documentCaptureMeta } from '../screens/DocumentCaptureStep';
-import { LivenessStep } from '../screens/LivenessStep';
-import { SubmittedStep } from '../screens/SubmittedStep';
+import { StepView } from './StepView';
+import { stepHeaderMeta } from './stepHeaderMeta';
+import { countrySelectOptions } from '../store/derive';
 
 // The step router — 1:1 with the Flutter SDK's _KycFlowWidget. Computes per-step
 // header title/description, the 4-step indicator info, back/country, fetches the
 // server config on mount, and gates the flow on fatal auth failures.
-
-function labelFor(country: SupportedCountry, idType: string | null): string {
-  if (!idType) return 'Document';
-  return Object.values(ID_TYPES).flat().find((t) => t.key === idType)?.label ?? 'Document';
-}
 
 /**
  * Result of a back request handled inside the flow:
@@ -47,11 +42,14 @@ export function KycFlow({
 }): React.ReactElement {
   const { colors } = useTheme();
   const config = useKycConfig();
+  const country = useEffectiveCountry();
   const store = useKycStore();
   const currentStep = useKyc((s) => s.currentStep);
   const selectedIdType = useKyc((s) => s.selectedIdType);
   const documentCapturePhase = useKyc((s) => s.documentCapturePhase);
+  const contactChallenge = useKyc((s) => s.contactChallenge);
   const serverConfig = useKyc((s) => s.serverConfig);
+  const immersiveCapture = useKyc((s) => s.immersiveCapture);
 
   const startedRef = useRef(false);
   const reportedRef = useRef(false);
@@ -60,7 +58,11 @@ export function KycFlow({
     if (!startedRef.current) {
       startedRef.current = true;
       config.onStart?.();
-      void store.getState().loadServerConfig();
+      // A resolved workflow already delivered the allowlist + branding, so
+      // there is nothing to fetch.
+      if (store.getState().serverConfig.status !== 'ready') {
+        void store.getState().loadServerConfig();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -75,41 +77,42 @@ export function KycFlow({
   }, [isFatal, serverConfig.statusCode, serverConfig.message, config.onError]);
 
   // ── Per-step header meta ──────────────────────────────────────────────────
-  const meta = useMemo(() => {
-    const label = labelFor(config.country, selectedIdType);
-    switch (currentStep) {
-      case 'consent':
-        return { title: '', description: null as string | null };
-      case 'id-type':
-        return { title: 'Select ID Type', description: "Choose the type of identification document you'd like to use." };
-      case 'id-input':
-        return { title: 'Enter Your Details', description: `Provide your ${label} for verification.` };
-      case 'document-capture':
-        // Phase-aware title/description live in the header (synced from the
-        // capture screen via `documentCapturePhase`) — mirrors Flutter.
-        return documentCaptureMeta(documentCapturePhase, label);
-      case 'liveness':
-        return { title: 'Face Verification', description: 'Follow the on-screen instructions' };
-      case 'submitted':
-      default:
-        return { title: '', description: null };
-    }
-  }, [currentStep, config.country, selectedIdType, documentCapturePhase]);
+  const meta = useMemo(
+    () =>
+      stepHeaderMeta(currentStep, {
+        config,
+        country,
+        selectedIdType,
+        documentCapturePhase,
+        contactChallenge,
+      }),
+    [currentStep, config, country, selectedIdType, documentCapturePhase, contactChallenge],
+  );
 
-  // ── Step indicator info (consent, id-type, capture|input, liveness?) ───────
+  // ── Step indicator info ───────────────────────────────────────────────────
+  // Read from the SAME ordered list navigation uses, so the dots can never
+  // describe a different flow than the one the user is walking. This used to be
+  // its own hand-written copy of the sequence, which meant a step added to the
+  // flow silently didn't count towards progress.
+  //
+  // 'submitted' is excluded on purpose — it is the terminal screen, not a step
+  // to make progress towards, and the indicator is hidden there.
+  //
+  // The derivation is memoised rather than done inside the selector: zustand
+  // compares snapshots by identity, so a selector that mints a fresh object on
+  // every call re-renders forever.
+  const state = useKyc((s) => s);
   const stepInfo = useMemo(() => {
-    if (currentStep === 'submitted') return null;
-    const hasCapture =
-      config.enableDocumentCapture && (selectedIdType ? requiresDocumentCapture(selectedIdType) : true);
-    const hasLiveness = config.enableLiveness !== false && config.enableSelfie !== false;
-    const steps: KYCStep[] = ['consent', 'id-type', hasCapture ? 'document-capture' : 'id-input'];
-    if (hasLiveness) steps.push('liveness');
-    const idx = steps.indexOf(currentStep);
+    if (state.currentStep === 'submitted') return null;
+    const steps = buildStepOrder(stepOrderOptions(state)).filter((s) => s !== 'submitted');
+    const idx = steps.indexOf(state.currentStep);
     if (idx < 0) return null;
     return { progress: (idx + 1) / steps.length, stepCount: steps.length };
-  }, [currentStep, config.enableDocumentCapture, config.enableLiveness, config.enableSelfie, selectedIdType]);
+  }, [state]);
 
-  const country = currentStep === 'id-type' || currentStep === 'id-input' ? config.country : null;
+  // The flag beside the title names the country whose IDs are on screen.
+  const headerCountry =
+    currentStep === 'id-type' || currentStep === 'id-input' ? country : null;
   const onBack = currentStep === 'consent' || currentStep === 'submitted' ? null : () => store.getState().previousStep();
 
   // Android hardware back arrives via the <Modal>'s onRequestClose. Expose a
@@ -136,36 +139,7 @@ export function KycFlow({
   }, [backRef, canGoBack, disableClose, store]);
 
   if (isFatal) {
-    return (
-      <KycSheet title="" onClose={onClose} hideBrand>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <View
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: radius.full,
-              backgroundColor: `${colors.error}1A`,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Icon name="alert" size={40} color={colors.error} />
-          </View>
-          <View style={{ height: spacing.lg }} />
-          <MyazaText variant="heading2" style={{ textAlign: 'center' }}>
-            Unable to start verification
-          </MyazaText>
-          <View style={{ height: spacing.xs }} />
-          <MyazaText variant="bodyMedium" color={colors.textSecondary} style={{ textAlign: 'center' }}>
-            {serverConfig.message ?? 'Please check your API key and try again.'}
-          </MyazaText>
-          <View style={{ height: spacing.lg }} />
-          <View style={{ width: '100%' }}>
-            <MyazaButton label="Close" onPress={onClose} />
-          </View>
-        </View>
-      </KycSheet>
-    );
+    return <FatalConfigError message={serverConfig.message} onClose={onClose} />;
   }
 
   return (
@@ -175,31 +149,29 @@ export function KycFlow({
         description={meta.description}
         progress={stepInfo?.progress ?? null}
         stepCount={stepInfo?.stepCount ?? null}
-        country={country}
+        country={headerCountry}
         onBack={onBack}
         onClose={onClose}
+        // The searchable country picker pins its search box above a list that
+        // can run to ~240 rows. Only the multi-country variant needs it: a
+        // short flat list is happier in the normal scroll body.
+        fillsViewport={
+          currentStep === 'country-select' &&
+          countrySelectOptions({ config, serverConfig }).length > COUNTRY_SEARCH_THRESHOLD
+        }
+        // A live camera asks for the whole screen: the sheet's header, padding
+        // and scroll view are exactly what force a small viewfinder on a short
+        // phone, and a camera you have to scroll to is a broken camera.
+        //
+        // Passed as a PROP rather than rendered as its own tree. The earlier
+        // shape early-returned a different element tree, which changed the
+        // step's parent MID-STEP — React unmounted and remounted it, wiping the
+        // acknowledged primer and bouncing straight back to it. Scoped to the
+        // step as well as the flag so the next step cannot inherit it.
+        immersive={immersiveCapture && currentStep === 'document-capture'}
       >
         <StepView step={currentStep} onClose={onClose} />
       </KycSheet>
     </ToastProvider>
   );
-}
-
-function StepView({ step, onClose }: { step: KYCStep; onClose: () => void }): React.ReactElement {
-  switch (step) {
-    case 'consent':
-      return <ConsentStep />;
-    case 'id-type':
-      return <IdTypeStep />;
-    case 'id-input':
-      return <IdInputStep />;
-    case 'document-capture':
-      return <DocumentCaptureStep />;
-    case 'liveness':
-      return <LivenessStep />;
-    case 'submitted':
-      return <SubmittedStep onClose={onClose} />;
-    default:
-      return <ConsentStep />;
-  }
 }

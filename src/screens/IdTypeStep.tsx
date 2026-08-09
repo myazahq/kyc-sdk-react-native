@@ -2,16 +2,35 @@ import React, { useMemo } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
-import { ID_TYPES } from '../config/idTypes';
+import { ID_TYPES, resolveIdTypeDefinition } from '../config/idTypes';
 import type { IdType, IdTypeDefinition } from '../types/config';
-import { useKyc, useKycConfig, useTheme } from '../components/runtime';
+import {
+  useEffectiveCountry,
+  useKyc,
+  useKycConfig,
+  useKycStore,
+  useTheme,
+} from '../components/runtime';
 import { MyazaText } from '../components/Typography';
-import { MyazaButton } from '../components/MyazaButton';
 import { MyazaPulseLoader } from '../components/MyazaPulseLoader';
 import { Icon, type IconName } from '../components/Icon';
 
 // ID-type picker — 1:1 with the Flutter SDK's IdTypeScreen: a list of cards
-// (icon tile + label + radio circle), select-on-tap, Continue to advance.
+// (icon tile + label + forward chevron) that ADVANCE ON TAP.
+//
+// No Continue button and no radio, matching Flutter and the web SDK. It is a
+// single-select list with nothing else on the step to confirm, so Continue only
+// restated a decision already made; and country-select already advances on tap,
+// so a second list that behaved differently taught users one rule then broke
+// it. A mis-tap costs one Back. The affordance is therefore a "go to the next
+// step" chevron — a radio would imply a select-then-confirm this flow does not
+// have.
+//
+// The advance reads the TAPPED value through the store, never the
+// `selectedIdType` bound at render: that closure is a step behind inside the
+// handler (and empty on the first selection), which would route a document ID
+// to the number-only step. Going through `store.getState()` is what makes the
+// write visible to `nextStep()`, since zustand commits synchronously.
 
 const ICON_FOR: Record<string, IconName> = {
   bvn: 'landmark', // Bank Verification Number → bank/landmark
@@ -31,25 +50,54 @@ const ICON_FOR: Record<string, IconName> = {
 export function IdTypeStep(): React.ReactElement {
   const { colors } = useTheme();
   const config = useKycConfig();
+  const country = useEffectiveCountry();
+  const store = useKycStore();
   const serverConfig = useKyc((s) => s.serverConfig);
   const selectedIdType = useKyc((s) => s.selectedIdType);
-  const setIdType = useKyc((s) => s.setIdType);
-  const nextStep = useKyc((s) => s.nextStep);
+
+  // Select AND advance in one tap. Both go through the store so `nextStep`
+  // routes off the value just written — a document ID to document-capture, a
+  // number-only ID to id-input.
+  const pick = (key: IdType): void => {
+    store.getState().setIdType(key);
+    store.getState().nextStep();
+  };
 
   const available = useMemo<IdTypeDefinition[]>(() => {
-    const allForCountry = ID_TYPES[config.country] ?? [];
-    const requested = config.idTypes?.length
-      ? allForCountry.filter((t) => (config.idTypes as IdType[]).includes(t.key))
-      : [...allForCountry];
+    // In a multi-region flow the PICKED country's own `idTypes` narrow the
+    // list; otherwise the top-level prop applies. Absent or empty means every
+    // granted type, which is the server's own "unset = all" semantic.
+    const perCountry = (config.countries ?? []).find(
+      (e) => e.country.toUpperCase() === country.toUpperCase(),
+    )?.idTypes;
+    const keys = (perCountry?.length ? perCountry : config.idTypes) as
+      | readonly string[]
+      | undefined;
+    const allowed = (key: string): boolean => !keys?.length || keys.includes(key);
+
+    // Built from the SERVER rows, not the curated table. The curated table only
+    // knows the five gov-DB countries; a Global-Documents flow offers ~240, and
+    // filtering against the table rendered an empty list — "no ID types are
+    // enabled" — for every country outside it. The row carries the label and
+    // capture shape, so an uncurated country renders correctly from it.
     if (serverConfig.status === 'ready') {
-      const granted = new Set(
-        serverConfig.idTypes.filter((t) => t.country === config.country).map((t) => t.idType),
-      );
-      return requested.filter((t) => granted.has(t.key));
+      return serverConfig.idTypes
+        .filter((row) => row.country === country && allowed(row.idType))
+        .map((row) =>
+          resolveIdTypeDefinition(country, row.idType, {
+            label: row.label,
+            requiresDocumentCapture: row.requiresDocumentCapture,
+            scanSides: row.scanSides,
+            supportsNfc: row.supportsNfc,
+          }),
+        );
     }
     if (serverConfig.status === 'loading') return [];
-    return requested;
-  }, [config.country, config.idTypes, serverConfig]);
+    // Config failed to load: fall back to the curated list. The server still
+    // rejects anything actually disabled, so this is permissive, not unsafe.
+    const table = ID_TYPES as Record<string, readonly IdTypeDefinition[] | undefined>;
+    return (table[country.toUpperCase()] ?? []).filter((t) => allowed(t.key));
+  }, [country, config.idTypes, config.countries, serverConfig]);
 
   if (serverConfig.status === 'loading') {
     return (
@@ -84,7 +132,9 @@ export function IdTypeStep(): React.ReactElement {
         return (
           <Pressable
             key={t.key}
-            onPress={() => setIdType(t.key)}
+            onPress={() => pick(t.key)}
+            accessibilityRole="button"
+            accessibilityLabel={t.label}
             style={{
               marginBottom: spacing.sm,
               borderRadius: radius.md,
@@ -118,25 +168,16 @@ export function IdTypeStep(): React.ReactElement {
               {t.label}
             </MyazaText>
             <View style={{ width: spacing.md }} />
-            <View
-              style={{
-                width: 22,
-                height: 22,
-                borderRadius: 11,
-                borderWidth: 1.5,
-                borderColor: selected ? colors.primary : colors.gray300,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {selected ? <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: colors.primary }} /> : null}
-            </View>
+            {/* Forward chevron, not a radio: the tap advances, so the icon has
+                to promise the next step rather than a pending confirmation. */}
+            <Icon
+              name="chevron-right"
+              size={20}
+              color={selected ? colors.primary : colors.gray400}
+            />
           </Pressable>
         );
       })}
-
-      <View style={{ height: spacing.lg }} />
-      <MyazaButton label="Continue" onPress={selectedIdType ? nextStep : undefined} disabled={!selectedIdType} />
     </View>
   );
 }

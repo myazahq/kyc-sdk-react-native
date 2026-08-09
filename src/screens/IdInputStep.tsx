@@ -5,7 +5,7 @@ import { spacing } from '../config/theme';
 import { ID_TYPES } from '../config/idTypes';
 import { validateIdNumber } from '../services/validators';
 import type { IdType } from '../types/config';
-import { useKyc, useKycConfig } from '../components/runtime';
+import { useEffectiveCountry, useKyc, useKycConfig } from '../components/runtime';
 import { MyazaText } from '../components/Typography';
 import { MyazaInput } from '../components/MyazaInput';
 import { MyazaButton } from '../components/MyazaButton';
@@ -24,11 +24,16 @@ function hintFor(def: { label: string; inputLabel?: string; digits?: number } | 
 
 export function IdInputStep(): React.ReactElement {
   const config = useKycConfig();
+  const country = useEffectiveCountry();
   const selectedIdType = useKyc((s) => s.selectedIdType);
+  const storedIdNumber = useKyc((s) => s.idNumber);
   const setIdNumber = useKyc((s) => s.setIdNumber);
   const nextStep = useKyc((s) => s.nextStep);
 
-  const [value, setValue] = useState('');
+  // Seeded from the store so a back-and-forward through the flow never loses
+  // what was already typed — everything persists until submission, or until
+  // the user themselves changes it (mirrors web + Flutter).
+  const [value, setValue] = useState(storedIdNumber ?? '');
   const [error, setError] = useState<string | null>(null);
 
   const def = useMemo(() => Object.values(ID_TYPES).flat().find((t) => t.key === selectedIdType) ?? null, [selectedIdType]);
@@ -36,15 +41,18 @@ export function IdInputStep(): React.ReactElement {
 
   const valid = useMemo(() => {
     if (!selectedIdType || !value.trim()) return false;
-    return validateIdNumber(config.country, selectedIdType as IdType, value).valid;
-  }, [config.country, selectedIdType, value]);
+    return validateIdNumber(country, selectedIdType as IdType, value).valid;
+  }, [country, selectedIdType, value]);
 
   const handleChange = (text: string) => {
     // Match Flutter: BVN/NIN are digits-only.
     const next = isDigits ? text.replace(/[^0-9]/g, '') : text;
     setValue(next);
+    // Write-through to the store as they type — a back-swipe mid-entry must
+    // not cost them the digits they already entered.
+    setIdNumber(next);
     if (selectedIdType && next.trim()) {
-      const result = validateIdNumber(config.country, selectedIdType as IdType, next);
+      const result = validateIdNumber(country, selectedIdType as IdType, next);
       setError(result.valid ? null : result.message ?? null);
     } else {
       setError(null);

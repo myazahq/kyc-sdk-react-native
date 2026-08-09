@@ -90,6 +90,20 @@ final class HybridMyazaFaceDetector: HybridMyazaFaceDetectorSpec {
     let rightOpen = Self.openProbability(fromEAR: Self.eyeAspectRatio(face.landmarks?.rightEye))
     let smile = Self.smileProbability(face.landmarks)
     let faceSizeRatio = Double(face.boundingBox.width)
+    // Face centre, so the TS continuity guard can tell "the same face moved"
+    // from "a different face appeared" — size alone cannot, since two people at
+    // the same distance measure alike.
+    let centerX = Double(face.boundingBox.midX)
+    let centerY = Double(face.boundingBox.midY)
+
+    // Mean RGB of the face region, for flash (screen-reflection) liveness. Taken
+    // here because the buffer is already mapped — a second pass would cost a
+    // whole frame walk for numbers available now. Sampled over the CENTRE of
+    // the frame rather than Vision's bounding box: the box is in a rotated,
+    // mirrored coordinate space, and the positioning gate has already put the
+    // face in the middle, so a fixed centre crop is both simpler and steadier
+    // than a box that jitters frame to frame.
+    let faceRgb = Self.averageFaceRgb(pixelBuffer)
 
     return FaceResult(
       headEulerAngleX: pitchDeg,
@@ -101,7 +115,15 @@ final class HybridMyazaFaceDetector: HybridMyazaFaceDetectorSpec {
       faceSizeRatio: faceSizeRatio,
       // Number of faces in frame — the TS liveness flow pauses on > 1.
       faceCount: Double(faces.count),
-      brightness: brightness
+      brightness: brightness,
+      faceCenterX: centerX,
+      faceCenterY: centerY,
+      // Vision has no cross-frame face identifier, so iOS never supplies one;
+      // the geometric guard carries the check on this platform.
+      trackingId: -1,
+      faceR: faceRgb.0,
+      faceG: faceRgb.1,
+      faceB: faceRgb.2
     )
   }
 
@@ -111,8 +133,88 @@ final class HybridMyazaFaceDetector: HybridMyazaFaceDetectorSpec {
     FaceResult(
       headEulerAngleX: 0, headEulerAngleY: 0, headEulerAngleZ: 0,
       smilingProbability: 0, leftEyeOpenProbability: 1, rightEyeOpenProbability: 1,
-      faceSizeRatio: 0, faceCount: 0, brightness: brightness
+      faceSizeRatio: 0, faceCount: 0, brightness: brightness,
+      faceCenterX: -1, faceCenterY: -1, trackingId: -1,
+      faceR: -1, faceG: -1, faceB: -1
     )
+  }
+
+  /// Mean RGB (0–255 each) of the centre crop, where the positioning gate has
+  /// already placed the face. Used by flash liveness to measure how the face
+  /// reflects each emitted colour.
+  ///
+  /// The crop matches the web SDK's (centre 40% × 50%) so all three platforms —
+  /// and the server's re-analysis of the recorded video — measure the same
+  /// patch of skin.
+  private static func averageFaceRgb(_ pixelBuffer: CVPixelBuffer) -> (Double, Double, Double) {
+    CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
+    defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly) }
+
+    let format = CVPixelBufferGetPixelFormatType(pixelBuffer)
+    let w = CVPixelBufferGetWidth(pixelBuffer)
+    let h = CVPixelBufferGetHeight(pixelBuffer)
+    guard w > 0, h > 0 else { return (-1, -1, -1) }
+
+    let x0 = Int(Double(w) * 0.3), x1 = Int(Double(w) * 0.7)
+    let y0 = Int(Double(h) * 0.25), y1 = Int(Double(h) * 0.75)
+    let stepX = max(1, (x1 - x0) / 32)
+    let stepY = max(1, (y1 - y0) / 32)
+
+    var rs = 0.0, gs = 0.0, bs = 0.0, count = 0.0
+
+    if CVPixelBufferGetPlaneCount(pixelBuffer) >= 2,
+       let yBase = CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 0),
+       let cBase = CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 1) {
+      // 4:2:0 bi-planar: luma full-res, chroma quarter-res and interleaved.
+      let yRow = CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 0)
+      let cRow = CVPixelBufferGetBytesPerRowOfPlane(pixelBuffer, 1)
+      let yPtr = yBase.assumingMemoryBound(to: UInt8.self)
+      let cPtr = cBase.assumingMemoryBound(to: UInt8.self)
+      // The chroma order differs between the two 4:2:0 formats; reading it the
+      // wrong way round swaps red and blue, which would invert every flash
+      // verdict rather than merely degrade it.
+      let crFirst = format == kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
+        || format == kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
+      var y = y0
+      while y < y1 {
+        var x = x0
+        while x < x1 {
+          let luma = Double(yPtr[y * yRow + x])
+          let cIdx = (y / 2) * cRow + (x / 2) * 2
+          let c0 = Double(cPtr[cIdx]) - 128.0
+          let c1 = Double(cPtr[cIdx + 1]) - 128.0
+          let cb = crFirst ? c0 : c1
+          let cr = crFirst ? c1 : c0
+          rs += luma + 1.402 * cr
+          gs += luma - 0.344136 * cb - 0.714136 * cr
+          bs += luma + 1.772 * cb
+          count += 1
+          x += stepX
+        }
+        y += stepY
+      }
+    } else if let base = CVPixelBufferGetBaseAddress(pixelBuffer) {
+      // Non-planar BGRA.
+      let rowBytes = CVPixelBufferGetBytesPerRow(pixelBuffer)
+      let ptr = base.assumingMemoryBound(to: UInt8.self)
+      var y = y0
+      while y < y1 {
+        let row = ptr + y * rowBytes
+        var x = x0
+        while x < x1 {
+          bs += Double(row[x * 4])
+          gs += Double(row[x * 4 + 1])
+          rs += Double(row[x * 4 + 2])
+          count += 1
+          x += stepX
+        }
+        y += stepY
+      }
+    }
+
+    guard count > 0 else { return (-1, -1, -1) }
+    let clamp = { (v: Double) in min(255.0, max(0.0, v / count)) }
+    return (clamp(rs), clamp(gs), clamp(bs))
   }
 
   /// Mean luma (0–255) of the frame, sampled on a coarse ~64×48 grid for speed.

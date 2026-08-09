@@ -1,57 +1,34 @@
+// ---------------------------------------------------------------------------
+// The SDK's public configuration.
+//
+// The country/ID matrix, the presentation types and the workflow-driven blocks
+// live in their own modules (200-line rule) and are re-exported here, so
+// `types/config` remains the single import for consumers.
+// ---------------------------------------------------------------------------
+
 import type { KYCSubmission, KYCError } from './verification';
+import type { IdType, IdTypeForCountry, SupportedCountry } from './id-types';
+import type {
+  KYCAppearance,
+  KYCConsentContent,
+  KYCSuccessContent,
+  VoiceGuidanceOption,
+} from './appearance';
+import type { SubjectType, WorkflowBusinessConfig } from './business';
+import type {
+  EmailVerificationConfig,
+  LivenessMode,
+  NfcConfig,
+  PhoneVerificationConfig,
+  ProofOfAddressConfig,
+  QuestionnaireConfig,
+  WorkflowCountry,
+} from './workflow';
 
-// ---------------------------------------------------------------------------
-// Supported countries & ID types  (identical set to the web + Flutter SDKs)
-// ---------------------------------------------------------------------------
-
-export type SupportedCountry = 'NG' | 'GH' | 'KE' | 'ZA' | 'CI';
-
-export type NigeriaIdType = 'bvn' | 'bvn-premium' | 'nin' | 'vnin' | 'tax-id' | 'passport' | 'drivers-license' | 'pvc';
-export type GhanaIdType = 'ghana-card' | 'voters' | 'drivers-license' | 'ssnit' | 'passport';
-export type KenyaIdType = 'national-id' | 'passport';
-export type SouthAfricaIdType = 'national-id';
-export type IvoryCoastIdType = 'cni' | 'residence-card';
-
-export type IdType =
-  | NigeriaIdType
-  | GhanaIdType
-  | KenyaIdType
-  | SouthAfricaIdType
-  | IvoryCoastIdType;
-
-/** Maps a country code to the ID types available in that country. */
-export type IdTypeForCountry<C extends SupportedCountry> =
-  C extends 'NG' ? NigeriaIdType :
-  C extends 'GH' ? GhanaIdType :
-  C extends 'KE' ? KenyaIdType :
-  C extends 'ZA' ? SouthAfricaIdType :
-  C extends 'CI' ? IvoryCoastIdType :
-  never;
-
-export interface IdTypeDefinition {
-  key: IdType;
-  label: string;
-  /**
-   * What the user actually types when it differs from the ID's name — e.g.
-   * Tax ID lookups are keyed off the person's NIN, so the input asks for a NIN.
-   */
-  inputLabel?: string;
-  digits?: number;
-  pattern?: RegExp;
-  /** Whether this ID type requires photographing/uploading a physical document. */
-  requiresDocumentCapture: boolean;
-  /**
-   * How many sides of the document need to be scanned. Only present when
-   * `requiresDocumentCapture` is true.
-   * - `front_only` — single scan (passports, data-page only)
-   * - `front_and_back` — both sides required
-   */
-  scanSides?: 'front_only' | 'front_and_back';
-}
-
-export type IdTypesByCountry = {
-  [K in SupportedCountry]: readonly IdTypeDefinition[];
-};
+export type * from './workflow';
+export type * from './appearance';
+export type * from './id-types';
+export type * from './business';
 
 // ---------------------------------------------------------------------------
 // KYC flow steps
@@ -59,81 +36,26 @@ export type IdTypesByCountry = {
 
 export type KYCStep =
   | 'consent'
+  // Contact-verification OTP steps — right after consent (a cheap pre-filter
+  // before capture/registry spend). Present when the workflow enables them.
+  | 'email-verification'
+  | 'phone-verification'
+  | 'country-select'
   | 'id-type'
   | 'id-input'
   | 'document-capture'
+  // eMRTD chip read — a real step here, unlike the web SDK where it exists only
+  // as a builder-preview screen (Web NFC can't do ISO-DEP).
+  | 'nfc'
+  // KYB application steps — present only when the workflow configures them.
+  | 'business-details'
+  | 'business-key-people'
+  | 'business-documents'
+  | 'applicant-role'
   | 'liveness'
+  | 'proof-of-address'
+  | 'questionnaire'
   | 'submitted';
-
-// ---------------------------------------------------------------------------
-// Appearance / theming
-// ---------------------------------------------------------------------------
-
-export interface KYCAppearance {
-  /** Brand color — drives buttons, selected states, focus rings. */
-  primaryColor?: string;
-  /** Text/icon color rendered on top of `primaryColor` (e.g. button labels). */
-  primaryTextColor?: string;
-  /** Accent color for subtle hover/active surfaces. */
-  accentColor?: string;
-  /** Modal/sheet background color. */
-  backgroundColor?: string;
-  /** Elevated surface color for cards/panels. */
-  surfaceColor?: string;
-  /** Border + input outline color. */
-  borderColor?: string;
-  /** Primary text color. */
-  textColor?: string;
-  companyName?: string;
-  /**
-   * Logo to show in the flow.
-   * - An image URL renders that logo.
-   * - The literal `'default'` renders the org's own logo from the server config
-   *   response (falls back to the built-in shield if the org has none set).
-   * - Omitted renders the built-in shield badge.
-   */
-  logo?: string;
-  /** Initial light/dark mode. Applied on mount; the theme toggle can flip it. */
-  theme?: 'light' | 'dark';
-}
-
-// ---------------------------------------------------------------------------
-// Consent / success screen content
-// ---------------------------------------------------------------------------
-
-export interface KYCConsentContent {
-  /** Consent heading. Supports `{firstName}` / `{lastName}` tokens. */
-  title?: string;
-  /** Sub-text under the heading. Same tokens. */
-  description?: string;
-}
-
-export interface KYCSuccessContent {
-  /** Success heading. Supports `{firstName}` / `{lastName}` tokens. */
-  title?: string;
-  /** Sub-text under the heading. Same tokens. */
-  description?: string;
-}
-
-// ---------------------------------------------------------------------------
-// Voice guidance (spoken liveness instructions — TTS output only, no mic)
-// ---------------------------------------------------------------------------
-
-/**
- * Configuration for the spoken liveness instructions. TTS **output** for
- * accessibility — it never records audio, so no microphone permission is
- * involved. An object (not a bare boolean) so a `language` can be added later
- * without a breaking change.
- */
-export interface VoiceGuidanceConfig {
-  /** Whether spoken guidance plays. Default `true`. */
-  enabled?: boolean;
-  /** BCP-47 voice tag (e.g. `'en-US'`, `'fr-FR'`). Default `'en-US'`. */
-  language?: string;
-}
-
-/** Accepts a bare boolean for ergonomics or the full {@link VoiceGuidanceConfig}. */
-export type VoiceGuidanceOption = boolean | VoiceGuidanceConfig;
 
 // ---------------------------------------------------------------------------
 // Client-side SDK config  (MyazaKYC.show() / useMyazaKYC options)
@@ -156,17 +78,57 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> {
    */
   devUrl?: string;
 
-  /** Two-letter country code. */
-  country: C;
+  /**
+   * A published workflow to run (`wf_…`). The flow is resolved BEFORE the SDK
+   * mounts and its config wins over the props below — so an org can change the
+   * flow's shape in the dashboard builder without a redeploy. Runtime data
+   * (`userId`, `userData`, `metadata`, callbacks) always stays yours.
+   *
+   * A workflow supplies `country`, so it may be omitted alongside this.
+   */
+  workflowId?: string;
+
+  /**
+   * KYB only: the mapped applicant workflow's id (business.applicant.workflowId,
+   * resolved server-side). Set by the workflow gate after overlaying its
+   * capture template; stamped on the applicant's own submission so the server
+   * applies that workflow's gates, pricing and decision graph. Internal —
+   * never set this yourself.
+   */
+  applicantWorkflowId?: string;
+
+  /**
+   * Two-letter (ISO-2) country code. Required unless {@link workflowId} is set
+   * (the flow carries the country) or {@link subjectType} is `'business'` (the
+   * business block carries its own registry country). When both are present the
+   * flow's country wins.
+   */
+  country?: C;
 
   /** Subset of ID types to offer. Only types valid for the country are accepted. */
   idTypes?: IdTypeForCountry<C>[];
+
+  /**
+   * The org's own reference for the person being verified (e.g. your internal
+   * user id). It is **not** matched during verification — it becomes
+   * `Entity.externalUserId` at the KYC seam, so repeat checks of the same user
+   * collapse onto one entity and you can correlate results back to your record.
+   * Optional; when omitted the server falls back to the provider record id.
+   */
+  userId?: string;
 
   /** Pre-populated user data. Fields provided here won't be collected again. */
   userData?: {
     firstName?: string;
     lastName?: string;
     dateOfBirth?: string;
+    /**
+     * The business's display name, for `{businessName}` tokens in consent
+     * copy on KYB flows. Registration details aren't collected until after
+     * consent, so this resolves only when the integrator passes it in —
+     * mirroring the web SDK.
+     */
+    businessName?: string;
   };
 
   /** Enable the live-selfie capture step. */
@@ -184,6 +146,52 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> {
 
   /** Enable liveness detection during selfie capture. Default `true`. */
   enableLiveness?: boolean;
+
+  /**
+   * Which liveness method runs: randomized gestures (default), the screen-
+   * reflection flash, or both. Workflow-driven.
+   */
+  livenessMode?: LivenessMode;
+
+  /** Colours in the flash sequence (2–5, default 4). Flash modes only. */
+  flashSequenceLength?: number;
+
+  // ── Workflow-driven blocks ────────────────────────────────────────────────
+  // Authored in the dashboard's workflow builder, not usually in consumer code.
+  // A resolved flow always wins over a prop of the same name.
+
+  /** What this flow verifies. Absent = 'individual' (classic KYC). */
+  subjectType?: SubjectType;
+
+  /** KYB registry configuration. Required when `subjectType` is 'business'. */
+  business?: WorkflowBusinessConfig;
+
+  /**
+   * Multi-region: every country this flow serves. More than one inserts a
+   * country-select step between consent and ID type.
+   */
+  countries?: WorkflowCountry[];
+
+  /** Email OTP possession check, right after consent. */
+  emailVerification?: EmailVerificationConfig;
+
+  /** Phone OTP possession check, right after consent / email. */
+  phoneVerification?: PhoneVerificationConfig;
+
+  /** Proof-of-address document check, after capture. */
+  proofOfAddress?: ProofOfAddressConfig;
+
+  /** Compliance declarations asked just before submission. */
+  questionnaire?: QuestionnaireConfig;
+
+  /** eMRTD chip read for chip-capable documents. */
+  nfc?: NfcConfig;
+
+  /** Collect device + IP fraud signals. Default `true`. */
+  deviceIntelligence?: boolean;
+
+  /** Refuse to run on a desktop/laptop. Default `false`. */
+  requireMobileDevice?: boolean;
 
   /**
    * Spoken liveness instructions (accessibility). `true`/omitted = on,
@@ -213,7 +221,11 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> {
   /** Override the success (submitted) screen copy. */
   success?: KYCSuccessContent;
 
-  /** Arbitrary metadata forwarded with every verification request. */
+  /**
+   * Arbitrary, free-form metadata forwarded verbatim with every verification
+   * request. Nothing here is required or interpreted by the SDK/server — use
+   * {@link userId} for the user reference, not a `userId` key in here.
+   */
   metadata?: Record<string, string>;
 
   // Callbacks
@@ -231,6 +243,20 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> {
    */
   onError?: (error: KYCError) => void;
 }
+
+/**
+ * The config the FLOW runs on, as opposed to the config a consumer writes.
+ *
+ * `country` is optional on the public surface because a `workflowId` supplies
+ * it — but by the time anything mounts, the workflow gate has resolved one, and
+ * every screen from ID-type onward needs it. Making that guarantee a type keeps
+ * the "is it there yet?" question at the single place that answers it (the
+ * gate) instead of in every screen.
+ */
+export type ResolvedKYCConfig<C extends SupportedCountry = SupportedCountry> = Omit<
+  MyazaKYCConfig<C>,
+  'country'
+> & { country: C };
 
 // ---------------------------------------------------------------------------
 // useMyazaKYC() hook return type

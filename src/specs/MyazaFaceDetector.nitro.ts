@@ -32,6 +32,16 @@ export interface FaceResult {
   faceSizeRatio: number; // face width / frame width (0–1)
   faceCount: number; // # faces in frame; 0 = no face
   brightness: number; // mean luma of the frame (0–255), for the low-light gate
+  faceCenterX: number; // face centre X, normalised 0–1 (−1 when unavailable)
+  faceCenterY: number; // face centre Y, normalised 0–1 (−1 when unavailable)
+  trackingId: number; // ML Kit per-face id; −1 on iOS / when untracked
+  // Mean RGB of the FACE REGION (0–255 each), for flash (screen-reflection)
+  // liveness. Sampled in this same pass because the pixel buffer is already
+  // mapped here — a second native module would mean a second frame walk for
+  // numbers we can take for free. −1 when no face was found.
+  faceR: number;
+  faceG: number;
+  faceB: number;
 }
 
 export interface MyazaFaceDetector extends HybridObject<{ ios: 'swift'; android: 'kotlin' }> {

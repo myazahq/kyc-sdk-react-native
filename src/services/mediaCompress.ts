@@ -79,9 +79,14 @@ export async function cropImage(uri: string, rect: CropRect): Promise<string> {
  * CameraViewfinder shows the preview `BoxFit.cover` in a fixed 3:4 box with the
  * guide centred at 88% width and `aspect` height (mirrors the SVG overlay).
  */
-export async function cropCardRegion(uri: string, aspect: number): Promise<string> {
+export async function cropCardRegion(
+  uri: string,
+  aspect: number,
+  /** Aspect of the box the preview actually rendered in (width ÷ height). */
+  viewAr?: number,
+): Promise<string> {
   const { width, height } = await imageSize(uri);
-  return cropImage(uri, cardCropRect(width, height, aspect));
+  return cropImage(uri, cardCropRect(width, height, aspect, viewAr));
 }
 
 /** Compress a document still for OCR. Returns a new file URI. */

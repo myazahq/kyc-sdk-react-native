@@ -34,6 +34,11 @@ export interface KYCSubmission {
 export type KYCErrorCode =
   | 'network_error'
   | 'invalid_api_key'
+  // A `workflowId` that is unknown, unpublished, archived, or belongs to
+  // another org/environment. Blocking — the flow never mounts.
+  | 'invalid_workflow'
+  // The props are unusable as given (e.g. no `country` and no `workflowId`).
+  | 'invalid_config'
   | 'insufficient_credits'
   | 'upload_failed'
   | 'camera_permission_denied'

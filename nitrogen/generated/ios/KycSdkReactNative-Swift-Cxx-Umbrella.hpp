@@ -8,20 +8,44 @@
 #pragma once
 
 // Forward declarations of C++ defined types
+// Forward declaration of `DetectedRect` to properly resolve imports.
+namespace margelo::nitro::myazakyc { struct DetectedRect; }
+// Forward declaration of `EmrtdApduResponse` to properly resolve imports.
+namespace margelo::nitro::myazakyc { struct EmrtdApduResponse; }
+// Forward declaration of `EmrtdTagInfo` to properly resolve imports.
+namespace margelo::nitro::myazakyc { struct EmrtdTagInfo; }
 // Forward declaration of `FaceResult` to properly resolve imports.
 namespace margelo::nitro::myazakyc { struct FaceResult; }
 // Forward declaration of `HybridFrameSpec` to properly resolve imports.
 namespace margelo::nitro::camera { class HybridFrameSpec; }
+// Forward declaration of `HybridMyazaEmrtdSpec` to properly resolve imports.
+namespace margelo::nitro::myazakyc { class HybridMyazaEmrtdSpec; }
 // Forward declaration of `HybridMyazaFaceDetectorSpec` to properly resolve imports.
 namespace margelo::nitro::myazakyc { class HybridMyazaFaceDetectorSpec; }
+// Forward declaration of `HybridMyazaRectDetectorSpec` to properly resolve imports.
+namespace margelo::nitro::myazakyc { class HybridMyazaRectDetectorSpec; }
+// Forward declaration of `HybridMyazaTextRecognizerSpec` to properly resolve imports.
+namespace margelo::nitro::myazakyc { class HybridMyazaTextRecognizerSpec; }
+// Forward declaration of `TextResult` to properly resolve imports.
+namespace margelo::nitro::myazakyc { struct TextResult; }
 
 // Include C++ defined types
+#include "DetectedRect.hpp"
+#include "EmrtdApduResponse.hpp"
+#include "EmrtdTagInfo.hpp"
 #include "FaceResult.hpp"
+#include "HybridMyazaEmrtdSpec.hpp"
 #include "HybridMyazaFaceDetectorSpec.hpp"
+#include "HybridMyazaRectDetectorSpec.hpp"
+#include "HybridMyazaTextRecognizerSpec.hpp"
+#include "TextResult.hpp"
+#include <NitroModules/Promise.hpp>
 #include <NitroModules/Result.hpp>
 #include <VisionCamera/HybridFrameSpec.hpp>
 #include <exception>
 #include <memory>
+#include <string>
+#include <vector>
 
 // C++ helpers for Swift
 #include "KycSdkReactNative-Swift-Cxx-Bridge.hpp"
@@ -35,8 +59,14 @@ namespace margelo::nitro::myazakyc { class HybridMyazaFaceDetectorSpec; }
 // Forward declarations of Swift defined types
 // Forward declaration of `HybridFrameSpec_cxx` to properly resolve imports.
 namespace VisionCamera { class HybridFrameSpec_cxx; }
+// Forward declaration of `HybridMyazaEmrtdSpec_cxx` to properly resolve imports.
+namespace KycSdkReactNative { class HybridMyazaEmrtdSpec_cxx; }
 // Forward declaration of `HybridMyazaFaceDetectorSpec_cxx` to properly resolve imports.
 namespace KycSdkReactNative { class HybridMyazaFaceDetectorSpec_cxx; }
+// Forward declaration of `HybridMyazaRectDetectorSpec_cxx` to properly resolve imports.
+namespace KycSdkReactNative { class HybridMyazaRectDetectorSpec_cxx; }
+// Forward declaration of `HybridMyazaTextRecognizerSpec_cxx` to properly resolve imports.
+namespace KycSdkReactNative { class HybridMyazaTextRecognizerSpec_cxx; }
 
 // Include Swift defined types
 #if __has_include("KycSdkReactNative-Swift.h")

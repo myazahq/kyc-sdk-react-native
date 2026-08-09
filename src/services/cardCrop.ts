@@ -12,36 +12,51 @@ export interface CropRect {
   height: number;
 }
 
-const VIEW_AR = 3 / 4; // viewfinder box width ÷ height
+/** Legacy framed-viewfinder aspect — only correct when capture runs in the 3:4 box. */
+export const FRAMED_VIEW_AR = 3 / 4;
 const GUIDE_WIDTH_FRACTION = 0.88; // card width as a fraction of the box (overlay GW/VB_W)
 
 /**
- * Given the photo's pixel size and the guide `aspect` (width ÷ height), return
- * the card-guide crop rect in photo pixels:
- *   1. the cover-fit 3:4 box shows a centred 3:4 slice of the photo,
+ * Given the photo's pixel size, the guide `aspect` (width ÷ height), and the
+ * aspect of the box the preview ACTUALLY rendered in, return the card-guide
+ * crop rect in photo pixels:
+ *   1. the cover-fit box shows a centred `viewAr` slice of the photo,
  *   2. the guide is centred in that slice (88% wide, `aspect` ratio).
+ *
+ * `viewAr` is a parameter because assuming it was the bug: this math was
+ * written for the framed 3:4 viewfinder, and capture then moved to a
+ * FULL-SCREEN modal (~9:19.5) without the constant following. A cover-fit
+ * 3:4 slice of the photo is far wider than the slice a full-screen preview
+ * shows, so every review image came back ~1.6× wider than what the user had
+ * framed. The caller passes the MEASURED box aspect, so the crop and the
+ * preview agree by construction.
  */
-export function cardCropRect(imageW: number, imageH: number, aspect: number): CropRect {
+export function cardCropRect(
+  imageW: number,
+  imageH: number,
+  aspect: number,
+  viewAr: number = FRAMED_VIEW_AR,
+): CropRect {
   const photoAR = imageW / imageH;
   let visW: number;
   let visH: number;
   let offX: number;
   let offY: number;
-  if (photoAR > VIEW_AR) {
+  if (photoAR > viewAr) {
     visH = imageH;
-    visW = imageH * VIEW_AR;
+    visW = imageH * viewAr;
     offX = (imageW - visW) / 2;
     offY = 0;
   } else {
     visW = imageW;
-    visH = imageW / VIEW_AR;
+    visH = imageW / viewAr;
     offX = 0;
     offY = (imageH - visH) / 2;
   }
   const leftFraction = (1 - GUIDE_WIDTH_FRACTION) / 2;
   // card height ÷ box height = (cardWidthFrac · boxWidth / aspect) / boxHeight,
-  // and boxWidth ÷ boxHeight = VIEW_AR.
-  const heightFraction = (GUIDE_WIDTH_FRACTION * VIEW_AR) / aspect;
+  // and boxWidth ÷ boxHeight = viewAr.
+  const heightFraction = (GUIDE_WIDTH_FRACTION * viewAr) / aspect;
   const topFraction = (1 - heightFraction) / 2;
   return {
     originX: offX + leftFraction * visW,

@@ -5,6 +5,10 @@
  */
 module.exports = {
   preset: 'ts-jest',
+  // Watchman hangs indefinitely on this repo — `jest --listTests` never returns,
+  // so every run looks like an infinite compile rather than a crawl that never
+  // finishes. Jest's own file crawler is fine for a source tree this size.
+  watchman: false,
   testEnvironment: 'node',
   roots: ['<rootDir>/src'],
   testMatch: ['**/__tests__/**/*.test.ts'],

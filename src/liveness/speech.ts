@@ -30,11 +30,23 @@ export class LivenessSpeaker {
   private readonly enabled: boolean;
   private readonly language: string;
   private lastSpoken: string | null = null;
+  private spokeBefore = false;
 
   constructor(option: VoiceGuidanceOption | undefined) {
     const resolved = resolveVoiceGuidance(option);
     this.enabled = resolved.enabled;
     this.language = resolved.language;
+    if (this.enabled) {
+      // Warm the engine NOW, not at the first phrase. Android's TextToSpeech
+      // initialises asynchronously, and when the user is well-positioned from
+      // the start the first thing this session ever says is the first GESTURE
+      // COMMAND — which then races engine init and loses: exactly the phrase
+      // a user holding the phone at arm's length cannot afford to miss. Any
+      // expo-speech call triggers init; voices is the harmless one. By the
+      // time positioning settles the engine is ready and the command plays
+      // immediately. iOS initialises synchronously and ignores the warm-up.
+      void Speech.getAvailableVoicesAsync().catch(() => undefined);
+    }
   }
 
   /** Speaks `text` unless guidance is off or it equals the last phrase spoken. */
@@ -42,7 +54,13 @@ export class LivenessSpeaker {
     if (!this.enabled || !text || text === this.lastSpoken) return;
     this.lastSpoken = text;
     try {
-      Speech.stop();
+      // stop() exists to cut off a STALE phrase so guidance stays current.
+      // Before anything has been spoken there is nothing to cut off — and on
+      // Android calling stop() against a still-initialising engine is exactly
+      // the poke that can eat the first queued utterance. Skip it until a
+      // phrase has actually been issued.
+      if (this.spokeBefore) Speech.stop();
+      this.spokeBefore = true;
       Speech.speak(text, { language: this.language });
     } catch {
       /* TTS is best-effort — a failure must never block the flow */

@@ -1,4 +1,4 @@
-import type { IdTypesByCountry } from '../types/config';
+import type { IdTypeDefinition, IdTypesByCountry } from '../types/config';
 
 /**
  * Source of truth for the supported `(country, idType)` matrix — identical to
@@ -47,6 +47,33 @@ export function isNumberOnlyIdType(idType: string): boolean {
   return def ? !def.requiresDocumentCapture : false;
 }
 
+/**
+ * ID keys whose physical document carries an ICAO 9303 eMRTD chip.
+ *
+ * A FALLBACK only. Chip capability is catalogue-driven SERVER-side and arrives
+ * per row on `/api/kyc/config` as `supportsNfc`; that answer is authoritative
+ * and covers documents this local list has never heard of (every country's
+ * passport, for one). This list is what the flow uses before config lands.
+ *
+ * Matches the Flutter SDK's `IdTypeConfig.supportsNfc`.
+ */
+const CHIP_CAPABLE_KEYS = new Set(['passport', 'ghana-card', 'cni']);
+
+/**
+ * Whether the document behind this ID has a readable chip.
+ *
+ * `serverSupportsNfc` is the row from `/api/kyc/config` when it has loaded —
+ * pass it and it wins outright, including its `false`.
+ */
+export function supportsNfcChip(
+  _country: string,
+  idType: string,
+  serverSupportsNfc?: boolean,
+): boolean {
+  if (serverSupportsNfc !== undefined) return serverSupportsNfc;
+  return CHIP_CAPABLE_KEYS.has(idType);
+}
+
 /** Returns true when the selected ID type requires a physical document scan. */
 export function requiresDocumentCapture(idType: string): boolean {
   const def = ALL_ID_TYPES.find((t) => t.key === idType);
@@ -60,6 +87,74 @@ export function requiresDocumentCapture(idType: string): boolean {
 export function getScanSides(idType: string): 'front_only' | 'front_and_back' {
   const def = ALL_ID_TYPES.find((t) => t.key === idType);
   return def?.scanSides ?? 'front_only';
+}
+
+/**
+ * The document's name, short enough to sit in a pill beside a flag.
+ *
+ * The catalogue label is written for a PICKER, where "International Passport"
+ * disambiguates. Beside a flag it is redundant twice over — the country is
+ * already shown, and nobody is choosing anything at the camera. Keyed off the
+ * ID type rather than trimmed from the string, so it holds for every country's
+ * passport whatever its catalogue label says.
+ */
+export function shortDocumentLabel(idType: string | null, label: string): string {
+  return idType === 'passport' ? 'Passport' : label;
+}
+
+/** `drivers-license` → `Drivers License`. Last-resort label for an unknown key. */
+export function humanizeIdType(key: string): string {
+  return key
+    .replace(/[-_]+/g, ' ')
+    .trim()
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w[0]!.toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
+/** The server-config metadata a row carries for one (country, idType) pair. */
+export interface IdTypeRowMeta {
+  label?: string;
+  requiresDocumentCapture?: boolean;
+  scanSides?: string;
+  supportsNfc?: boolean;
+}
+
+/**
+ * The definition for a (country, idType) pair.
+ *
+ * A curated entry wins; otherwise one is SYNTHESIZED from the server row. That
+ * fallback is the whole point: the curated table only covers the five gov-DB
+ * countries, while Global Documents lets a workflow offer any of ~240. Without
+ * it, every country outside that table renders an empty ID list — the flow
+ * looks like the org has no access when it simply has no curated entry.
+ *
+ * Mirrors the Flutter SDK's `resolveIdTypeDefinition`.
+ */
+export function resolveIdTypeDefinition(
+  country: string,
+  key: string,
+  meta: IdTypeRowMeta = {},
+): IdTypeDefinition {
+  // Indexed loosely on purpose: `IdTypesByCountry` is keyed by the five curated
+  // countries, and the whole point here is being asked about the other ~235.
+  const table = ID_TYPES as Record<string, readonly IdTypeDefinition[] | undefined>;
+  const curated = (table[country.toUpperCase()] ?? []).find((t) => t.key === key);
+  if (curated) return curated;
+
+  // Default to needing a document: an unknown ID is far more likely to be a
+  // physical card than a number the user can type, and asking for a photo that
+  // wasn't needed is recoverable in a way that skipping capture is not.
+  const needsCapture = meta.requiresDocumentCapture ?? true;
+  return {
+    key: key as IdTypeDefinition['key'],
+    label: meta.label && meta.label.length > 0 ? meta.label : humanizeIdType(key),
+    requiresDocumentCapture: needsCapture,
+    ...(needsCapture
+      ? { scanSides: meta.scanSides === 'front_and_back' ? 'front_and_back' : 'front_only' }
+      : {}),
+  } as IdTypeDefinition;
 }
 
 // Card-guide / crop aspect (width ÷ height) for the live camera. Mirrors the

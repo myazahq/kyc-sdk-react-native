@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, type TextProps, type TextStyle } from 'react-native';
 
 import { useTheme } from './runtime';
-import { fontFamilyFor } from './fonts';
+import { fontFamilyFor, markFamilyName } from './fonts';
 
 // Branded text. `variant` picks size/weight; headings render in Space Grotesk and
 // body/labels in Karla — the SAME families the Flutter SDK uses (google_fonts) —
@@ -34,15 +34,24 @@ const HEADINGS = new Set<TextVariant>(['heading1', 'heading2', 'heading3']);
 export interface MyazaTextProps extends TextProps {
   variant?: TextVariant;
   color?: string;
+  /**
+   * Render in the Myaza brand face, ignoring the org's font override.
+   *
+   * For the wordmark ONLY (the "TRUST" in the footer lockup). Everything else
+   * in the flow is the customer's UI and should take the customer's typeface;
+   * a logo is not.
+   */
+  brandMark?: boolean;
 }
 
 export function MyazaText({
   variant = 'body',
   color,
   style,
+  brandMark = false,
   ...rest
 }: MyazaTextProps): React.ReactElement {
-  const { colors, fontsLoaded } = useTheme();
+  const { colors, fontsLoaded, brandFonts } = useTheme();
   const defaultColor =
     variant === 'bodyMedium'
       ? colors.textSecondary
@@ -54,13 +63,19 @@ export function MyazaText({
   // right Space Grotesk / Karla weight (custom fonts ignore `fontWeight`, so the
   // weight must be baked into the family).
   const flat = (StyleSheet.flatten([VARIANTS[variant], style]) ?? {}) as TextStyle;
-  const family = fontFamilyFor(HEADINGS.has(variant), flat.fontWeight, fontsLoaded);
+  const family = brandMark
+    ? markFamilyName(flat.fontWeight, fontsLoaded)
+    : fontFamilyFor(HEADINGS.has(variant), flat.fontWeight, fontsLoaded, brandFonts);
 
   return (
     <Text
       style={[
         flat,
         { color: color ?? defaultColor },
+        // EVERY resolved family — bundled or brand — encodes its weight in the
+        // family name, so fontWeight must always be cleared. Leaving it makes
+        // the platform synthesise a bolder face on top of an already-bold file:
+        // the glyphs render wider than they were measured and the text clips.
         family ? { fontFamily: family, fontWeight: undefined } : null,
       ]}
       {...rest}

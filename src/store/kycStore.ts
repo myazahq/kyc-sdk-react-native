@@ -1,143 +1,56 @@
 // ---------------------------------------------------------------------------
-// kycStore — the main flow/state store (mirrors Flutter's KYCNotifier + KYCState).
+// kycStore — the flow store (mirrors Flutter's KYCNotifier + KYCState).
 //
-// One store is created per modal instance via `createKycStore(config)` so the
-// flow state (and the resolved API client) is scoped to a single launch. The
-// React layer (Step 2) exposes it through context + a `useStore` selector hook.
+// One store per modal instance via `createKycStore(config)`, so the flow state
+// and its resolved API client are scoped to a single launch. The React layer
+// exposes it through context + a `useStore` selector hook.
+//
+// The state SHAPES live in ./state.ts and the pure derivations in ./derive.ts
+// (200-line rule); this file is the store factory and its actions. Both are
+// re-exported below so existing importers are unaffected.
 // ---------------------------------------------------------------------------
 
-import { createStore, type StoreApi } from 'zustand/vanilla';
+import { createStore } from 'zustand/vanilla';
 
-import { createKYCApi, type KYCApi, type VerifyRequest } from '../services/api';
+import { createKYCApi } from '../services/api';
+
 import { resolveBaseUrl, normalizeDevAssetUrl } from '../services/resolveUrl';
 import { withRetry } from '../services/retry';
-import { collectDeviceMetadata } from '../services/deviceMetadata';
-import { requiresDocumentCapture } from '../config/idTypes';
-import { generateRequestId } from '../utils/uuid';
-import type { IdType, KYCStep, MyazaKYCConfig } from '../types/config';
+import { collectFingerprint } from '../services/fingerprint';
+import type { KYCStep, ResolvedKYCConfig } from '../types/config';
+import { INITIAL_SERVER_CONFIG, describeConfigError, type ServerConfigState } from './serverConfig';
 import {
-  INITIAL_SERVER_CONFIG,
-  describeConfigError,
-  featuresFor,
-  type ServerConfigState,
-} from './serverConfig';
+  EMPTY_BUSINESS,
+  EMPTY_BUSINESS_APPLICATION,
+  type KYCSubmissionResult,
+  type KycState,
+  type KycStore,
+} from './state';
+import { nextStepAfter, nfcDecision, previousStepBefore } from './derive';
+import { buildVerifyRequest } from './submit';
+import { applicantMediaCaptured, buildApplicantVerifyRequest } from './submitApplicant';
 
-export interface KYCMediaIds {
-  documentFront?: string;
-  documentBack?: string;
-  selfie?: string;
-  documentFrontVideo?: string;
-  documentBackVideo?: string;
-  livenessVideo?: string;
-}
+export * from './state';
+export {
+  effectiveCountry,
+  livenessEnabled,
+  nfcEnabled,
+  nextStepAfter,
+  previousStepBefore,
+  stepOrderOptions,
+  stepProgress,
+} from './derive';
 
-export interface KYCSubmissionResult {
-  verificationId: string;
-  status: 'pending';
-}
-
-export type DocumentScanPhase = 'front' | 'back' | 'complete';
-
-/** Document-capture sub-phase — drives the sheet header title/description. */
-export type DocumentCapturePhase = 'front' | 'front-preview' | 'back' | 'review';
-
-/** The mediaIds keys settable via `setMediaId`. */
-export type MediaIdKey = keyof KYCMediaIds;
-
-export interface KycState {
-  config: MyazaKYCConfig;
-  api: KYCApi;
-
-  currentStep: KYCStep;
-  selectedIdType: IdType | null;
-  idNumber: string | null;
-  mediaIds: KYCMediaIds;
-  submissionResult: KYCSubmissionResult | null;
-  serverConfig: ServerConfigState;
-  documentScanPhase: DocumentScanPhase;
-  /** Sub-phase of the document-capture step — synced by the screen so the header
-   *  title/description can be phase-aware (mirrors Flutter's docReviewPhase). */
-  documentCapturePhase: DocumentCapturePhase;
-  isLoading: boolean;
-  error: string | null;
-
-  // Actions
-  loadServerConfig: () => Promise<void>;
-  setIdType: (idType: IdType) => void;
-  setIdNumber: (idNumber: string) => void;
-  setMediaId: (key: MediaIdKey, mediaId: string) => void;
-  setDocumentMediaId: (mediaId: string, side: 'front' | 'back') => void;
-  setDocumentCapturePhase: (phase: DocumentCapturePhase) => void;
-  nextStep: () => void;
-  previousStep: () => void;
-  goToStep: (step: KYCStep) => void;
-  submitAsync: (onRetry?: (attempt: number, total: number) => void) => Promise<KYCSubmissionResult>;
-  reset: () => void;
-}
-
-export type KycStore = StoreApi<KycState>;
-
-// ---------------------------------------------------------------------------
-// Flow navigation — single source of truth for the 5-step sequence.
-// ---------------------------------------------------------------------------
-
-function livenessEnabled(state: KycState): boolean {
-  // Consumer baseline: liveness is on unless explicitly disabled.
-  if (state.config.enableLiveness === false) return false;
-  const idType = state.selectedIdType;
-  if (!idType) return true;
-  // Server flag wins when present; otherwise keep the consumer baseline (on).
-  const features = featuresFor(state.serverConfig, state.config.country, idType);
-  return features ? features.livenessCheck : true;
-}
-
-/** The step that follows `step`, given the current selection + flags. */
-function nextStepAfter(step: KYCStep, state: KycState): KYCStep {
-  switch (step) {
-    case 'consent':
-      return 'id-type';
-    case 'id-type':
-      return state.selectedIdType && requiresDocumentCapture(state.selectedIdType)
-        ? 'document-capture'
-        : 'id-input';
-    case 'document-capture':
-    case 'id-input':
-      return livenessEnabled(state) ? 'liveness' : 'submitted';
-    case 'liveness':
-      return 'submitted';
-    case 'submitted':
-      return 'submitted';
-    default:
-      return step;
-  }
-}
-
-/** The step before `step` (for the back button). */
-function previousStepBefore(step: KYCStep, state: KycState): KYCStep {
-  switch (step) {
-    case 'id-type':
-      return 'consent';
-    case 'document-capture':
-    case 'id-input':
-      return 'id-type';
-    case 'liveness':
-      return state.selectedIdType && requiresDocumentCapture(state.selectedIdType)
-        ? 'document-capture'
-        : 'id-input';
-    case 'submitted':
-      // Submitted is terminal; back is a no-op in practice.
-      return livenessEnabled(state) ? 'liveness' : step;
-    case 'consent':
-    default:
-      return 'consent';
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Store factory
-// ---------------------------------------------------------------------------
-
-export function createKycStore(config: MyazaKYCConfig): KycStore {
+/**
+ * `serverConfig` may be PRELOADED: resolving a workflow already returns the
+ * org's ID-type allowlist and branding, so seeding it here means the flow never
+ * makes the separate `/config` call — and never renders the loading state for
+ * data it already has.
+ */
+export function createKycStore(
+  config: ResolvedKYCConfig,
+  serverConfig?: ServerConfigState,
+): KycStore {
   const baseUrl = resolveBaseUrl(config.apiKey, config.devUrl);
   const api = createKYCApi(baseUrl, config.apiKey);
 
@@ -151,13 +64,29 @@ export function createKycStore(config: MyazaKYCConfig): KycStore {
       api,
 
       currentStep: 'consent',
+      selectedCountry: null,
       selectedIdType: null,
       idNumber: null,
       mediaIds: {},
       submissionResult: null,
-      serverConfig: INITIAL_SERVER_CONFIG,
+      serverConfig: serverConfig ?? INITIAL_SERVER_CONFIG,
       documentScanPhase: 'front',
       documentCapturePhase: 'front',
+      immersiveCapture: false,
+      flashPaint: null,
+      navDirection: 'forward' as const,
+      questionnaireAnswers: {},
+      contact: {},
+      contactChallenge: null,
+      business: EMPTY_BUSINESS,
+      businessApplication: EMPTY_BUSINESS_APPLICATION,
+      applicantKeyPersonId: null,
+      keyPeopleInvites: [],
+      captureIntegrity: null,
+      mrzScan: null,
+      chipData: null,
+      poaDocumentType: null,
+      poaFileName: null,
       isLoading: false,
       error: null,
 
@@ -188,6 +117,17 @@ export function createKycStore(config: MyazaKYCConfig): KycStore {
         }
       },
 
+      setCountry(country) {
+        // Changing country invalidates the ID choice: the same key can mean a
+        // different document (or none) elsewhere, so it is cleared rather than
+        // silently carried across.
+        set((s) => ({
+          selectedCountry: country,
+          selectedIdType: s.selectedCountry === country ? s.selectedIdType : null,
+          idNumber: s.selectedCountry === country ? s.idNumber : null,
+        }));
+      },
+
       setIdType(idType) {
         set({ selectedIdType: idType });
       },
@@ -210,14 +150,144 @@ export function createKycStore(config: MyazaKYCConfig): KycStore {
         }));
       },
 
+      setQuestionnaireAnswer(key, value) {
+        set((s) => {
+          const next = { ...s.questionnaireAnswers };
+          // An undefined answer is REMOVED rather than stored as undefined, so
+          // "unanswered" is one state and not two.
+          if (value === undefined) delete next[key];
+          else next[key] = value;
+          return { questionnaireAnswers: next };
+        });
+      },
+
+      setContactVerified(channel, destination, token) {
+        set((s) => ({
+          contact:
+            channel === 'email'
+              ? { ...s.contact, emailAddress: destination, emailToken: token }
+              : { ...s.contact, phoneNumber: destination, phoneToken: token },
+        }));
+      },
+
+      setContactDestination(channel, destination) {
+        set((s) => ({
+          contact:
+            channel === 'email'
+              ? { ...s.contact, emailAddress: destination }
+              : { ...s.contact, phoneNumber: destination },
+        }));
+      },
+
+      setBusinessField(key, value) {
+        set((s) => ({ business: { ...s.business, [key]: value } }));
+      },
+
+      setKeyPeople(rows) {
+        set((s) => ({ businessApplication: { ...s.businessApplication, keyPeople: rows } }));
+      },
+
+      setBusinessDocument(doc) {
+        set((s) => ({
+          businessApplication: {
+            ...s.businessApplication,
+            // One upload per slot: re-uploading replaces rather than appends,
+            // so a user who retakes a photo does not submit both.
+            documents: [
+              ...s.businessApplication.documents.filter((d) => d.type !== doc.type),
+              doc,
+            ],
+          },
+        }));
+      },
+
+      removeBusinessDocument(type) {
+        set((s) => ({
+          businessApplication: {
+            ...s.businessApplication,
+            documents: s.businessApplication.documents.filter((d) => d.type !== type),
+          },
+        }));
+      },
+
+      setApplicant(role, name, keyPersonIndex = null) {
+        set((s) => ({
+          businessApplication: {
+            ...s.businessApplication,
+            applicantRole: role,
+            applicantName: name,
+            applicantKeyPersonIndex: keyPersonIndex,
+          },
+        }));
+      },
+
+      setCaptureIntegrity(integrity) {
+        set({ captureIntegrity: integrity });
+      },
+
+      setMrzScan(scan) {
+        set({ mrzScan: scan });
+      },
+
+      setChipData(data) {
+        set({ chipData: data });
+      },
+
+      setProofOfAddress(mediaId, docType, fileName) {
+        set((s) => ({
+          mediaIds: { ...s.mediaIds, proofOfAddress: mediaId },
+          poaDocumentType: docType,
+          poaFileName: fileName,
+        }));
+      },
+
+      clearProofOfAddress() {
+        set((s) => {
+          const { proofOfAddress: _dropped, ...rest } = s.mediaIds;
+          return { mediaIds: rest, poaDocumentType: null, poaFileName: null };
+        });
+      },
+
       setDocumentCapturePhase(phase) {
         if (get().documentCapturePhase !== phase) set({ documentCapturePhase: phase });
       },
 
+      setContactChallenge(challenge) {
+        const prev = get().contactChallenge;
+        // Guarded like the capture phase: the header re-renders off this, and a
+        // send that changes nothing should not churn it.
+        if (
+          prev?.channel === challenge?.channel &&
+          prev?.destination === challenge?.destination &&
+          prev?.via === challenge?.via
+        ) {
+          return;
+        }
+        set({ contactChallenge: challenge });
+      },
+
+      setFlashPaint(paint) {
+        set({ flashPaint: paint });
+      },
+      setImmersiveCapture(immersive) {
+        if (get().immersiveCapture !== immersive) set({ immersiveCapture: immersive });
+      },
+
       nextStep() {
         const next = nextStepAfter(get().currentStep, get());
+        // Leaving document capture is the moment the chip step either appears or
+        // silently does not. Four independent gates can remove it and a missing
+        // step looks the same however it went missing, so say which one.
+        if (__DEV__ && get().currentStep === 'document-capture' && next !== 'nfc') {
+          const d = nfcDecision(get());
+          if (!d.enabled) console.log('[myaza] NFC step skipped:', d.reason);
+        }
         if (next !== get().currentStep) {
-          set({ currentStep: next });
+          // Lowered on every step change: the flag belongs to a live camera, and
+          // leaving it raised means re-entering document-capture renders its
+          // primer chrome-free for a frame before the effect corrects it. The
+          // step that wants it raises it again on mount.
+          set({ currentStep: next, immersiveCapture: false, navDirection: 'forward' });
           emitStepChange(next);
         }
       },
@@ -225,7 +295,7 @@ export function createKycStore(config: MyazaKYCConfig): KycStore {
       previousStep() {
         const prev = previousStepBefore(get().currentStep, get());
         if (prev !== get().currentStep) {
-          set({ currentStep: prev });
+          set({ currentStep: prev, immersiveCapture: false, navDirection: 'back' });
           emitStepChange(prev);
         }
       },
@@ -240,25 +310,42 @@ export function createKycStore(config: MyazaKYCConfig): KycStore {
       async submitAsync(onRetry) {
         set({ isLoading: true, error: null });
         const state = get();
-        const request: VerifyRequest = {
-          country: state.config.country,
-          idType: state.selectedIdType ?? '',
-          idNumber: state.idNumber ?? undefined,
-          userData: state.config.userData,
-          mediaIds: state.mediaIds,
-          metadata: {
-            requestId: generateRequestId(),
-            device: collectDeviceMetadata() as unknown as Record<string, unknown>,
-            ...(state.config.metadata ?? {}),
-          },
-        };
+        // Best-effort: a fingerprint that fails to collect is a missing signal,
+        // never a failed submission.
+        const fingerprint =
+          state.config.deviceIntelligence === false
+            ? undefined
+            : await collectFingerprint().catch(() => undefined);
+        const request = buildVerifyRequest(state, fingerprint);
         try {
           const res = await withRetry(() => api.verify(request), { onRetry });
           const result: KYCSubmissionResult = {
             verificationId: res.verificationId,
             status: 'pending',
           };
-          set({ submissionResult: result, isLoading: false });
+          set({
+            submissionResult: result,
+            isLoading: false,
+            // Kept so the submitted screen can hand out the invite links. A
+            // retry of the same requestId returns these again, so they
+            // survive a re-submit.
+            ...(res.applicantKeyPersonId ? { applicantKeyPersonId: res.applicantKeyPersonId } : {}),
+            ...(res.keyPeopleInvites ? { keyPeopleInvites: res.keyPeopleInvites } : {}),
+          });
+          // Applicant KYC: fire-and-forget — the submitted screen shows after
+          // the BUSINESS submit; a failed applicant submit only warns (the org
+          // can re-invite the applicant from the dashboard). Mirrors the web
+          // and Flutter SDKs.
+          if (res.applicantKeyPersonId && applicantMediaCaptured(state)) {
+            void withRetry(() =>
+              api.verify(buildApplicantVerifyRequest(state, res.applicantKeyPersonId!, fingerprint)),
+            ).catch((err) => {
+              console.warn(
+                '[MyazaKYC] Applicant identity submission failed — the organization can re-invite the applicant from the dashboard:',
+                err,
+              );
+            });
+          }
           return result;
         } catch (err) {
           set({ isLoading: false, error: err instanceof Error ? err.message : 'Submission failed' });
@@ -269,12 +356,27 @@ export function createKycStore(config: MyazaKYCConfig): KycStore {
       reset() {
         set({
           currentStep: 'consent',
+          selectedCountry: null,
           selectedIdType: null,
           idNumber: null,
           mediaIds: {},
           submissionResult: null,
           documentScanPhase: 'front',
           documentCapturePhase: 'front',
+          immersiveCapture: false,
+          flashPaint: null,
+          questionnaireAnswers: {},
+          contact: {},
+          contactChallenge: null,
+          business: EMPTY_BUSINESS,
+          businessApplication: EMPTY_BUSINESS_APPLICATION,
+          applicantKeyPersonId: null,
+          keyPeopleInvites: [],
+          captureIntegrity: null,
+          mrzScan: null,
+          chipData: null,
+          poaDocumentType: null,
+          poaFileName: null,
           isLoading: false,
           error: null,
         });
@@ -285,4 +387,3 @@ export function createKycStore(config: MyazaKYCConfig): KycStore {
 
 // Re-export the flow helpers for tests + screens that need to reason about
 // navigation without mutating the store.
-export { livenessEnabled, nextStepAfter, previousStepBefore };

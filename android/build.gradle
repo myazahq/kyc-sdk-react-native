@@ -91,6 +91,10 @@ repositories {
 
 dependencies {
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+
+  // JPEG 2000 for the DG2 chip portrait — BitmapFactory cannot decode it and
+  // never will; JJ2000 is the pure-Java reference implementation. ~500KB.
+  implementation 'edu.ucar:jj2000:5.2'
   implementation 'com.facebook.react:react-android'
 
   // Nitro core — provides the HybridObject base + the NitroModules prefab the
@@ -107,4 +111,6 @@ dependencies {
 
   // Google ML Kit face detection — Android only. Same version as the Flutter SDK.
   implementation 'com.google.mlkit:face-detection:16.1.6'
+  // On-device text recognition, for reading the MRZ off a passport or ID card.
+  implementation 'com.google.mlkit:text-recognition:16.0.1'
 }

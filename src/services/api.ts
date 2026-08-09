@@ -1,4 +1,21 @@
 import { SDK_VERSION } from './deviceMetadata';
+import type {
+  ContactCheckResponse,
+  ContactSendResponse,
+  HealthResponse,
+  MediaUploadType,
+  SdkConfigResponse,
+  UploadFile,
+  UploadResponse,
+  VerificationStatusResponse,
+  VerifyRequest,
+  VerifyResponse,
+  WorkflowResolutionResponse,
+} from './api-types';
+
+// The HTTP contract lives in ./api-types and is re-exported here, so importers
+// keep a single entry point for both the client and the shapes it exchanges.
+export * from './api-types';
 
 // ---------------------------------------------------------------------------
 // HTTP client — talks to the only endpoints the SDK calls (upload / verify /
@@ -80,107 +97,9 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return data as T;
 }
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-/** Media kinds the SDK can upload — document/selfie photos plus best-effort videos. */
-export type MediaUploadType =
-  | 'document_front'
-  | 'document_back'
-  | 'selfie'
-  | 'document_front_video'
-  | 'document_back_video'
-  | 'liveness_video';
-
-/**
- * A file to upload, in React Native's multipart shape. `uri` points at a
- * local file (camera capture / gallery pick); `name`/`type` populate the
- * multipart part's filename + Content-Type.
- */
-export interface UploadFile {
-  uri: string;
-  name?: string;
-  /** Raw mime type (codec params are stripped before sending). */
-  type?: string;
-}
-
-export interface UploadResponse {
-  mediaId: string;
-}
-
-export interface VerifyRequest {
-  country: string;
-  idType: string;
-  idNumber?: string;
-  userData?: {
-    firstName?: string;
-    lastName?: string;
-    dateOfBirth?: string;
-  };
-  mediaIds: {
-    documentFront?: string;
-    documentBack?: string;
-    selfie?: string;
-    documentFrontVideo?: string;
-    documentBackVideo?: string;
-    livenessVideo?: string;
-  };
-  metadata: {
-    requestId: string;
-    device?: Record<string, unknown>;
-    [key: string]: unknown;
-  };
-}
-
-export interface VerifyResponse {
-  verificationId: string;
-  status: 'pending';
-}
-
-/**
- * Minimal, publishable-safe status from `GET /api/kyc/status/:id` — no PII,
- * scores, or result data; only the lifecycle state and an org-safe reason.
- */
-export interface VerificationStatusResponse {
-  verificationId: string;
-  status: 'pending' | 'verified' | 'failed' | 'not_found' | 'error';
-  reason?: string | null;
-  reasonCode?: string | null;
-  createdAt: string;
-  completedAt?: string;
-}
-
-export interface SdkConfigIdType {
-  country: string;
-  idType: string;
-  features: {
-    documentVerification: boolean;
-    livenessCheck: boolean;
-    govDbCheck: boolean;
-  };
-}
-
-/** Org branding configured server-side, returned with the SDK config. */
-export interface SdkConfigBranding {
-  logo?: string;
-  companyName?: string;
-  primaryColor?: string;
-}
-
-export interface SdkConfigResponse {
-  environment: 'DEVELOPMENT' | 'SANDBOX' | 'PRODUCTION';
-  idTypes: SdkConfigIdType[];
-  branding?: SdkConfigBranding;
-}
-
-export interface HealthResponse {
-  status: string;
-}
-
-// The mime types the server accepts (must mirror the server's upload allowlist).
 const IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
 const VIDEO_MIME_TYPES = ['video/webm', 'video/mp4'] as const;
+const POA_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'] as const;
 
 const MIME_EXTENSIONS: Record<string, string> = {
   'image/jpeg': 'jpg',
@@ -188,6 +107,7 @@ const MIME_EXTENSIONS: Record<string, string> = {
   'image/webp': 'webp',
   'video/webm': 'webm',
   'video/mp4': 'mp4',
+  'application/pdf': 'pdf',
 };
 
 /**
@@ -199,7 +119,12 @@ const MIME_EXTENSIONS: Record<string, string> = {
 function normalizeMimeType(rawType: string | undefined, type: MediaUploadType): string {
   const base = (rawType?.split(';')[0] ?? '').trim().toLowerCase();
   const isVideo = type.endsWith('_video');
-  const allowed: readonly string[] = isVideo ? VIDEO_MIME_TYPES : IMAGE_MIME_TYPES;
+  const isPoa = type === 'proof_of_address' || type === 'business_document';
+  const allowed: readonly string[] = isVideo
+    ? VIDEO_MIME_TYPES
+    : isPoa
+      ? POA_MIME_TYPES
+      : IMAGE_MIME_TYPES;
   if (allowed.includes(base)) return base;
   return isVideo ? 'video/mp4' : 'image/jpeg';
 }
@@ -277,8 +202,52 @@ export function createKYCApi(baseUrl: string, apiKey: string) {
       return request<VerificationStatusResponse>(`/status/${verificationId}`);
     },
 
-    async config(): Promise<SdkConfigResponse> {
-      return request<SdkConfigResponse>('/config');
+    /**
+     * Send a contact-verification OTP. Non-production environments never
+     * deliver a real message — the code is all zeros of `codeLength`, so an
+     * integrator can automate the flow for free.
+     */
+    async contactSend(body: {
+      channel: 'email' | 'phone';
+      destination: string;
+      /** ISO-2 default country for national phone formats (the flow's country). */
+      country?: string;
+      /** Phone delivery channel preference (default sms). */
+      via?: 'sms' | 'whatsapp';
+      /** Org-configured code length (server clamps 4–8). */
+      codeLength?: number;
+      /** Org-configured attempt budget (server clamps 1–5). */
+      maxAttempts?: number;
+    }): Promise<ContactSendResponse> {
+      return request<ContactSendResponse>('/contact/send', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+    },
+
+    /** Check a typed code. The returned `token` is a single-use proof that
+     *  rides the /verify submission. */
+    async contactCheck(body: { challengeId: string; code: string }): Promise<ContactCheckResponse> {
+      return request<ContactCheckResponse>('/contact/check', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+    },
+
+    async config(signal?: AbortSignal): Promise<SdkConfigResponse> {
+      return request<SdkConfigResponse>('/config', signal ? { signal } : {});
+    },
+
+    /**
+     * Resolve a published workflow. Returns the flow's config plus the org's
+     * ID-type allowlist and branding, so a `workflowId` mount needs no
+     * subsequent `/config` call.
+     */
+    async workflow(workflowId: string, signal?: AbortSignal): Promise<WorkflowResolutionResponse> {
+      return request<WorkflowResolutionResponse>(
+        `/workflows/${encodeURIComponent(workflowId)}`,
+        signal ? { signal } : {},
+      );
     },
 
     async health(): Promise<HealthResponse> {
@@ -289,3 +258,4 @@ export function createKYCApi(baseUrl: string, apiKey: string) {
 }
 
 export type KYCApi = ReturnType<typeof createKYCApi>;
+

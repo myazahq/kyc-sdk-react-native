@@ -11,6 +11,9 @@
 #import <type_traits>
 
 #include "HybridMyazaFaceDetectorSpecSwift.hpp"
+#include "HybridMyazaTextRecognizerSpecSwift.hpp"
+#include "HybridMyazaEmrtdSpecSwift.hpp"
+#include "HybridMyazaRectDetectorSpecSwift.hpp"
 
 @interface KycSdkReactNativeAutolinking : NSObject
 @end
@@ -25,6 +28,27 @@
     "MyazaFaceDetector",
     []() -> std::shared_ptr<HybridObject> {
       std::shared_ptr<HybridMyazaFaceDetectorSpec> hybridObject = KycSdkReactNative::KycSdkReactNativeAutolinking::createMyazaFaceDetector();
+      return hybridObject;
+    }
+  );
+  HybridObjectRegistry::registerHybridObjectConstructor(
+    "MyazaTextRecognizer",
+    []() -> std::shared_ptr<HybridObject> {
+      std::shared_ptr<HybridMyazaTextRecognizerSpec> hybridObject = KycSdkReactNative::KycSdkReactNativeAutolinking::createMyazaTextRecognizer();
+      return hybridObject;
+    }
+  );
+  HybridObjectRegistry::registerHybridObjectConstructor(
+    "MyazaEmrtd",
+    []() -> std::shared_ptr<HybridObject> {
+      std::shared_ptr<HybridMyazaEmrtdSpec> hybridObject = KycSdkReactNative::KycSdkReactNativeAutolinking::createMyazaEmrtd();
+      return hybridObject;
+    }
+  );
+  HybridObjectRegistry::registerHybridObjectConstructor(
+    "MyazaRectDetector",
+    []() -> std::shared_ptr<HybridObject> {
+      std::shared_ptr<HybridMyazaRectDetectorSpec> hybridObject = KycSdkReactNative::KycSdkReactNativeAutolinking::createMyazaRectDetector();
       return hybridObject;
     }
   );

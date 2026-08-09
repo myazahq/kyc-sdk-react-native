@@ -20,8 +20,8 @@ export type SdkEnvironment = 'development' | 'sandbox' | 'production';
 /** Canonical base URLs for the non-development environments. */
 const BASE_URLS: Record<Exclude<SdkEnvironment, 'development'>, string> = {
   // Sandbox and production share the same host; the key prefix selects the env.
-  sandbox: 'https://identity.myaza.app',
-  production: 'https://identity.myaza.app',
+  sandbox: 'https://trust.myaza.app',
+  production: 'https://trust.myaza.app',
 };
 
 /**

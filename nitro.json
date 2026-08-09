@@ -1,16 +1,60 @@
 {
   "$schema": "https://nitro.margelo.com/nitro.schema.json",
-  "cxxNamespace": ["myazakyc"],
-  "ios": { "iosModuleName": "KycSdkReactNative" },
+  "cxxNamespace": [
+    "myazakyc"
+  ],
+  "ios": {
+    "iosModuleName": "KycSdkReactNative"
+  },
   "android": {
-    "androidNamespace": ["myazakyc"],
+    "androidNamespace": [
+      "myazakyc"
+    ],
     "androidCxxLibName": "KycSdkReactNative"
   },
   "autolinking": {
     "MyazaFaceDetector": {
-      "ios": { "language": "swift", "implementationClassName": "HybridMyazaFaceDetector" },
-      "android": { "language": "kotlin", "implementationClassName": "HybridMyazaFaceDetector" }
+      "ios": {
+        "language": "swift",
+        "implementationClassName": "HybridMyazaFaceDetector"
+      },
+      "android": {
+        "language": "kotlin",
+        "implementationClassName": "HybridMyazaFaceDetector"
+      }
+    },
+    "MyazaTextRecognizer": {
+      "ios": {
+        "language": "swift",
+        "implementationClassName": "HybridMyazaTextRecognizer"
+      },
+      "android": {
+        "language": "kotlin",
+        "implementationClassName": "HybridMyazaTextRecognizer"
+      }
+    },
+    "MyazaEmrtd": {
+      "ios": {
+        "language": "swift",
+        "implementationClassName": "HybridMyazaEmrtd"
+      },
+      "android": {
+        "language": "kotlin",
+        "implementationClassName": "HybridMyazaEmrtd"
+      }
+    },
+    "MyazaRectDetector": {
+      "ios": {
+        "language": "swift",
+        "implementationClassName": "HybridMyazaRectDetector"
+      },
+      "android": {
+        "language": "kotlin",
+        "implementationClassName": "HybridMyazaRectDetector"
+      }
     }
   },
-  "ignorePaths": ["**/node_modules"]
+  "ignorePaths": [
+    "**/node_modules"
+  ]
 }

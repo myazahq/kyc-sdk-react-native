@@ -49,6 +49,18 @@ namespace margelo::nitro::myazakyc {
       double faceCount = this->getFieldValue(fieldFaceCount);
       static const auto fieldBrightness = clazz->getField<double>("brightness");
       double brightness = this->getFieldValue(fieldBrightness);
+      static const auto fieldFaceCenterX = clazz->getField<double>("faceCenterX");
+      double faceCenterX = this->getFieldValue(fieldFaceCenterX);
+      static const auto fieldFaceCenterY = clazz->getField<double>("faceCenterY");
+      double faceCenterY = this->getFieldValue(fieldFaceCenterY);
+      static const auto fieldTrackingId = clazz->getField<double>("trackingId");
+      double trackingId = this->getFieldValue(fieldTrackingId);
+      static const auto fieldFaceR = clazz->getField<double>("faceR");
+      double faceR = this->getFieldValue(fieldFaceR);
+      static const auto fieldFaceG = clazz->getField<double>("faceG");
+      double faceG = this->getFieldValue(fieldFaceG);
+      static const auto fieldFaceB = clazz->getField<double>("faceB");
+      double faceB = this->getFieldValue(fieldFaceB);
       return FaceResult(
         headEulerAngleX,
         headEulerAngleY,
@@ -58,7 +70,13 @@ namespace margelo::nitro::myazakyc {
         rightEyeOpenProbability,
         faceSizeRatio,
         faceCount,
-        brightness
+        brightness,
+        faceCenterX,
+        faceCenterY,
+        trackingId,
+        faceR,
+        faceG,
+        faceB
       );
     }
 
@@ -68,7 +86,7 @@ namespace margelo::nitro::myazakyc {
      */
     [[maybe_unused]]
     static jni::local_ref<JFaceResult::javaobject> fromCpp(const FaceResult& value) {
-      using JSignature = JFaceResult(double, double, double, double, double, double, double, double, double);
+      using JSignature = JFaceResult(double, double, double, double, double, double, double, double, double, double, double, double, double, double, double);
       static const auto clazz = javaClassStatic();
       static const auto create = clazz->getStaticMethod<JSignature>("fromCpp");
       return create(
@@ -81,7 +99,13 @@ namespace margelo::nitro::myazakyc {
         value.rightEyeOpenProbability,
         value.faceSizeRatio,
         value.faceCount,
-        value.brightness
+        value.brightness,
+        value.faceCenterX,
+        value.faceCenterY,
+        value.trackingId,
+        value.faceR,
+        value.faceG,
+        value.faceB
       );
     }
   };

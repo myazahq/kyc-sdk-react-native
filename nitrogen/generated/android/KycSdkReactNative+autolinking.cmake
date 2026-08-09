@@ -33,9 +33,15 @@ target_sources(
   # Autolinking Setup
   ../nitrogen/generated/android/KycSdkReactNativeOnLoad.cpp
   # Shared Nitrogen C++ sources
+  ../nitrogen/generated/shared/c++/HybridMyazaEmrtdSpec.cpp
   ../nitrogen/generated/shared/c++/HybridMyazaFaceDetectorSpec.cpp
+  ../nitrogen/generated/shared/c++/HybridMyazaRectDetectorSpec.cpp
+  ../nitrogen/generated/shared/c++/HybridMyazaTextRecognizerSpec.cpp
   # Android-specific Nitrogen C++ sources
+  ../nitrogen/generated/android/c++/JHybridMyazaEmrtdSpec.cpp
   ../nitrogen/generated/android/c++/JHybridMyazaFaceDetectorSpec.cpp
+  ../nitrogen/generated/android/c++/JHybridMyazaRectDetectorSpec.cpp
+  ../nitrogen/generated/android/c++/JHybridMyazaTextRecognizerSpec.cpp
 )
 
 # From node_modules/react-native/ReactAndroid/cmake-utils/folly-flags.cmake

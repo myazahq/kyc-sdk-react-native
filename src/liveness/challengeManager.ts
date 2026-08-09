@@ -10,6 +10,7 @@ import {
   type ChallengeConfig,
   type LivenessChallenge,
   type LivenessConfig,
+  type LivenessMode,
 } from './types';
 
 // Gestures within a similarity group should never appear together — one can
@@ -29,9 +30,34 @@ function shuffle<T>(arr: readonly T[]): T[] {
   return copy;
 }
 
-/** Picks `challengeCount` non-similar challenges from the pool, in random order. */
+/**
+ * Whether the workflow's liveness mode runs gesture challenges at all.
+ *
+ * `flash` means the screen-reflection sequence IS the check, so gestures are
+ * skipped entirely — only `both` runs gestures and then flash. Kept in step
+ * with the Flutter SDK's `runsGestures` and the web SDK.
+ */
+export function modeRunsGestures(mode: LivenessMode | undefined): boolean {
+  return mode !== 'flash';
+}
+
+/**
+ * Picks `challengeCount` non-similar challenges from the pool, in random order.
+ *
+ * Returns NOTHING in flash-only mode. This is gated here, at the single place
+ * challenges are chosen, rather than at the call sites: `useLiveness` rebuilds
+ * the tracker in three separate places (mount, retry, face-change reset), and a
+ * check in one of them would leave the others silently running gestures a
+ * flash-only workflow explicitly turned off.
+ *
+ * Deliberately keyed on the mode rather than `challengeCount: 0` — the count is
+ * clamped to at least one on purpose, so that a stray zero in a consumer's
+ * config can never quietly disable gesture liveness. Skipping gestures has to
+ * be asked for.
+ */
 export function pickChallenges(config: Partial<LivenessConfig> = {}): ChallengeConfig[] {
   const merged = { ...DEFAULT_LIVENESS_CONFIG, ...config };
+  if (!modeRunsGestures(merged.mode)) return [];
 
   let pool = CHALLENGE_POOL;
   if (merged.challengePool && merged.challengePool.length > 0) {

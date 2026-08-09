@@ -279,7 +279,7 @@ export function DocumentCropper({ uri, onCancel, onConfirm }: DocumentCropperPro
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 48 }}>
               <ActivityIndicator color="#FFFFFF" />
               <View style={{ width: 10 }} />
-              <MyazaText variant="bodyMedium" color="rgba(255,255,255,0.8)">
+              <MyazaText variant="bodyMedium" color="rgba(255,255,255,0.8)" style={{ flexShrink: 1 }}>
                 Processing…
               </MyazaText>
             </View>

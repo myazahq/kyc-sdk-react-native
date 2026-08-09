@@ -41,77 +41,67 @@ import {
   eyeAverageOpenProbability,
   pushHistory,
 } from './gestureDetector';
-import { ChallengeTracker, pickChallenges } from './challengeManager';
+import { ChallengeTracker, modeRunsGestures, pickChallenges } from './challengeManager';
+import { FlashReadyGate } from './flashReadyGate';
+import { FaceContinuityGuard } from './faceContinuity';
+import type { FlashResult } from './flashDetector';
+import { useFlashPhase } from './useFlashPhase';
+
+// State shape, options, guidance strings and phase predicates live in
+// ./livenessState — re-exported here so existing imports keep working.
+export {
+  positionGuidanceText,
+  lightingGuidanceText,
+  type PositionGuidance,
+  type LightingGuidance,
+  type LivenessUiState,
+  type UseLivenessOptions,
+  type UseLivenessReturn,
+} from './livenessState';
 import { LivenessSpeaker } from './speech';
-import type { VoiceGuidanceOption } from '../types/config';
-
-const CHALLENGE_PASSED_MS = 700; // brief "Great!" before the next challenge
-const POSITION_TOO_FAR = 'too_far';
-const POSITION_TOO_CLOSE = 'too_close';
-const MULTIPLE_FACES_GUIDANCE = 'Make sure only your face is visible';
-
-export type PositionGuidance = typeof POSITION_TOO_FAR | typeof POSITION_TOO_CLOSE;
-export type LightingGuidance = 'dark' | 'bright';
-
-export interface LivenessUiState {
-  phase: LivenessPhase;
-  instruction: string;
-  activeChallenge: LivenessChallenge | null;
-  timeoutRemaining: number;
-  completedCount: number;
-  totalCount: number;
-  positionGuidance: PositionGuidance | null;
-  lightingGuidance: LightingGuidance | null;
-  multipleFaces: boolean;
-  wrongGesture: boolean;
-  faceDetected: boolean;
-  failureReason: LivenessFailureReason | null;
-}
-
-export interface UseLivenessOptions {
-  config?: Partial<LivenessConfig>;
-  voiceGuidance?: VoiceGuidanceOption;
-  /** Fires once when all challenges pass and the phase enters `capturing`. */
-  onReadyToCapture?: () => void;
-}
-
-export interface UseLivenessReturn extends LivenessUiState {
-  /** Push a face frame into the machine (call from the frame processor via runOnJS). */
-  onFace: (data: LivenessFaceData) => void;
-  /** Push a "no face this frame" signal. */
-  onNoFace: () => void;
-  /** Feed live lighting quality (null = ok). */
-  setLighting: (guidance: LightingGuidance | null) => void;
-  /** Mark the selfie captured → phase `complete`. */
-  markComplete: () => void;
-  /** Restart the session with a fresh random challenge set. */
-  reset: () => void;
-  /** True while the machine wants a still captured (phase === 'capturing'). */
-  shouldCapture: boolean;
-}
-
-/** Position guidance text (spoken + shown), matching the Flutter SDK exactly. */
-export function positionGuidanceText(g: PositionGuidance): string {
-  return g === POSITION_TOO_FAR ? 'Kindly move closer' : 'Kindly move further away';
-}
-/** Lighting warning banner text — the full Flutter strings (shown, not spoken). */
-export function lightingGuidanceText(g: LightingGuidance): string {
-  return g === 'dark'
-    ? 'It looks dark here. Move to a brighter area or near a light source for better detection.'
-    : 'Too bright — reduce glare or move away from direct light for better detection.';
-}
-
-function isTerminal(phase: LivenessPhase): boolean {
-  return phase === 'complete' || phase === 'failed';
-}
+import {
+  INTEGRITY_FAILED_PATCH,
+  CHALLENGE_PASSED_MS,
+  POSITION_TOO_FAR,
+  POSITION_TOO_CLOSE,
+  MULTIPLE_FACES_GUIDANCE,
+  isSettled,
+  isTerminal,
+  positionGuidanceText,
+  type LightingGuidance,
+  type PositionGuidance,
+  type LivenessUiState,
+  type UseLivenessOptions,
+  type UseLivenessReturn,
+} from './livenessState';
 
 export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
-  const { config, voiceGuidance, onReadyToCapture } = opts;
+  const { config, voiceGuidance, onReadyToCapture, announce = true } = opts;
 
   // Resolve the challenge set once per session (and on reset).
   const trackerRef = useRef<ChallengeTracker | null>(null);
+
+  // Tracks that the face performing the challenges is the face still in frame.
+  // Liveness without it proves a live human was present, not WHICH human.
+  const continuityRef = useRef<FaceContinuityGuard>(new FaceContinuityGuard());
+  // Flash-only has no challenges to act as a buffer, so it needs its own
+  // "framed, lit and held still" gate before the screen lights up.
+  const flashGateRef = useRef<FlashReadyGate | null>(null);
+  // "No lighting warning" is ambiguous until the sampler has actually reported:
+  // during warm-up, unknown looks identical to good.
+  const lightingSampledRef = useRef(false);
+  // When a face was last actually seen. The capture gate needs this to refuse a
+  // frame with nobody in it.
+  const lastFaceSeenRef = useRef<number | null>(null);
+
+  // Set when the session can no longer vouch for who is in frame. Recorded
+  // rather than shown during `capturing`: that phase runs the capture (and, in
+  // future, the flash overlay), and re-laying out the screen mid-capture is how
+  // the Flutter SDK ended up displacing its preview from the flash cutout.
+  const integrityBrokenRef = useRef(false);
   if (trackerRef.current === null) {
     trackerRef.current = new ChallengeTracker(pickChallenges(config));
+    flashGateRef.current = modeRunsGestures(config?.mode) ? null : new FlashReadyGate();
   }
   const initialTotalCount = trackerRef.current.totalCount;
 
@@ -175,12 +165,45 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
     [cancelTimer],
   );
 
+  const flash = useFlashPhase(config?.mode, setState);
+
+  // Speak whatever the screen is currently instructing.
+  //
+  // Only CHALLENGE instructions were ever spoken, so a flash-only flow — which
+  // has no challenges — was silent from start to finish, and "Position your face
+  // in the circle" was never spoken in any mode. The guidance is most needed
+  // exactly where it was missing: a user holding a phone at arm's length during
+  // a flash sequence is not reading the screen.
+  //
+  // Keyed on the instruction rather than the phase so a challenge-to-challenge
+  // change is announced too. The speaker de-dupes consecutive identical phrases,
+  // so this cannot stutter over a re-render. Multi-face and lighting prompts are
+  // spoken by their own handlers and take priority, so they are skipped here.
+  useEffect(() => {
+    if (!announce || !state.instruction || state.multipleFaces) return;
+    speak(state.instruction);
+  }, [announce, state.instruction, state.multipleFaces, speak]);
+  // Whether the flash occupies a slot in the progress indicator.
+  const flashIsStep = config?.mode === 'flash' || config?.mode === 'both';
+
   const startNextChallenge = useCallback(() => {
     const tracker = trackerRef.current!;
     const current = tracker.current;
     if (!current) {
-      // No challenges left → ask for a still.
       cancelTimer();
+      // Flash runs LAST, after the gestures: by now the face is positioned and
+      // steady, which is what makes the reflection readable. Starting it during
+      // positioning would measure a moving target.
+      if (flash.pending()) {
+        setState((s) => ({
+          ...s,
+          phase: 'flash',
+          instruction: 'Hold still and look at the screen',
+          activeChallenge: null,
+          positionGuidance: null,
+        }));
+        return;
+      }
       setState((s) => ({
         ...s,
         phase: 'capturing',
@@ -231,11 +254,7 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
   // ── Position check (every frame; mirrors Flutter _checkFacePosition) ────────
   const checkPosition = useCallback((ratio: number) => {
     setState((s) => {
-      if (
-        s.phase === 'challenge_passed' ||
-        s.phase === 'capturing' ||
-        isTerminal(s.phase)
-      ) {
+      if (s.phase === 'challenge_passed' || isSettled(s.phase) || isTerminal(s.phase)) {
         return s;
       }
       let next: PositionGuidance | null;
@@ -247,26 +266,99 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
   }, []);
 
   // ── Per-frame entry point ──────────────────────────────────────────────────
+  /**
+   * A different face is in frame, or one returned after an absence.
+   *
+   * `substituted` ends the session: nothing performed so far can be attributed
+   * to whoever is there now. `reacquired` is not proof — people look away — but
+   * nothing vouches for the returning face either, so the challenges are
+   * restarted rather than inherited.
+   *
+   * Mid-capture the verdict is RECORDED, not shown: re-laying out the screen
+   * while a capture (or flash overlay) is running is a separate class of bug,
+   * so the flow reports it once capture is done.
+   */
+  const onFaceIntegrityBroken = useCallback(
+    (kind: 'substituted' | 'reacquired') => {
+      const phase = stateRef.current.phase;
+      if (isTerminal(phase)) return;
+      integrityBrokenRef.current = true;
+      // Counted whether or not it is shown: a session with several
+      // discontinuities is worth flagging even when each one was recoverable.
+      flash.recordGlitch();
+      if (isSettled(phase)) return;
+
+      cancelTimer();
+      if (kind === 'substituted') {
+        setState((s) => ({ ...s, ...INTEGRITY_FAILED_PATCH }));
+        return;
+      }
+
+      // Re-acquired: start again from positioning with a fresh challenge set.
+      trackerRef.current = new ChallengeTracker(pickChallenges(config));
+      // The returning face has to earn the hold again — otherwise a face that
+      // left and came back would flash immediately on a gate that is still
+      // holding the departed face's dwell.
+      flashGateRef.current?.reset();
+      xHistoryRef.current = [];
+      earHistoryRef.current = [];
+      processingRef.current = false;
+      integrityBrokenRef.current = false;
+      setState((s) => ({
+        ...s,
+        phase: 'positioning',
+        instruction: 'Position your face in the circle',
+        activeChallenge: null,
+        completedCount: 0,
+        positionGuidance: null,
+      }));
+    },
+    [cancelTimer, config, flash],
+  );
+
   const onFace = useCallback(
     (data: LivenessFaceData) => {
       const phase = stateRef.current.phase;
       if (isTerminal(phase)) return;
+
+      lastFaceSeenRef.current = Date.now();
 
       if (!stateRef.current.faceDetected) {
         setState((s) => ({ ...s, faceDetected: true }));
       }
 
       // Multiple-faces guard — pause everything until a single face returns.
+      //
+      // Runs in EVERY non-terminal phase, including the flash and the capture
+      // itself. It used to be suppressed once the phase had settled, to keep
+      // the layout still underneath the flash's cutout — but that put the blind
+      // spot exactly where it matters most: the flash IS the liveness
+      // measurement, and the capture is the frame that becomes the selfie, so a
+      // second face arriving during either went unrecorded. A misaligned hole
+      // is a cosmetic defect; an unnoticed second face is the thing the check
+      // exists to catch. Flutter has never gated this either.
+      //
+      // The layout concern is handled where it belongs — the banner is
+      // suppressed at RENDER time during a flash, so the state is still true
+      // while nothing moves.
       if (data.faceCount > 1) {
-        if (!stateRef.current.multipleFaces && phase !== 'capturing') {
+        if (isSettled(phase)) {
+          // The flash and the shutter are the two moments that actually prove
+          // liveness. There is no useful guidance to show mid-sequence, so
+          // instead of prompting, the session is marked BROKEN — the flash
+          // aborts and the capture refuses. Flagging without breaking is what
+          // made a second face during the flash have no effect at all.
+          integrityBrokenRef.current = true;
+        }
+        if (!stateRef.current.multipleFaces) {
           cancelTimer();
           setState((s) => ({
             ...s,
             multipleFaces: true,
-            instruction: MULTIPLE_FACES_GUIDANCE,
+            instruction: isSettled(s.phase) ? s.instruction : MULTIPLE_FACES_GUIDANCE,
             wrongGesture: false,
           }));
-          speak(MULTIPLE_FACES_GUIDANCE);
+          if (!isSettled(phase)) speak(MULTIPLE_FACES_GUIDANCE);
         }
         return;
       }
@@ -287,10 +379,37 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
         }
       }
 
+      // Same face as a moment ago? Nothing here identifies anyone — it only
+      // rejects a substitution, which is what stops one person performing the
+      // challenges while another is photographed.
+      const continuity = continuityRef.current.update(data, Date.now());
+      if (continuity === 'substituted' || continuity === 'reacquired') {
+        onFaceIntegrityBroken(continuity);
+        return;
+      }
+
       checkPosition(data.faceSizeRatio);
 
       const s = stateRef.current;
       if (s.phase === 'positioning') {
+        const gate = flashGateRef.current;
+        if (gate) {
+          // Flash-only. Advancing on a single good frame meant the screen
+          // flashed at a face that was merely passing through the right
+          // distance, before the "come closer / more light" guidance had any
+          // chance to show — and before lighting had actually been measured.
+          // Gestures don't need this because they take seconds and re-check
+          // framing throughout; nothing follows the flash, so it does.
+          const verdict = gate.update({
+            framed: s.positionGuidance == null,
+            lit: s.lightingGuidance == null,
+            lightingConfirmed: lightingSampledRef.current,
+            now: Date.now(),
+          });
+          if (s.positionGuidance) speak(positionGuidanceText(s.positionGuidance));
+          if (verdict.ready) startNextChallenge();
+          return;
+        }
         // Advance only at the right distance AND with acceptable lighting.
         if (s.positionGuidance == null && s.lightingGuidance == null) {
           startNextChallenge();
@@ -328,7 +447,7 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
     },
     // checkGesture is defined below and stable via refs
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cancelTimer, checkPosition, config, speak, startNextChallenge, startTimer],
+    [cancelTimer, checkPosition, config, onFaceIntegrityBroken, speak, startNextChallenge, startTimer],
   );
 
   // checkGesture reads the current challenge + histories from refs.
@@ -374,7 +493,29 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
     [onChallengePassed],
   );
 
+  /**
+   * Waits for a face detection that lands AFTER this call, up to `timeoutMs`.
+   *
+   * Deliberately not a recency check on the last-seen timestamp: a stamp from
+   * just before the face left still falls inside any short window, and that is
+   * exactly the blank-selfie case — the flash finishes, nobody is there, and the
+   * shutter fires on an empty frame anyway. Demanding a NEW detection, with the
+   * overlay gone and detection reliable again, means the face has to be there
+   * now rather than have been there a moment ago.
+   */
+  const awaitFreshFace = useCallback(async (timeoutMs: number): Promise<boolean> => {
+    const since = Date.now();
+    const deadline = since + timeoutMs;
+    while (Date.now() < deadline) {
+      const seen = lastFaceSeenRef.current;
+      if (seen !== null && seen > since) return true;
+      await new Promise((r) => setTimeout(r, 60));
+    }
+    return false;
+  }, []);
+
   const onNoFace = useCallback(() => {
+    continuityRef.current.reportNoFace();
     if (!stateRef.current.faceDetected) return;
     if (isTerminal(stateRef.current.phase)) return;
     setState((s) => ({ ...s, faceDetected: false, positionGuidance: null, multipleFaces: false }));
@@ -382,12 +523,15 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
 
   const setLighting = useCallback(
     (guidance: LightingGuidance | null) => {
+      // The sampler has produced a real reading — "no warning" now means
+      // measured-OK rather than not-yet-known.
+      lightingSampledRef.current = true;
       const prev = stateRef.current.lightingGuidance;
       const phase = stateRef.current.phase;
       setState((s) => {
         if (guidance === s.lightingGuidance) return s;
         // Lighting only matters before/while reaching capture.
-        if (s.phase === 'capturing' || isTerminal(s.phase)) {
+        if (isSettled(s.phase) || isTerminal(s.phase)) {
           return s.lightingGuidance != null ? { ...s, lightingGuidance: null } : s;
         }
         return { ...s, lightingGuidance: guidance };
@@ -433,6 +577,14 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
     processingRef.current = false;
     readyFiredRef.current = false;
     speakerRef.current?.reset();
+    // A retry is a fresh session: whoever is in frame now becomes the reference.
+    continuityRef.current.reset();
+    flashGateRef.current?.reset();
+    lastFaceSeenRef.current = null;
+    integrityBrokenRef.current = false;
+    // A retry runs the whole check again, INCLUDING a fresh colour sequence —
+    // reusing the previous one would hand an attacker the answer.
+    flash.reset();
     setState({
       phase: 'positioning',
       instruction: 'Position your face in the circle',
@@ -457,6 +609,21 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
     }
   }, [state.phase, onReadyToCapture]);
 
+  /**
+   * Surfaces a failure detected during `capturing` and deliberately withheld.
+   *
+   * Called by the capture path once the still is done, so the re-layout happens
+   * against a settled screen. The Flutter SDK learned this the hard way: failing
+   * mid-capture moved the preview circle out from under the flash overlay's
+   * cutout, which is measured once when the flash starts.
+   */
+  const reportIntegrityFailure = useCallback(() => {
+    if (!integrityBrokenRef.current) return;
+    if (stateRef.current.phase === 'complete') return;
+    cancelTimer();
+    setState((s) => ({ ...s, ...INTEGRITY_FAILED_PATCH }));
+  }, [cancelTimer]);
+
   // Cleanup timers + speech on unmount.
   useEffect(() => {
     return () => {
@@ -471,12 +638,30 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
       ...state,
       onFace,
       onNoFace,
+      awaitFreshFace,
       setLighting,
       markComplete,
       reset,
       shouldCapture: state.phase === 'capturing',
+      shouldFlash: state.phase === 'flash',
+      completeFlash: flash.complete,
+      flashResult: flash.result(),
+      faceGlitches: flash.glitches(),
+      // The flash IS a step, so it gets a dot. Without this the indicator
+      // claimed the check was finished while the longest, most visible part of
+      // it was still to come — and in flash-only mode it showed no steps at all.
+      totalCount: state.totalCount + (flashIsStep ? 1 : 0),
+      completedCount: state.completedCount + (flashIsStep && flash.result() !== null ? 1 : 0),
+      integrityBroken: integrityBrokenRef.current,
+      // Read through a function, not a snapshot: integrity is recorded in a ref
+      // (deliberately — re-laying out mid-flash is its own class of bug), and a
+      // ref write does not re-render. Anything consulting it from a callback
+      // created BEFORE the flash would otherwise read the pre-flash value, which
+      // is precisely the window a substitution happens in.
+      isCompromised: () => integrityBrokenRef.current,
+      reportIntegrityFailure,
     }),
-    [state, onFace, onNoFace, setLighting, markComplete, reset],
+    [state, onFace, onNoFace, awaitFreshFace, setLighting, markComplete, reset, reportIntegrityFailure, flash],
   );
 }
 

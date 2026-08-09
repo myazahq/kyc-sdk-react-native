@@ -1,29 +1,25 @@
-import React, { createContext, useContext, useMemo, useRef, useState } from 'react';
+import React, { createContext, useContext, useMemo, useRef } from 'react';
 import { useStore } from 'zustand';
 
-import { createKycStore, type KycState, type KycStore } from '../store/kycStore';
-import { resolveColors, type MyazaColorScheme, type ThemeMode } from '../config/theme';
-import type { MyazaKYCConfig } from '../types/config';
-import { useMyazaFonts } from './fonts';
+import { createKycStore, effectiveCountry, type KycState, type KycStore } from '../store/kycStore';
+import type { ResolvedKYCConfig, SupportedCountry } from '../types/config';
+import type { ServerConfigState } from '../store/serverConfig';
+import { MyazaThemeProvider } from './theme-provider';
 
 // ---------------------------------------------------------------------------
-// Runtime context — owns the per-instance zustand store + theme mode. Mirrors
-// the Flutter SDK's ProviderScope + theme provider wiring.
+// Runtime context — owns the per-instance zustand store. Mirrors the Flutter
+// SDK's ProviderScope wiring.
+//
+// Theming moved to its own provider (theme-provider.tsx) because the two have
+// different lifetimes: the trigger button and the workflow-resolution barrier
+// need colours BEFORE there is a resolved config to build a store from. This
+// one composes it, so a resolved workflow's appearance takes over from the
+// props' appearance inside the flow.
 // ---------------------------------------------------------------------------
-
-interface ThemeValue {
-  mode: ThemeMode;
-  colors: MyazaColorScheme;
-  setMode: (mode: ThemeMode) => void;
-  toggle: () => void;
-  /** True once Space Grotesk + Karla are loaded (system font until then). */
-  fontsLoaded: boolean;
-}
 
 interface RuntimeValue {
   store: KycStore;
-  config: MyazaKYCConfig;
-  theme: ThemeValue;
+  config: ResolvedKYCConfig;
 }
 
 const RuntimeContext = createContext<RuntimeValue | null>(null);
@@ -38,38 +34,28 @@ function useRuntime(): RuntimeValue {
 
 export function KycRuntimeProvider({
   config,
+  serverConfig,
   children,
 }: {
-  config: MyazaKYCConfig;
+  config: ResolvedKYCConfig;
+  /** Preloaded from a resolved workflow — skips the flow's own `/config` call. */
+  serverConfig?: ServerConfigState;
   children: React.ReactNode;
 }): React.ReactElement {
   // The store is created once per provider instance (per modal launch).
   const storeRef = useRef<KycStore | null>(null);
   if (storeRef.current === null) {
-    storeRef.current = createKycStore(config);
+    storeRef.current = createKycStore(config, serverConfig);
   }
   const store = storeRef.current;
 
-  const [mode, setMode] = useState<ThemeMode>(config.appearance?.theme ?? 'light');
-  const colors = useMemo(() => resolveColors(mode, config.appearance), [mode, config.appearance]);
-  const fontsLoaded = useMyazaFonts();
+  const value = useMemo<RuntimeValue>(() => ({ store, config }), [store, config]);
 
-  const value = useMemo<RuntimeValue>(
-    () => ({
-      store,
-      config,
-      theme: {
-        mode,
-        colors,
-        setMode,
-        toggle: () => setMode((m) => (m === 'dark' ? 'light' : 'dark')),
-        fontsLoaded,
-      },
-    }),
-    [store, config, mode, colors, fontsLoaded],
+  return (
+    <RuntimeContext.Provider value={value}>
+      <MyazaThemeProvider appearance={config.appearance}>{children}</MyazaThemeProvider>
+    </RuntimeContext.Provider>
   );
-
-  return <RuntimeContext.Provider value={value}>{children}</RuntimeContext.Provider>;
 }
 
 /** Selects from the KYC store (re-renders only on selected-slice changes). */
@@ -82,12 +68,21 @@ export function useKycStore(): KycStore {
   return useRuntime().store;
 }
 
+/**
+ * The country this session is verifying against — the one picked on a
+ * multi-region flow, else the config's.
+ *
+ * Screens must use THIS, never `config.country`: on a multi-region flow the
+ * config carries only the primary, so reading it directly offers one country's
+ * IDs and validates against another's.
+ */
+export function useEffectiveCountry(): SupportedCountry {
+  return useKyc(effectiveCountry);
+}
+
 /** The resolved SDK config (props + callbacks) for this launch. */
-export function useKycConfig(): MyazaKYCConfig {
+export function useKycConfig(): ResolvedKYCConfig {
   return useRuntime().config;
 }
 
-/** Theme colors + light/dark mode controls. */
-export function useTheme(): ThemeValue {
-  return useRuntime().theme;
-}
+export { MyazaThemeProvider, useTheme, type ThemeValue } from './theme-provider';

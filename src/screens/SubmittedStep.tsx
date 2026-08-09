@@ -11,6 +11,7 @@ import { MyazaAlert } from '../components/MyazaAlert';
 import { MyazaPulseLoader } from '../components/MyazaPulseLoader';
 import { Icon } from '../components/Icon';
 import { fillTokens } from '../utils/tokens';
+import { KeyPeopleInviteLinks } from './KeyPeopleInviteLinks';
 
 // Terminal screen — 1:1 with the Flutter SDK's SubmittedScreen. Calls
 // submitAsync on mount; renders submitting / success / error views with the same
@@ -135,6 +136,9 @@ export function SubmittedStep({ onClose }: { onClose: () => void }): React.React
   const description = config.success?.description
     ? fillTokens(config.success.description, config.userData)
     : DEFAULT_SUCCESS_DESCRIPTION;
+  // KYB: per-person verification links for full-KYC key people — rendered so
+  // the applicant can send each one immediately.
+  const invites = store.getState().keyPeopleInvites; // set before phase flips to success
 
   return (
     <View style={{ flex: 1, justifyContent: 'space-between' }}>
@@ -151,6 +155,7 @@ export function SubmittedStep({ onClose }: { onClose: () => void }): React.React
         <MyazaText variant="bodyMedium" style={{ textAlign: 'center' }}>
           {description}
         </MyazaText>
+        <KeyPeopleInviteLinks invites={invites} />
       </View>
       <MyazaButton label="Done" onPress={onClose} />
     </View>

@@ -1,12 +1,22 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <!--
-    The ML Kit face-detection model is downloaded on demand by Play Services.
-    This meta-data tells Play Services to fetch it at install time so the first
-    liveness session doesn't pay the download cost. Mirrors the Flutter SDK.
+    NFC, for reading a passport's eMRTD chip. `required="false"` on the feature
+    is deliberate: the rest of the SDK works without NFC, and marking it
+    required would hide the host app from every device that has no NFC radio.
+    The chip step checks availability at runtime and skips instead.
   -->
+  <uses-permission android:name="android.permission.NFC" />
+  <uses-feature android:name="android.hardware.nfc" android:required="false" />
+
   <application>
+    <!--
+      ML Kit models are downloaded on demand by Play Services. Naming them here
+      makes Play Services fetch them at INSTALL time, so the first liveness or
+      MRZ scan does not pay the download cost — which on a slow connection is
+      the difference between a step that works and one the user abandons.
+    -->
     <meta-data
       android:name="com.google.mlkit.vision.DEPENDENCIES"
-      android:value="face" />
+      android:value="face,ocr" />
   </application>
 </manifest>

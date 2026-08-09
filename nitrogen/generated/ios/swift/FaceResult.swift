@@ -18,8 +18,8 @@ public extension FaceResult {
   /**
    * Create a new instance of `FaceResult`.
    */
-  init(headEulerAngleX: Double, headEulerAngleY: Double, headEulerAngleZ: Double, smilingProbability: Double, leftEyeOpenProbability: Double, rightEyeOpenProbability: Double, faceSizeRatio: Double, faceCount: Double, brightness: Double) {
-    self.init(headEulerAngleX, headEulerAngleY, headEulerAngleZ, smilingProbability, leftEyeOpenProbability, rightEyeOpenProbability, faceSizeRatio, faceCount, brightness)
+  init(headEulerAngleX: Double, headEulerAngleY: Double, headEulerAngleZ: Double, smilingProbability: Double, leftEyeOpenProbability: Double, rightEyeOpenProbability: Double, faceSizeRatio: Double, faceCount: Double, brightness: Double, faceCenterX: Double, faceCenterY: Double, trackingId: Double, faceR: Double, faceG: Double, faceB: Double) {
+    self.init(headEulerAngleX, headEulerAngleY, headEulerAngleZ, smilingProbability, leftEyeOpenProbability, rightEyeOpenProbability, faceSizeRatio, faceCount, brightness, faceCenterX, faceCenterY, trackingId, faceR, faceG, faceB)
   }
 
   @inline(__always)
@@ -65,5 +65,35 @@ public extension FaceResult {
   @inline(__always)
   var brightness: Double {
     return self.__brightness
+  }
+  
+  @inline(__always)
+  var faceCenterX: Double {
+    return self.__faceCenterX
+  }
+  
+  @inline(__always)
+  var faceCenterY: Double {
+    return self.__faceCenterY
+  }
+  
+  @inline(__always)
+  var trackingId: Double {
+    return self.__trackingId
+  }
+  
+  @inline(__always)
+  var faceR: Double {
+    return self.__faceR
+  }
+  
+  @inline(__always)
+  var faceG: Double {
+    return self.__faceG
+  }
+  
+  @inline(__always)
+  var faceB: Double {
+    return self.__faceB
   }
 }

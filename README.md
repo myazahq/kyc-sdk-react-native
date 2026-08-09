@@ -1,8 +1,12 @@
 # @myazahq/kyc-sdk-react-native
 
-Myaza KYC SDK for **React Native (Expo)** — ID verification, document capture, and
-active **on-device** liveness. Mirrors the [web](https://www.npmjs.com/package/@myazahq/kyc-sdk-react)
-and Flutter SDKs feature-for-feature and calls the same Myaza KYC API server.
+Myaza KYC SDK for **React Native (Expo)** — ID verification with document
+auto-capture, **eMRTD chip reading (NFC)**, active **on-device** liveness,
+email/phone OTP verification, questionnaires, proof of address, and full
+business (**KYB**) verification, for any supported country. Mirrors the
+[web](https://www.npmjs.com/package/@myazahq/kyc-sdk-react) and Flutter SDKs
+feature-for-feature — including `workflowId` embeds — and calls the same Myaza
+KYC API server.
 
 The SDK is a **thin UI layer**: it captures the user's data (ID number, document
 photos, a live selfie), uploads the media, and submits a verification request.
@@ -157,7 +161,8 @@ export default function VerifyScreen() {
         title: "You're all set, {firstName}!",
         description: "We'll email you once your verification is reviewed.",
       }}
-      metadata={{ userId: 'test_user_123' }}
+      userId='usr_123'
+      metadata={{ orderId: 'ord_456' }}
       onStart={() => console.log('KYC started')}
       onStepChange={(step) => console.log('Step:', step)}
       onSubmit={(submission) => {
@@ -180,14 +185,28 @@ export default function VerifyScreen() {
 | Prop                    | Type                                      | Default             | Description                                                                                                          |
 | ----------------------- | ----------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | `apiKey`                | `string`                                  | —                   | **Required.** Sent as `Authorization: Bearer`. The **environment is derived from the key prefix** (`pk_test_…` → sandbox, `pk_live_…` → production); an unrecognized prefix throws. |
-| `country`               | `'NG' \| 'GH' \| 'KE' \| 'ZA' \| 'CI'`    | —                   | **Required.** Country whose ID types are offered.                                                                    |
+| `country`               | `string` (ISO-2)                          | —                   | Country whose ID types are offered. **Required unless `workflowId` is set** (the workflow carries its own country). Any ISO-2 code works — `'NG' \| 'GH' \| 'KE' \| 'ZA' \| 'CI'` keep autocomplete and client-side ID-number validation; other countries render their ID types from the server. |
+| `workflowId`            | `string` (`wf_…`)                         | —                   | Run a **published Workflow** built in the dashboard. Workflow config wins over overlapping props. See [Workflows](#workflows). |
+| `countries`             | `WorkflowCountry[]`                       | —                   | Multi-region — more than one entry inserts a country-select step between consent and ID type. Usually from a workflow. |
 | `idTypes`               | `IdType[]`                                | all allowed for org | Subset of ID types to offer; must be valid for `country`.                                                            |
+| `userId`                | `string`                                  | —                   | **Your** reference for the person being verified. Not matched during verification — it correlates repeat checks of the same user onto one identity so results map back to your record. Prefer this over putting a user id in `metadata`. |
 | `userData`              | `{ firstName?, lastName?, dateOfBirth? }` | —                   | Pre-fills the user's details.                                                                                        |
 | `enableSelfie`          | `boolean`                                 | `true`              | Capture a selfie during liveness.                                                                                    |
 | `enableDocumentCapture` | `boolean`                                 | `true`              | Enable the document-scan step for document IDs.                                                                      |
 | `allowDocumentUpload`   | `boolean`                                 | `true`              | Allow picking a document photo from the gallery as an alternative to the camera. `false` hides every "upload instead" affordance (it's still offered on the camera-permission-denied screen as an escape hatch). |
 | `enableLiveness`        | `boolean`                                 | `true`              | Run the liveness challenge step. The server can still disable it per ID type.                                        |
+| `livenessMode`          | `'gestures' \| 'flash' \| 'both'`         | `'gestures'`        | How liveness is proven. See [Liveness](#liveness).                                                                   |
+| `flashSequenceLength`   | `number` (2–5)                            | `4`                 | Colours in the flash sequence, for `'flash'` / `'both'`.                                                             |
 | `voiceGuidance`         | `boolean \| { enabled?, language? }`      | `true`              | Spoken liveness instructions (accessibility, TTS **output** — no microphone). `false` mutes it; pass `{ language: 'fr-FR' }` to set the voice. See [Robustness & error handling](#robustness--error-handling). |
+| `emailVerification`     | `EmailVerificationConfig`                 | off                 | Email OTP step after consent. See [Optional steps](#optional-steps).                                                 |
+| `phoneVerification`     | `PhoneVerificationConfig`                 | off                 | Phone OTP step (SMS or WhatsApp). See [Optional steps](#optional-steps).                                             |
+| `proofOfAddress`        | `ProofOfAddressConfig`                    | off                 | Proof-of-address upload after capture. See [Optional steps](#optional-steps).                                        |
+| `questionnaire`         | `QuestionnaireConfig`                     | off                 | Compliance declarations before submission. See [Optional steps](#optional-steps).                                    |
+| `nfc`                   | `NfcConfig`                               | off                 | **eMRTD chip read** — native on this SDK, and the strongest assurance level available. See [Optional steps](#optional-steps). |
+| `subjectType`           | `'individual' \| 'business'`              | `'individual'`      | Business (KYB) flows require a published KYB workflow. See [Business (KYB) flows](#business-kyb-flows).               |
+| `business`              | `WorkflowBusinessConfig`                  | —                   | KYB registry configuration. Normally supplied by a resolved workflow.                                                |
+| `deviceIntelligence`    | `boolean`                                 | `true`              | Device + IP fraud signals (multi-accounting, emulator, velocity). **Billed per verification**; `false` disables the analysis, its charge, and the SDK's fingerprint collection. |
+| `requireMobileDevice`   | `boolean`                                 | `false`             | Refuse to run on a desktop/laptop — relevant because React Native also targets desktop runtimes and emulators. The server re-checks and rejects with `mobile_device_required`. |
 | `showThemeToggle`       | `boolean`                                 | `true`              | Show a light/dark toggle inside the modal header. When `false`, the flow stays on `appearance.theme`.                |
 | `disableClose`          | `boolean`                                 | `false`             | Hide the close (X) and block **all** user dismissal (X, Android back, iOS swipe-down). The flow can then only be closed programmatically via `useMyazaKYC().close()`. |
 | `appearance`            | `KYCAppearance`                           | brand defaults      | Brand & theme the modal — colors, logo, light/dark. See [Appearance & theming](#appearance--theming).                |
@@ -209,10 +228,94 @@ base URL) from the API key prefix, the single source of truth:
 
 | Prefix     | Environment | Base URL                          |
 | ---------- | ----------- | --------------------------------- |
-| `pk_test_` | sandbox     | `https://identity.myaza.app`      |
-| `pk_live_` | production  | `https://identity.myaza.app`      |
+| `pk_test_` | sandbox     | `https://trust.myaza.app`      |
+| `pk_live_` | production  | `https://trust.myaza.app`      |
 
 An unrecognized or malformed key throws at setup (it never silently defaults).
+
+## Workflows
+
+Instead of configuring the flow in code, build it in the Myaza dashboard and
+reference it by id:
+
+```tsx
+<MyazaKYC apiKey="pk_live_xxx" workflowId="wf_abc123" userId="usr_123" />
+```
+
+- **Workflow config wins** over any overlapping prop — country, ID types, step
+  toggles, appearance, copy. Set them in the builder, not in code.
+- **Runtime data always comes from your code**: `userId`, `userData`,
+  `metadata`, and every callback.
+- `country` becomes optional, because the workflow carries it.
+
+This is the recommended way to drive the optional steps below: compliance teams
+change the flow in the dashboard without shipping a new app build — which
+matters far more on mobile than on web, where a redeploy is instant and an app
+store review is not.
+
+## Optional steps
+
+Steps that are off unless configured. Each is normally switched on in the
+dashboard workflow builder (so it rides `workflowId`), but every one can also be
+passed directly as a prop.
+
+The flow runs them in this order:
+
+```
+consent → email-verification → phone-verification → country-select → id-type
+       → id-input / document-capture → nfc → liveness → proof-of-address
+       → questionnaire → submitted
+```
+
+| Prop | Shape | What it adds |
+|---|---|---|
+| `emailVerification` | `{ enabled?, required?, codeLength?, maxAttempts?, inputStyle? }` | Email OTP right after consent. `required: false` adds a "skip for now". `codeLength` 4–8 (default 6), `maxAttempts` 1–5 (default 3). |
+| `phoneVerification` | same, plus `{ channels?, defaultCountry? }` | Phone OTP. `channels` defaults to `['sms']`; add `'whatsapp'` to offer it. |
+| `proofOfAddress` | `{ enabled?, documentTypes?, otherLabel?, maxAgeDays? }` | Upload a utility bill, bank statement, tenancy agreement, or other document. `maxAgeDays` is the recency window (default 90). |
+| `questionnaire` | `{ enabled?, title?, description?, fields }` | Compliance declarations before submission. Field `type` is one of `text`, `number`, `money`, `select`, `multiselect`, `boolean`, `date`. |
+| `nfc` | `{ enabled?, idTypes?, allowSkip? }` | Reads the passport/ID **chip** (eMRTD). |
+
+**The chip read is a real, native capability on this SDK** — unlike the web SDK,
+which cannot do ISO-DEP from a browser. It gives the strongest assurance level
+available. A device with no NFC radio skips the step automatically; `allowSkip`
+adds a manual escape hatch for a chip that will not read, revealed after a failed
+attempt rather than offered on arrival. Skipping never fails the verification —
+the chip result is a soft sub-result.
+
+Answers and outcomes arrive in the verification webhook
+(`data.questionnaire`, `data.emailVerification`, `data.phoneVerification`,
+`data.proofOfAddress`).
+
+```tsx
+<MyazaKYC
+  apiKey="pk_live_xxx"
+  country="NG"
+  nfc={{ enabled: true, allowSkip: true }}
+  phoneVerification={{ enabled: true, channels: ["sms", "whatsapp"] }}
+  questionnaire={{
+    title: "A few final questions",
+    fields: [
+      { key: "source_of_funds", label: "Source of funds", type: "select", required: true,
+        options: [{ value: "salary", label: "Salary" }, { value: "business", label: "Business income" }] },
+    ],
+  }}
+/>
+```
+
+## Business (KYB) flows
+
+When a resolved workflow's config carries `subjectType: 'business'`, the SDK runs
+a company-verification flow instead of the individual one: a registry lookup
+(country, product, registration number/name), and — when the workflow configures
+them — a company profile, directors & owners, and supporting-document uploads.
+
+KYB is **workflow-required**: there is no prop-only business flow, because the
+server rejects a business submission that does not reference a published KYB
+workflow.
+
+If the workflow asks the submitter to verify their own identity, the ordinary
+individual capture leg runs afterwards for them, and the success screen can hand
+back invite links for any directors or owners who need their own check.
 
 ## Trigger component & hook
 
@@ -411,7 +514,7 @@ and a short liveness video is recorded and uploaded best-effort.
 
 ## Documentation
 
-Full documentation, configuration options, and webhook setup: **[identity.myaza.co/documentation/sdks](https://identity.myaza.co/documentation/sdks)**.
+Full documentation, configuration options, and webhook setup: **[trust.myaza.co/documentation/sdks](https://trust.myaza.co/documentation/sdks)**.
 
 ## License
 

@@ -8,13 +8,72 @@
 #include "KycSdkReactNative-Swift-Cxx-Bridge.hpp"
 
 // Include C++ implementation defined types
+#include "HybridMyazaEmrtdSpecSwift.hpp"
 #include "HybridMyazaFaceDetectorSpecSwift.hpp"
+#include "HybridMyazaRectDetectorSpecSwift.hpp"
+#include "HybridMyazaTextRecognizerSpecSwift.hpp"
 #include "KycSdkReactNative-Swift-Cxx-Umbrella.hpp"
 #include <NitroModules/NitroDefines.hpp>
 #include <VisionCamera/VisionCamera-Swift-Cxx-Bridge.hpp>
 
 namespace margelo::nitro::myazakyc::bridge::swift {
 
+  // pragma MARK: std::function<void(const EmrtdTagInfo& /* result */)>
+  Func_void_EmrtdTagInfo create_Func_void_EmrtdTagInfo(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = KycSdkReactNative::Func_void_EmrtdTagInfo::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](const EmrtdTagInfo& result) mutable -> void {
+      swiftClosure.call(result);
+    };
+  }
+  
+  // pragma MARK: std::function<void(const std::exception_ptr& /* error */)>
+  Func_void_std__exception_ptr create_Func_void_std__exception_ptr(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = KycSdkReactNative::Func_void_std__exception_ptr::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](const std::exception_ptr& error) mutable -> void {
+      swiftClosure.call(error);
+    };
+  }
+  
+  // pragma MARK: std::function<void()>
+  Func_void create_Func_void(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = KycSdkReactNative::Func_void::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)]() mutable -> void {
+      swiftClosure.call();
+    };
+  }
+  
+  // pragma MARK: std::function<void(const EmrtdApduResponse& /* result */)>
+  Func_void_EmrtdApduResponse create_Func_void_EmrtdApduResponse(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = KycSdkReactNative::Func_void_EmrtdApduResponse::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](const EmrtdApduResponse& result) mutable -> void {
+      swiftClosure.call(result);
+    };
+  }
+  
+  // pragma MARK: std::function<void(const std::string& /* result */)>
+  Func_void_std__string create_Func_void_std__string(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = KycSdkReactNative::Func_void_std__string::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](const std::string& result) mutable -> void {
+      swiftClosure.call(result);
+    };
+  }
+  
+  // pragma MARK: std::shared_ptr<HybridMyazaEmrtdSpec>
+  std::shared_ptr<HybridMyazaEmrtdSpec> create_std__shared_ptr_HybridMyazaEmrtdSpec_(void* NON_NULL swiftUnsafePointer) noexcept {
+    KycSdkReactNative::HybridMyazaEmrtdSpec_cxx swiftPart = KycSdkReactNative::HybridMyazaEmrtdSpec_cxx::fromUnsafe(swiftUnsafePointer);
+    return std::make_shared<margelo::nitro::myazakyc::HybridMyazaEmrtdSpecSwift>(swiftPart);
+  }
+  void* NON_NULL get_std__shared_ptr_HybridMyazaEmrtdSpec_(std__shared_ptr_HybridMyazaEmrtdSpec_ cppType) {
+    std::shared_ptr<margelo::nitro::myazakyc::HybridMyazaEmrtdSpecSwift> swiftWrapper = std::dynamic_pointer_cast<margelo::nitro::myazakyc::HybridMyazaEmrtdSpecSwift>(cppType);
+    #ifdef NITRO_DEBUG
+    if (swiftWrapper == nullptr) [[unlikely]] {
+      throw std::runtime_error("Class \"HybridMyazaEmrtdSpec\" is not implemented in Swift!");
+    }
+    #endif
+    KycSdkReactNative::HybridMyazaEmrtdSpec_cxx& swiftPart = swiftWrapper->getSwiftPart();
+    return swiftPart.toUnsafe();
+  }
+  
   // pragma MARK: std::shared_ptr<margelo::nitro::camera::HybridFrameSpec>
   std::shared_ptr<margelo::nitro::camera::HybridFrameSpec> create_std__shared_ptr_margelo__nitro__camera__HybridFrameSpec_(void* NON_NULL swiftUnsafePointer) noexcept {
     // Implemented in VisionCamera
@@ -38,6 +97,46 @@ namespace margelo::nitro::myazakyc::bridge::swift {
     }
     #endif
     KycSdkReactNative::HybridMyazaFaceDetectorSpec_cxx& swiftPart = swiftWrapper->getSwiftPart();
+    return swiftPart.toUnsafe();
+  }
+  
+  // pragma MARK: std::shared_ptr<HybridMyazaRectDetectorSpec>
+  std::shared_ptr<HybridMyazaRectDetectorSpec> create_std__shared_ptr_HybridMyazaRectDetectorSpec_(void* NON_NULL swiftUnsafePointer) noexcept {
+    KycSdkReactNative::HybridMyazaRectDetectorSpec_cxx swiftPart = KycSdkReactNative::HybridMyazaRectDetectorSpec_cxx::fromUnsafe(swiftUnsafePointer);
+    return std::make_shared<margelo::nitro::myazakyc::HybridMyazaRectDetectorSpecSwift>(swiftPart);
+  }
+  void* NON_NULL get_std__shared_ptr_HybridMyazaRectDetectorSpec_(std__shared_ptr_HybridMyazaRectDetectorSpec_ cppType) {
+    std::shared_ptr<margelo::nitro::myazakyc::HybridMyazaRectDetectorSpecSwift> swiftWrapper = std::dynamic_pointer_cast<margelo::nitro::myazakyc::HybridMyazaRectDetectorSpecSwift>(cppType);
+    #ifdef NITRO_DEBUG
+    if (swiftWrapper == nullptr) [[unlikely]] {
+      throw std::runtime_error("Class \"HybridMyazaRectDetectorSpec\" is not implemented in Swift!");
+    }
+    #endif
+    KycSdkReactNative::HybridMyazaRectDetectorSpec_cxx& swiftPart = swiftWrapper->getSwiftPart();
+    return swiftPart.toUnsafe();
+  }
+  
+  // pragma MARK: std::function<void(const TextResult& /* result */)>
+  Func_void_TextResult create_Func_void_TextResult(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = KycSdkReactNative::Func_void_TextResult::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](const TextResult& result) mutable -> void {
+      swiftClosure.call(result);
+    };
+  }
+  
+  // pragma MARK: std::shared_ptr<HybridMyazaTextRecognizerSpec>
+  std::shared_ptr<HybridMyazaTextRecognizerSpec> create_std__shared_ptr_HybridMyazaTextRecognizerSpec_(void* NON_NULL swiftUnsafePointer) noexcept {
+    KycSdkReactNative::HybridMyazaTextRecognizerSpec_cxx swiftPart = KycSdkReactNative::HybridMyazaTextRecognizerSpec_cxx::fromUnsafe(swiftUnsafePointer);
+    return std::make_shared<margelo::nitro::myazakyc::HybridMyazaTextRecognizerSpecSwift>(swiftPart);
+  }
+  void* NON_NULL get_std__shared_ptr_HybridMyazaTextRecognizerSpec_(std__shared_ptr_HybridMyazaTextRecognizerSpec_ cppType) {
+    std::shared_ptr<margelo::nitro::myazakyc::HybridMyazaTextRecognizerSpecSwift> swiftWrapper = std::dynamic_pointer_cast<margelo::nitro::myazakyc::HybridMyazaTextRecognizerSpecSwift>(cppType);
+    #ifdef NITRO_DEBUG
+    if (swiftWrapper == nullptr) [[unlikely]] {
+      throw std::runtime_error("Class \"HybridMyazaTextRecognizerSpec\" is not implemented in Swift!");
+    }
+    #endif
+    KycSdkReactNative::HybridMyazaTextRecognizerSpec_cxx& swiftPart = swiftWrapper->getSwiftPart();
     return swiftPart.toUnsafe();
   }
 
