@@ -30,6 +30,7 @@ import {
   Moon,
   MoveLeft,
   Nfc,
+  Pencil,
   Smartphone,
   RefreshCw,
   ScanFace,
@@ -84,6 +85,7 @@ export type IconName =
   | 'scan-line'
   | 'scan-face'
   | 'nfc'
+  | 'pencil'
   | 'search'
   | 'zap'
   | 'link'
@@ -145,6 +147,7 @@ const ICONS: Record<IconName, LucideIcon> = {
   'scan-line': ScanLine,
   'scan-face': ScanFace,
   nfc: Nfc,
+  pencil: Pencil,
   search: Search,
   zap: Zap,
   'zap-off': ZapOff,

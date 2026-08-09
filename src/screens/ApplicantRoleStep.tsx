@@ -13,6 +13,7 @@ import { CountryFlag } from '../components/CountryFlag';
 import {
   KEY_PERSON_ROLE_LABELS,
   KEY_PERSON_ROLES,
+  initialsOf,
   isKeyPersonRowValid,
   namesLooselyMatch,
 } from '../config/keyPeople';
@@ -42,16 +43,6 @@ const APPLICANT_ROLE_LABELS: Record<ApplicantRole, string> = {
   ...KEY_PERSON_ROLE_LABELS,
   authorized_representative: 'Authorized representative',
 };
-
-/** "Richard Ingwe" → "RI" — the avatar monogram. */
-function initialsOf(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((t) => t[0]?.toUpperCase() ?? '')
-    .join('');
-}
 
 export function ApplicantRoleStep(): React.ReactElement {
   const store = useKycStore();

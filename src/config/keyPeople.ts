@@ -106,6 +106,16 @@ export function keyPeoplePayload(
     }));
 }
 
+/** "Richard Ingwe" → "RI" — the avatar monogram used on person cards. */
+export function initialsOf(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((t) => t[0]?.toUpperCase() ?? '')
+    .join('');
+}
+
 /** Split a typed full name into first/last (best-effort). */
 export function splitFullName(name: string): { firstName?: string; lastName?: string } | undefined {
   const trimmed = name.trim();
