@@ -82,6 +82,16 @@ export interface PhoneVerificationConfig {
 export interface QuestionnaireFieldOption {
   value: string;
   label: string;
+  /**
+   * Marks a choice that is not an answer on its own — an "Other". Selecting it
+   * reveals a required free-text input, stored as the `<key>_other` companion
+   * answer (the same shape as a money field's `<key>_currency`).
+   */
+  requiresDetail?: boolean;
+  /** Label for the detail input (default "Please specify"). */
+  detailLabel?: string;
+  /** Placeholder for the detail input (default `Tell us more about "<label>"`). */
+  detailPlaceholder?: string;
 }
 
 export interface QuestionnaireField {

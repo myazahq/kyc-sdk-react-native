@@ -562,7 +562,7 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
     setState((s) => ({
       ...s,
       phase: 'complete',
-      instruction: 'Verification complete',
+      instruction: 'Capture complete',
       activeChallenge: null,
       positionGuidance: null,
     }));

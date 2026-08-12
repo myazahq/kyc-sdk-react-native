@@ -39,17 +39,24 @@ export function currencyKeyFor(field: QuestionnaireField): string {
   return `${field.key}_currency`;
 }
 
+/** The companion key holding what an "Other" choice actually was. */
+export function otherKeyFor(field: QuestionnaireField): string {
+  return `${field.key}_other`;
+}
+
 /**
- * Every answer key a definition can produce — money questions contribute two.
- * The server uses the same expansion to cross-check decision-graph references,
- * so anything reasoning about "the keys this questionnaire yields" must use it
- * rather than mapping over `fields`.
+ * Every answer key a definition can produce — money questions contribute two,
+ * and so does a choice question offering an "Other". The server uses the same
+ * expansion to cross-check decision-graph references, so anything reasoning
+ * about "the keys this questionnaire yields" must use it rather than mapping
+ * over `fields`.
  */
 export function questionnaireAnswerKeys(questionnaire: QuestionnaireConfig | undefined): string[] {
   const keys: string[] = [];
   for (const field of questionnaire?.fields ?? []) {
     keys.push(field.key);
     if (field.type === 'money') keys.push(currencyKeyFor(field));
+    if ((field.options ?? []).some((o) => o.requiresDetail)) keys.push(otherKeyFor(field));
   }
   return keys;
 }
@@ -76,6 +83,23 @@ export function validateQuestionnaire(
     if (isEmpty(value)) {
       if (field.required) errors[field.key] = 'This field is required.';
       continue;
+    }
+
+    // An "Other" choice obliges a description, whether or not the question
+    // itself is required: an unexplained "Other" is the answer that most needs
+    // explaining. Checked before the per-type rules so it applies to select and
+    // multiselect alike.
+    const detailOption = (field.options ?? []).find(
+      (o) =>
+        o.requiresDetail &&
+        (Array.isArray(value) ? (value as string[]).includes(o.value) : value === o.value),
+    );
+    if (detailOption) {
+      const detail = answers[`${field.key}_other`];
+      if (typeof detail !== 'string' || !detail.trim()) {
+        errors[field.key] = `Tell us more about "${detailOption.label}".`;
+        continue;
+      }
     }
 
     if (field.type === 'number' || field.type === 'money') {
@@ -147,6 +171,23 @@ export function questionnairePayload(
     }
 
     payload[field.key] = value as QuestionnaireAnswerValue;
+
+    // The description behind an "Other" choice. Carried explicitly for the same
+    // reason `_currency` is: this builds the request from the FIELD LIST, so a
+    // companion answer that is not named here is silently dropped — the user
+    // types it, the client accepts it, and the server then rejects the
+    // submission for a missing detail it was never sent.
+    const detailOption = (field.options ?? []).find(
+      (o) =>
+        o.requiresDetail &&
+        (Array.isArray(value) ? (value as string[]).includes(o.value) : value === o.value),
+    );
+    if (detailOption) {
+      const detail = answers[otherKeyFor(field)];
+      if (typeof detail === 'string' && detail.trim() !== '') {
+        payload[otherKeyFor(field)] = detail.trim();
+      }
+    }
   }
 
   return payload;

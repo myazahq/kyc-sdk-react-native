@@ -4,6 +4,7 @@
 // `utils/device-metadata.ts` and the Flutter SDK's `device_metadata_service.dart`.
 
 import { OS } from '../utils/platform';
+import { getStepLog } from '../lib/step-log';
 
 export const SDK_TYPE = 'react-native' as const;
 
@@ -14,7 +15,7 @@ export type DeviceType = 'mobile' | 'tablet' | 'desktop' | 'unknown';
  * Single source of truth for the SDK version — also used by `services/api.ts`
  * for the `X-SDK-Version` header. Keep in sync with `package.json`.
  */
-export const SDK_VERSION = '2.2.0';
+export const SDK_VERSION = '2.3.0';
 
 export interface ReactNativeDeviceMetadata {
   sdkType: 'react-native';
@@ -179,6 +180,13 @@ export function collectDeviceMetadata(): ReactNativeDeviceMetadata {
   const locales = localization?.getLocales?.();
   if (locales && locales.length > 0) {
     meta.locale = locales[0]?.languageTag;
+  }
+
+  // Step journey recorded during the session — powers the dashboard's
+  // verification timeline. See lib/step-log.
+  const stepLog = getStepLog();
+  if (stepLog) {
+    (meta as ReactNativeDeviceMetadata & { stepLog?: unknown }).stepLog = stepLog;
   }
 
   return meta;

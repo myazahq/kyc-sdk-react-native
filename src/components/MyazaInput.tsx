@@ -11,6 +11,7 @@ type BlurHandler = NonNullable<TextInputProps['onBlur']>;
 
 import { radius, sizing, spacing } from '../config/theme';
 import { useTheme } from './runtime';
+import { useInputFontFamily } from './fonts';
 import { MyazaText } from './Typography';
 
 // Branded text input with label, helper, and error states. Mirrors the Flutter
@@ -60,6 +61,9 @@ export function MyazaInput({
   onBlur,
 }: MyazaInputProps): React.ReactElement {
   const { colors } = useTheme();
+  // TextInput does not inherit fontFamily in RN — set it or the field (and its
+  // placeholder) renders in the system face beside brand-font text.
+  const fontFamily = useInputFontFamily();
   const [focused, setFocused] = useState(false);
 
   // Mirror the Flutter SDK's MyazaInput border states:
@@ -113,7 +117,7 @@ export function MyazaInput({
             autoFocus={autoFocus}
             onFocus={handleFocus}
             onBlur={handleBlur}
-            style={{ flex: 1, height: '100%', color: colors.textDark, fontSize: 16 }}
+            style={{ flex: 1, height: '100%', color: colors.textDark, fontSize: 16, fontFamily }}
           />
           {suffix ? <View style={{ width: spacing.sm }} /> : null}
           {suffix}
@@ -142,6 +146,7 @@ export function MyazaInput({
             color: colors.textDark,
             backgroundColor: colors.background,
             fontSize: 16,
+            fontFamily,
           }}
         />
       )}

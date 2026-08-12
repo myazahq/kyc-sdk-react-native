@@ -45,17 +45,9 @@ export function PoweredBy({ bottomInset = 0 }: { bottomInset?: number }): React.
         alignItems: 'center',
       }}
     >
-      {/* openURL can reject (no browser / a locked-down device). The mark itself
-          is the point, so a failed open is swallowed rather than surfaced. */}
-      <Pressable
-        onPress={() => {
-          void Linking.openURL(PRODUCT_URL).catch(() => undefined);
-        }}
-        accessibilityRole="link"
-        accessibilityLabel="Powered by Myaza Trust"
-        hitSlop={8}
-        style={{ flexDirection: 'row', alignItems: 'center', gap: 10, opacity: 0.9 }}
-      >
+      {/* The ROW is not the link — only the mark is. "Powered by" is a label,
+          not a destination, so it does not carry the tap. */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, opacity: 0.9 }}>
         {/* Small and muted on purpose — "Powered by" is connective tissue, not
             the message. The BRAND carries the weight. */}
         <MyazaText variant="body" color={markColor} style={{ flexShrink: 1, fontSize: 12 }}>
@@ -63,8 +55,21 @@ export function PoweredBy({ bottomInset = 0 }: { bottomInset?: number }): React.
         </MyazaText>
 
         {/* The lockup, spaced TIGHTER than the gap before it so it reads as one
-            mark rather than three evenly-spaced items. */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            mark rather than three evenly-spaced items. This is the link:
+            wordmark, rule and TRUST are one brand, so the whole lockup is the
+            target — but nothing beyond it is.
+
+            openURL can reject (no browser / a locked-down device). The mark
+            itself is the point, so a failed open is swallowed. */}
+        <Pressable
+          onPress={() => {
+            void Linking.openURL(PRODUCT_URL).catch(() => undefined);
+          }}
+          accessibilityRole="link"
+          accessibilityLabel="Myaza Trust"
+          hitSlop={8}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
+        >
           <MyazaWordmark height={28} wordmark={markColor} />
 
           <View style={{ width: 1, height: 24, backgroundColor: markColor, opacity: 0.35 }} />
@@ -82,8 +87,8 @@ export function PoweredBy({ bottomInset = 0 }: { bottomInset?: number }): React.
           >
             TRUST
           </MyazaText>
-        </View>
-      </Pressable>
+        </Pressable>
+      </View>
     </View>
   );
 }

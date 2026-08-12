@@ -99,7 +99,7 @@ export function deriveKey(
 }
 
 // The MRZ-derived key lives in ./mrzKey; re-exported so callers keep one import.
-export { keySeed, mrzKeySeedInput, type MrzKeyFields } from './mrzKey';
+export { keySeed, paceKeySeed, mrzKeySeedInput, type MrzKeyFields } from './mrzKey';
 
 /** The pair of session keys derived from a seed. */
 export interface SessionKeys {

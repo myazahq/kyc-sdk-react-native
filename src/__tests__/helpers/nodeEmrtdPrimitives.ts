@@ -52,11 +52,73 @@ export function nodePrimitives(): EmrtdPrimitives {
     aesCbc: (key, data, iv, encrypt) =>
       noPadCipher(`aes-${key.length * 8}-cbc`, key, iv, data, encrypt),
 
-    aesCmac: () => {
-      // Not needed by the BAC tests; PACE's AES suites are the caller.
-      throw new Error('aesCmac is not implemented in the Node test primitives');
-    },
+    // RFC 4493. Node exposes no CMAC, so the test side implements it from the
+    // spec — which is fine here because the RFC's own vectors are asserted in
+    // emrtdPace.test.ts, and on device this comes from the platform.
+    aesCmac: (key, data) => aesCmac(key, data),
 
     randomBytes: (n) => new Uint8Array(crypto.randomBytes(n)),
   };
+}
+
+// ── AES-CMAC (RFC 4493) ─────────────────────────────────────────────────────
+//
+// Test-side only. The subkey generation is the fiddly part: the block cipher is
+// applied to a zero block, then left-shifted with a conditional XOR of 0x87 —
+// and a message that is an exact block multiple takes K1 with NO padding while
+// anything else takes K2 with 0x80 padding. Getting that branch wrong produces
+// a MAC that is right for most inputs and wrong for the aligned ones.
+
+function shiftLeft(block: Uint8Array): Uint8Array {
+  const out = new Uint8Array(block.length);
+  let carry = 0;
+  for (let i = block.length - 1; i >= 0; i--) {
+    const value = block[i]!;
+    out[i] = ((value << 1) & 0xff) | carry;
+    carry = (value & 0x80) !== 0 ? 1 : 0;
+  }
+  return out;
+}
+
+function subkey(previous: Uint8Array): Uint8Array {
+  const shifted = shiftLeft(previous);
+  if ((previous[0]! & 0x80) !== 0) shifted[15] = shifted[15]! ^ 0x87;
+  return shifted;
+}
+
+function aesEcbBlock(key: Uint8Array, block: Uint8Array): Uint8Array {
+  return noPadCipher(`aes-${key.length * 8}-ecb`, key, new Uint8Array(0), block, true);
+}
+
+function aesCmac(key: Uint8Array, message: Uint8Array): Uint8Array {
+  const k0 = aesEcbBlock(key, new Uint8Array(16));
+  const k1 = subkey(k0);
+  const k2 = subkey(k1);
+
+  const complete = message.length > 0 && message.length % 16 === 0;
+  const blockCount = complete ? message.length / 16 : Math.floor(message.length / 16) + 1;
+
+  // The last block is XORed with K1 when the message is block-aligned, and with
+  // K2 (after 0x80 padding) when it is not.
+  const last = new Uint8Array(16);
+  if (complete) {
+    last.set(message.subarray((blockCount - 1) * 16));
+    for (let i = 0; i < 16; i++) last[i] = last[i]! ^ k1[i]!;
+  } else {
+    const tail = message.subarray((blockCount - 1) * 16);
+    last.set(tail);
+    last[tail.length] = 0x80;
+    for (let i = 0; i < 16; i++) last[i] = last[i]! ^ k2[i]!;
+  }
+
+  let x: Uint8Array = new Uint8Array(16);
+  for (let i = 0; i < blockCount - 1; i++) {
+    const block = message.subarray(i * 16, i * 16 + 16);
+    const input = new Uint8Array(16);
+    for (let j = 0; j < 16; j++) input[j] = x[j]! ^ block[j]!;
+    x = aesEcbBlock(key, input);
+  }
+  const input = new Uint8Array(16);
+  for (let j = 0; j < 16; j++) input[j] = x[j]! ^ last[j]!;
+  return aesEcbBlock(key, input);
 }

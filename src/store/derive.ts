@@ -29,6 +29,13 @@ import type { KYCStep, SupportedCountry } from '../types/config';
 import type { KycState } from './state';
 
 export function livenessEnabled(state: KycState): boolean {
+  // Presence Intelligence off ⇒ no selfie step at all. This is the builder's
+  // "Presence Intelligence step" switch (`enableSelfie`), and it outranks the
+  // liveness-gesture question below: with no selfie there is nothing to run
+  // gestures against. Checked first for that reason, and because omitting it
+  // was why turning the step off in the workflow changed nothing here while it
+  // worked on web.
+  if (state.config.enableSelfie === false) return false;
   // Consumer baseline: liveness is on unless explicitly disabled.
   if (state.config.enableLiveness === false) return false;
   const idType = state.selectedIdType;

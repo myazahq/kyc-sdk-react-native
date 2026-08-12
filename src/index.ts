@@ -24,6 +24,7 @@ export type {
   KYCConsentContent,
   KYCSuccessContent,
   VoiceGuidanceConfig,
+  ProgressStyle,
   VoiceGuidanceOption,
   // Workflow-driven blocks — normally authored in the dashboard builder and
   // delivered by `workflowId`, but settable as props too.

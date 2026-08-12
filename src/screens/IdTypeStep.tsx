@@ -99,6 +99,19 @@ export function IdTypeStep(): React.ReactElement {
     return (table[country.toUpperCase()] ?? []).filter((t) => allowed(t.key));
   }, [country, config.idTypes, config.countries, serverConfig]);
 
+  // Document Intelligence off ⇒ number-only IDs only (there is no document
+  // capture step), so drop every document-scanned ID from the picker. This is
+  // what makes the disabled step actually disappear from the live flow rather
+  // than still offering passports and licences that then have nowhere to be
+  // captured. Mirrors the web SDK's IdTypeStep.
+  const visible = useMemo<IdTypeDefinition[]>(
+    () =>
+      config.enableDocumentCapture === false
+        ? available.filter((t) => !t.requiresDocumentCapture)
+        : available,
+    [available, config.enableDocumentCapture],
+  );
+
   if (serverConfig.status === 'loading') {
     return (
       <View style={{ paddingVertical: spacing.xl, alignItems: 'center' }}>
@@ -107,7 +120,7 @@ export function IdTypeStep(): React.ReactElement {
     );
   }
 
-  if (serverConfig.status === 'ready' && available.length === 0) {
+  if (serverConfig.status === 'ready' && visible.length === 0) {
     return (
       <View
         style={{
@@ -127,7 +140,7 @@ export function IdTypeStep(): React.ReactElement {
 
   return (
     <View>
-      {available.map((t) => {
+      {visible.map((t) => {
         const selected = selectedIdType === t.key;
         return (
           <Pressable

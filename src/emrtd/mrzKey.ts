@@ -48,7 +48,27 @@ export function mrzKeySeedInput(fields: MrzKeyFields): string {
   );
 }
 
-/** Kseed: the first 16 bytes of SHA-1 over the MRZ information. */
+/** Kseed for BAC: the first 16 bytes of SHA-1 over the MRZ information. */
 export function keySeed(p: EmrtdPrimitives, fields: MrzKeyFields): Uint8Array {
   return p.sha1(fromAscii(mrzKeySeedInput(fields))).subarray(0, 16);
+}
+
+/**
+ * The seed PACE derives its password key from: the FULL SHA-1 digest, NOT
+ * truncated to 16 bytes.
+ *
+ * This is the one place the two protocols disagree about the same hash, and it
+ * is silent when wrong: a truncated seed yields a valid-looking K_π, the
+ * handshake runs to its last step, and the chip answers 0x6300 — which reads
+ * exactly like a mistyped MRZ rather than a derivation bug. It cost this SDK a
+ * real passport read to find (the same document opened over BAC moments later,
+ * proving the MRZ was right).
+ *
+ * ICAO 9303 Part 11 keeps the two apart: §9.7.3 truncates for BAC's Kseed,
+ * while §9.7.2 feeds the whole digest to KDF_π. JMRTD encodes the same split as
+ * `computeKeySeedForBAC(… truncate: true)` vs `computeKeySeedForPACE(…
+ * truncate: false)`.
+ */
+export function paceKeySeed(p: EmrtdPrimitives, fields: MrzKeyFields): Uint8Array {
+  return p.sha1(fromAscii(mrzKeySeedInput(fields)));
 }

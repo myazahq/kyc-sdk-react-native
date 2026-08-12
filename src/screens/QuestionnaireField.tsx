@@ -33,21 +33,34 @@ export function QuestionnaireFieldView({
   field,
   value,
   currencyValue,
+  detailValue,
   error,
   onChange,
   onCurrencyChange,
+  onDetailChange,
 }: {
   field: FieldDef;
   value: QuestionnaireAnswerValue | undefined;
   /** money only: the `<key>_currency` companion answer. */
   currencyValue?: string;
+  /** choice fields only: the `<key>_other` companion answer. */
+  detailValue?: string;
   error?: string;
   onChange: (value: QuestionnaireAnswerValue | undefined) => void;
   onCurrencyChange: (currency: string) => void;
+  onDetailChange?: (detail: string | undefined) => void;
 }): React.ReactElement {
   const { colors } = useTheme();
 
   const isPlainInput = field.type === 'text' || field.type === 'number';
+
+  // The chosen option that is not an answer on its own ("Other"). Covers both
+  // select (a single value) and multiselect (a list).
+  const detailOption = (field.options ?? []).find(
+    (o) =>
+      o.requiresDetail &&
+      (Array.isArray(value) ? value.includes(o.value) : value === o.value),
+  );
 
   return (
     <View style={{ marginBottom: spacing.lg }}>
@@ -142,6 +155,23 @@ export function QuestionnaireFieldView({
             );
           })
         : null}
+
+      {/* Free text behind an "Other" choice. Always required once that option
+          is picked: an unexplained "Other" is the answer a compliance reviewer
+          most needs spelled out. */}
+      {detailOption ? (
+        <View style={{ marginTop: spacing.sm }}>
+          <MyazaInput
+            label={detailOption.detailLabel || 'Please specify'}
+            value={detailValue ?? ''}
+            maxLength={200}
+            placeholder={
+              detailOption.detailPlaceholder || `Tell us more about "${detailOption.label}"`
+            }
+            onChangeText={(text: string) => onDetailChange?.(text || undefined)}
+          />
+        </View>
+      ) : null}
 
       {/* Inputs draw their own error; the rest need one underneath. */}
       {error && !isPlainInput && field.type !== 'money' ? (

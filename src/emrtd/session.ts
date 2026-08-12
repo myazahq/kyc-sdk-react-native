@@ -3,6 +3,7 @@ import { buildBacChallenge, completeBac } from './bac';
 import { primitivesFromNative, type EmrtdPrimitives, type MrzKeyFields } from './crypto';
 import { EF, readFile, type Transceive } from './files';
 import { readOptionalFile } from './optionalRead';
+import { PaceError, PREFER_PACE, tryPace, type PaceOutcome } from './open';
 import { SecureMessagingSession } from './secureMessaging';
 import type { NfcReadStage } from './stages';
 
@@ -44,8 +45,15 @@ export interface EmrtdReadResult {
   sod?: string;
   /** DG2 — the portrait. Best-effort; the largest file and the likeliest to drop. */
   dg2?: string;
-  /** How the chip was unlocked. */
-  chipAuth: 'bac';
+  /** How the chip was unlocked. Reported to the server on the submission. */
+  chipAuth: 'bac' | 'pace';
+  /**
+   * Why the session is on that protocol, and the negotiated variant when PACE
+   * ran. Diagnostics only: it never changes the read, and it is what
+   * distinguishes "the chip does not speak PACE" from "our PACE failed".
+   */
+  paceOutcome?: PaceOutcome;
+  paceDetail?: string;
 }
 
 /** The raw transport, before secure messaging wraps it. */
@@ -137,23 +145,8 @@ export async function readChip(
   const p = primitivesFromNative(native);
 
   onStage?.('authenticating');
-  // SELECT + BAC are retried ONCE in place, on the same live connection.
-  // On Android the tag is routinely dispatched while the platform is still
-  // settling the link, so the first exchange dies with the chip right there —
-  // and an immediate second attempt succeeds with the phone untouched. The
-  // Flutter SDK documents and fixes this exact failure the same way
-  // (nfc_reader_emrtd.dart); a full session teardown cannot fix it, because
-  // Android never re-dispatches a tag that stayed in the field, so the outer
-  // retry loop just waited for a re-tap nobody knew to perform.
-  let sm: Awaited<ReturnType<typeof openSession>> | null = null;
-  for (let attempt = 0; sm === null; attempt += 1) {
-    try {
-      await selectApplication(native);
-      sm = await openSession(p, native, mrz);
-    } catch (err) {
-      if (attempt >= 1) throw err;
-    }
-  }
+  const access = await establishSession(p, native, mrz);
+  const sm = access.sm;
 
   const transceive: Transceive = async (command) => {
     const { data, statusWord } = await native.transceive(toBase64(command));
@@ -195,6 +188,117 @@ export async function readChip(
     dg1: toBase64(dg1),
     ...(sod ? { sod: toBase64(sod) } : {}),
     ...(dg2 ? { dg2: toBase64(dg2) } : {}),
-    chipAuth: 'bac',
+    chipAuth: access.chipAuth,
+    paceOutcome: access.outcome,
+    ...(access.detail ? { paceDetail: access.detail } : {}),
   };
+}
+
+/**
+ * Open a secured session, trying both access protocols as needed.
+ *
+ * The ordering lives in open.ts (PREFER_PACE) along with why it is what it is.
+ * Whichever protocol goes first, the other still runs as the fallback, so a
+ * document that read before still reads.
+ */
+async function establishSession(
+  p: EmrtdPrimitives,
+  native: EmrtdTransport,
+  mrz: MrzKeyFields,
+): Promise<{
+  sm: SecureMessagingSession;
+  chipAuth: 'bac' | 'pace';
+  outcome: PaceOutcome;
+  detail?: string;
+}> {
+  // SELECT + BAC are retried ONCE in place, on the same live connection.
+  // On Android the tag is routinely dispatched while the platform is still
+  // settling the link, so the first exchange dies with the chip right there —
+  // and an immediate second attempt succeeds with the phone untouched. The
+  // Flutter SDK documents and fixes this exact failure the same way
+  // (nfc_reader_emrtd.dart); a full session teardown cannot fix it, because
+  // Android never re-dispatches a tag that stayed in the field, so the outer
+  // retry loop just waited for a re-tap nobody knew to perform.
+  const bac = async (): Promise<SecureMessagingSession> => {
+    let sm: SecureMessagingSession | null = null;
+    for (let attempt = 0; sm === null; attempt += 1) {
+      try {
+        await selectApplication(native);
+        sm = await openSession(p, native, mrz);
+      } catch (err) {
+        if (attempt >= 1) throw err;
+      }
+    }
+    return sm;
+  };
+
+  // PACE leaves the chip mid-protocol when it fails, so BAC after a failed
+  // PACE runs against a chip in an unknown state. Both orders below therefore
+  // re-SELECT the application first, which bac() already does.
+  const pace = async (): Promise<
+    { sm: SecureMessagingSession; detail: string } | { outcome: PaceOutcome; detail?: string }
+  > => {
+    try {
+      return await tryPace(p, native, mrz);
+    } catch (err) {
+      // A chip that fails PACE may still answer BAC, so this is never fatal
+      // by itself — only the reason is kept.
+      const detail =
+        err instanceof PaceError ? `${err.code}: ${err.message}` : String(err ?? '');
+      return { outcome: 'failed', detail };
+    }
+  };
+
+  if (PREFER_PACE) {
+    const attempted = await pace();
+    if ('sm' in attempted) {
+      // After PACE the application must be selected through the secure channel.
+      await selectApplicationSecure(attempted.sm, native);
+      return { sm: attempted.sm, chipAuth: 'pace', outcome: 'used', detail: attempted.detail };
+    }
+    return { sm: await bac(), chipAuth: 'bac', outcome: attempted.outcome, detail: attempted.detail };
+  }
+
+  try {
+    return { sm: await bac(), chipAuth: 'bac', outcome: 'notAttempted' };
+  } catch (bacFailure) {
+    // BAC was refused. A chip that has retired it may still open with PACE, and
+    // trying costs one exchange against a document that has otherwise failed.
+    const attempted = await pace();
+    if ('sm' in attempted) {
+      await selectApplicationSecure(attempted.sm, native);
+      return { sm: attempted.sm, chipAuth: 'pace', outcome: 'used', detail: attempted.detail };
+    }
+    // Both refused. The BAC failure is the one the user is told about: its
+    // message already says the document details did not match.
+    throw bacFailure;
+  }
+}
+
+/**
+ * SELECT the eMRTD application through an established PACE channel.
+ *
+ * PACE authenticates at the Master File, so the application still has to be
+ * selected afterwards — and now every command is wrapped, so it goes through
+ * secure messaging rather than the raw transport.
+ */
+async function selectApplicationSecure(
+  sm: SecureMessagingSession,
+  transport: EmrtdTransport,
+): Promise<void> {
+  const wrapped = sm.protect({ cla: 0x00, ins: 0xa4, p1: 0x04, p2: 0x0c, data: AID });
+  const { data, statusWord } = await transport.transceive(toBase64(wrapped));
+  const body = fromBase64(data);
+  const framed = new Uint8Array(body.length + 2);
+  framed.set(body);
+  framed[body.length] = (statusWord >> 8) & 0xff;
+  framed[body.length + 1] = statusWord & 0xff;
+
+  const unwrapped = sm.unprotect(framed);
+  if (unwrapped.statusWord !== SW_OK) {
+    throw new EmrtdSessionError(
+      'The secured session did not hold when selecting the passport application.',
+      'select_failed',
+    );
+  }
 }

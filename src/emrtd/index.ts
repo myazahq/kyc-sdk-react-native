@@ -26,5 +26,6 @@ export {
   nfcStageLabel,
   nfcStageProgress,
 } from './stages';
+export { parseDg1 } from './dg1';
 export { decodeChipImage, isNfcAvailable, nfcUnavailableReason } from './native';
 export { cancelChipRead, readPassportChip, type ChipReadOptions } from './read';

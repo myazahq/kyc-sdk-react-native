@@ -151,6 +151,18 @@ export function NfcStep(): React.ReactElement {
         },
       );
       if (!liveRef.current || seq !== readSeqRef.current) return;
+      // Which access protocol opened the session, and why. PACE is new here and
+      // reads over BAC by default, so this line is what distinguishes "the chip
+      // never offered PACE" from "our PACE was attempted and failed" while it
+      // is being proven against real documents. Dev builds only — it is
+      // diagnostics, never user-facing.
+      if (__DEV__) {
+        console.log(
+          `[kyc.nfc] session opened over ${result.chipAuth}` +
+            (result.paceOutcome ? ` (pace: ${result.paceOutcome}` : '') +
+            (result.paceDetail ? ` — ${result.paceDetail})` : result.paceOutcome ? ')' : ''),
+        );
+      }
       store.getState().setChipData(result);
       setResult(result);
       setPhase('done');

@@ -30,6 +30,7 @@ export const WORKFLOW_KEYS = [
   'requireMobileDevice',
   'voiceGuidance',
   'showThemeToggle',
+  'progressStyle',
   'disableClose',
   'appearance',
   'consent',

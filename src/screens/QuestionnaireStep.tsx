@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { spacing } from '../config/theme';
 import { useKyc, useKycConfig, useKycStore } from '../components/runtime';
 import { MyazaButton } from '../components/MyazaButton';
-import { currencyKeyFor, validateQuestionnaire } from '../config/questionnaire';
+import { currencyKeyFor, otherKeyFor, validateQuestionnaire } from '../config/questionnaire';
 import { QuestionnaireFieldView } from './QuestionnaireField';
 import type { QuestionnaireAnswerValue } from '../types/workflow';
 
@@ -63,9 +63,11 @@ export function QuestionnaireStep(): React.ReactElement {
           field={field}
           value={answers[field.key]}
           currencyValue={answers[currencyKeyFor(field)] as string | undefined}
+          detailValue={answers[otherKeyFor(field)] as string | undefined}
           error={errors[field.key] || undefined}
           onChange={(value) => setAnswer(field.key, value)}
           onCurrencyChange={(currency) => setAnswer(currencyKeyFor(field), currency)}
+          onDetailChange={(detail) => setAnswer(otherKeyFor(field), detail)}
         />
       ))}
 

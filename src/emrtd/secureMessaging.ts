@@ -1,13 +1,7 @@
 import { concat, padToBlock, timingSafeEqual, unpadFromBlock } from './bytes';
 import { encodeTlv, readTlvSequence } from './der';
-import {
-  BLOCK_SIZE,
-  decrypt3Des,
-  encrypt3Des,
-  macWithPadding,
-  type EmrtdPrimitives,
-  type SessionKeys,
-} from './crypto';
+import type { EmrtdPrimitives, SessionKeys } from './crypto';
+import { DES_EDE2_SUITE, type CipherSuite } from './suites';
 
 // ---------------------------------------------------------------------------
 // Secure messaging (ICAO 9303 Part 11 §9.8).
@@ -61,6 +55,13 @@ export class SecureMessagingSession {
     private readonly p: EmrtdPrimitives,
     private readonly keys: SessionKeys,
     initialSsc: Uint8Array,
+    /**
+     * Which cipher the session runs on. BAC is always 3DES (the default, so
+     * every existing call site is unchanged); a PACE session may have
+     * negotiated AES, which changes the block size, the padding unit, the
+     * counter width and how the IV is derived.
+     */
+    private readonly suite: CipherSuite = DES_EDE2_SUITE,
   ) {
     this.ssc = new Uint8Array(initialSsc);
   }
@@ -80,15 +81,21 @@ export class SecureMessagingSession {
     // The class byte gains the secure-messaging bits, and the MAC is computed
     // over the PADDED header — a detail the standard is easy to misread.
     const cla = apdu.cla | 0x0c;
+    const block = this.suite.blockSize;
     const header = padToBlock(
       new Uint8Array([cla, apdu.ins, apdu.p1, apdu.p2]),
-      BLOCK_SIZE,
+      block,
     );
 
     const parts: Uint8Array[] = [];
 
     if (apdu.data && apdu.data.length > 0) {
-      const encrypted = encrypt3Des(this.p, this.keys.ksEnc, padToBlock(apdu.data, BLOCK_SIZE));
+      const encrypted = this.suite.encrypt(
+        this.p,
+        this.keys.ksEnc,
+        padToBlock(apdu.data, block),
+        this.ssc,
+      );
       // The leading 0x01 is the padding-content indicator: "ISO 9797-1 method
       // 2 was used". Omitting it is a common source of chips rejecting DO'87'.
       parts.push(encodeTlv(DO87, concat(new Uint8Array([0x01]), encrypted)));
@@ -103,7 +110,11 @@ export class SecureMessagingSession {
     }
 
     const body = concat(...parts);
-    const mac = macWithPadding(this.p, this.keys.ksMac, concat(this.ssc, header, body));
+    const mac = this.suite.mac(
+      this.p,
+      this.keys.ksMac,
+      padToBlock(concat(this.ssc, header, body), block),
+    );
     const checksum = encodeTlv(DO8E, mac);
 
     const payload = concat(body, checksum);
@@ -140,7 +151,11 @@ export class SecureMessagingSession {
       this.ssc,
       ...objects.map((o) => encodeTlv(o.tag, o.value)),
     );
-    const expected = macWithPadding(this.p, this.keys.ksMac, macInput);
+    const expected = this.suite.mac(
+      this.p,
+      this.keys.ksMac,
+      padToBlock(macInput, this.suite.blockSize),
+    );
     if (!timingSafeEqual(expected, checksum.value)) {
       throw new SecureMessagingError('The response failed its integrity check.');
     }
@@ -161,12 +176,15 @@ export class SecureMessagingSession {
     // does not.
     const body =
       encrypted.tag === DO87 ? encrypted.value.subarray(1) : encrypted.value;
-    if (body.length === 0 || body.length % BLOCK_SIZE !== 0) {
+    if (body.length === 0 || body.length % this.suite.blockSize !== 0) {
       throw new SecureMessagingError('The response ciphertext was misaligned.');
     }
 
     return {
-      data: unpadFromBlock(decrypt3Des(this.p, this.keys.ksEnc, body), BLOCK_SIZE),
+      data: unpadFromBlock(
+        this.suite.decrypt(this.p, this.keys.ksEnc, body, this.ssc),
+        this.suite.blockSize,
+      ),
       statusWord,
     };
   }

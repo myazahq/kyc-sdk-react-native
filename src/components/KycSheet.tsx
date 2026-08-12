@@ -1,22 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import { Image, Platform, ScrollView, StatusBar, View } from 'react-native';
-import { SvgXml } from 'react-native-svg';
-import { StatusBarController } from './StatusBarController';
-import { initialWindowMetrics } from 'react-native-safe-area-context';
+import React, { useEffect, useState } from "react";
+import { Image, Platform, ScrollView, StatusBar, View } from "react-native";
+import { SvgXml } from "react-native-svg";
+import { StatusBarController } from "./StatusBarController";
+import { initialWindowMetrics } from "react-native-safe-area-context";
 
-import { headerSurface, radius, spacing } from '../config/theme';
-import { useKeyboardInset } from '../lib/use-keyboard-inset';
-import type { SupportedCountry } from '../types/config';
-import { useKycConfig, useTheme } from './runtime';
-import { useBranding } from './useBranding';
-import { MyazaText } from './Typography';
-import { PoweredBy } from './PoweredBy';
-import { StepHeader } from './StepHeader';
-import { StepIndicator } from './StepIndicator';
-import { GlassIconButton } from './GlassIconButton';
-import { GlassSurface } from './glass/GlassSurface';
-import { GlassGroup } from './glass/GlassGroup';
-import { FlashOverlay } from './FlashOverlay';
+import { headerSurface, radius, spacing } from "../config/theme";
+import { useKeyboardInset } from "../lib/use-keyboard-inset";
+import type { SupportedCountry } from "../types/config";
+import { useKycConfig, useTheme } from "./runtime";
+import { useBranding } from "./useBranding";
+import { MyazaText } from "./Typography";
+import { PoweredBy } from "./PoweredBy";
+import { StepHeader } from "./StepHeader";
+import { StepIndicator } from "./StepIndicator";
+import { ProgressBar } from "./ProgressBar";
+import { GlassIconButton } from "./GlassIconButton";
+import { GlassSurface } from "./glass/GlassSurface";
+import { GlassGroup } from "./glass/GlassGroup";
+import { FlashOverlay } from "./FlashOverlay";
 
 // Full-screen sheet shell — 1:1 with the Flutter SDK's KycBottomSheet:
 //   • a tinted header block (Liquid Glass on iOS 26) with a bottom border:
@@ -83,16 +84,20 @@ export function KycSheet({
   const keyboardInset = useKeyboardInset();
 
   const tint = headerSurface(colors, mode);
-  const showIndicator = progress != null && stepCount != null;
+  const hasProgress = progress != null && stepCount != null;
+  // The bar REPLACES the step row rather than joining it: two progress
+  // indicators on one header would be noise, and the point of the bar is that
+  // it costs no height.
+  const asBar = config.progressStyle === "bar";
+  const showIndicator = hasProgress && !asBar;
+  const showBar = hasProgress && asBar;
   const showBrand = !hideBrand && !!logoUri;
-
-
 
   // On iOS the modal is a pageSheet by default (sits below the status bar), but
   // `disableClose` presents it full-screen (to drop the swipe-to-dismiss), so it
   // then extends under the notch + over the home indicator and needs its own
   // safe-area insets — the pageSheet provides them for free.
-  const iosFullScreen = Platform.OS === 'ios' && config.disableClose === true;
+  const iosFullScreen = Platform.OS === "ios" && config.disableClose === true;
 
   // Static safe-area snapshot (captured at app launch — no SafeAreaProvider
   // needed). On Android 15+/API 35+ the modal is drawn EDGE-TO-EDGE, and
@@ -106,7 +111,7 @@ export function KycSheet({
   //   • iOS pageSheet: already below the status bar → no inset.
   //   • iOS full-screen (disableClose): 56 covers the status bar + notch.
   const topInset =
-    Platform.OS === 'android'
+    Platform.OS === "android"
       ? sa?.top || StatusBar.currentHeight || 28
       : iosFullScreen
         ? 56
@@ -114,95 +119,131 @@ export function KycSheet({
 
   // Clear the home indicator / nav bar at the bottom of a full-screen modal.
   const bottomInset =
-    Platform.OS === 'android' ? sa?.bottom ?? 0 : iosFullScreen ? 34 : 0;
+    Platform.OS === "android" ? (sa?.bottom ?? 0) : iosFullScreen ? 34 : 0;
 
   return (
-    <View style={{ flex: 1, backgroundColor: immersive ? '#000000' : colors.background }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: immersive ? "#000000" : colors.background,
+      }}
+    >
       {/* The SDK theme drives the status-bar glyph colour so it stays readable on
           the modal background — light glyphs in dark mode, dark in light mode.
           Android: JS StatusBar/SystemBars can't reach the <Modal>'s Dialog window,
           so a native view (StatusBarController) themes it from inside the modal.
           iOS: only the full-screen modal (disableClose) slides under the bar — the
           default pageSheet keeps the host bar above the card. */}
-      {Platform.OS === 'android' ? (
-        <StatusBarController barStyle={mode === 'dark' ? 'light' : 'dark'} />
+      {Platform.OS === "android" ? (
+        <StatusBarController barStyle={mode === "dark" ? "light" : "dark"} />
       ) : iosFullScreen ? (
-        <StatusBar barStyle={mode === 'dark' ? 'light-content' : 'dark-content'} animated />
+        <StatusBar
+          barStyle={mode === "dark" ? "light-content" : "dark-content"}
+          animated
+        />
       ) : null}
       <View style={{ flex: 1 }}>
         {/* Header block (glass on iOS 26, tinted surface otherwise) — dropped
             entirely when the step owns the display. */}
-        {immersive ? null : <GlassSurface
-          glassStyle="regular"
-          fallbackColor={tint}
-          style={{ borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: spacing.md }}
-        >
-          {/* Row 1 — brand + controls */}
-          <View
+        {immersive ? null : (
+          <GlassSurface
+            glassStyle="regular"
+            fallbackColor={tint}
             style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              paddingHorizontal: spacing.md,
-              paddingTop: topInset + spacing.sm,
+              // The bar sits ON this edge and paints its own track, so the
+              // border would double it.
+              borderBottomWidth: showBar ? 0 : 1,
+              borderBottomColor: colors.border,
+              paddingBottom: spacing.md,
             }}
           >
-            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-              {showBrand ? <BrandBar logoUri={logoUri!} companyName={companyName} /> : null}
-            </View>
+            {/* Row 1 — brand + controls */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: spacing.md,
+                paddingTop: topInset + spacing.sm,
+              }}
+            >
+              <View
+                style={{ flex: 1, flexDirection: "row", alignItems: "center" }}
+              >
+                {showBrand ? (
+                  <BrandBar logoUri={logoUri!} companyName={companyName} />
+                ) : null}
+              </View>
 
-            {/* Header controls. When BOTH the theme toggle and close show, they
+              {/* Header controls. When BOTH the theme toggle and close show, they
                 share a single Liquid Glass capsule (each button `plain`). When
                 only one shows — the consumer disabled the other (`disableClose`
                 or `showThemeToggle: false`) — that button stands on its own
                 glass instead of a one-icon capsule. Neither → nothing. */}
-            {(() => {
-              const showToggle = config.showThemeToggle !== false;
-              const showClose = !config.disableClose;
-              const toggleBtn = showToggle ? (
-                <GlassIconButton
-                  icon={mode === 'dark' ? 'sun' : 'moon'}
-                  onPress={toggle}
-                  solid
-                  plain={showClose}
-                  accessibilityLabel="Toggle theme"
-                />
-              ) : null;
-              const closeBtn = showClose ? (
-                <GlassIconButton
-                  icon="close"
-                  onPress={onClose}
-                  plain={showToggle}
-                  accessibilityLabel="Close"
-                />
-              ) : null;
+              {(() => {
+                const showToggle = config.showThemeToggle !== false;
+                const showClose = !config.disableClose;
+                const toggleBtn = showToggle ? (
+                  <GlassIconButton
+                    icon={mode === "dark" ? "sun" : "moon"}
+                    onPress={toggle}
+                    solid
+                    plain={showClose}
+                    accessibilityLabel="Toggle theme"
+                  />
+                ) : null;
+                const closeBtn = showClose ? (
+                  <GlassIconButton
+                    icon="close"
+                    onPress={onClose}
+                    plain={showToggle}
+                    accessibilityLabel="Close"
+                  />
+                ) : null;
 
-              if (showToggle && showClose) {
-                return (
-                  <GlassGroup style={{ gap: 2 }}>
-                    {toggleBtn}
-                    {closeBtn}
-                  </GlassGroup>
-                );
-              }
-              // Exactly one (or zero) — render it standalone with its own glass.
-              return toggleBtn ?? closeBtn;
-            })()}
-          </View>
-
-          {/* Row 2 — title + back + flag */}
-          {title || onBack ? (
-            <View style={{ paddingHorizontal: spacing.md, paddingTop: spacing.sm }}>
-              <StepHeader title={title} description={description} onBack={onBack} country={country} />
+                if (showToggle && showClose) {
+                  return (
+                    <GlassGroup style={{ gap: 2 }}>
+                      {toggleBtn}
+                      {closeBtn}
+                    </GlassGroup>
+                  );
+                }
+                // Exactly one (or zero) — render it standalone with its own glass.
+                return toggleBtn ?? closeBtn;
+              })()}
             </View>
-          ) : null}
 
-          {/* Row 3 — step indicator */}
-          {showIndicator ? (
-            <View style={{ marginTop: spacing.md }}>
-              <StepIndicator progress={progress!} stepCount={stepCount!} />
-            </View>
-          ) : null}
-        </GlassSurface>}
+            {/* Row 2 — title + back + flag */}
+            {title || onBack ? (
+              <View
+                style={{
+                  paddingHorizontal: spacing.md,
+                  paddingTop: spacing.sm,
+                }}
+              >
+                <StepHeader
+                  title={title}
+                  description={description}
+                  onBack={onBack}
+                  country={country}
+                />
+              </View>
+            ) : null}
+
+            {/* Row 3 — step indicator */}
+            {showIndicator ? (
+              <View style={{ marginTop: spacing.md }}>
+                <StepIndicator progress={progress!} stepCount={stepCount!} />
+              </View>
+            ) : null}
+
+            {/* Absolutely positioned, so it overlays the header's bottom edge
+                instead of adding a row — the whole reason to prefer it. */}
+            {showBar ? (
+              <ProgressBar progress={progress!} stepCount={stepCount!} />
+            ) : null}
+          </GlassSurface>
+        )}
 
         {/* Step body */}
         {fillsViewport ? (
@@ -210,7 +251,9 @@ export function KycSheet({
           // padding exists so scrolled content clears the home indicator, but
           // in a fixed-height body it just lifts the list off the footer and
           // reads as a dead band. PoweredBy owns the safe-area inset already.
-          <View style={{ flex: 1, padding: spacing.md, paddingBottom: spacing.md }}>
+          <View
+            style={{ flex: 1, padding: spacing.md, paddingBottom: spacing.md }}
+          >
             {children}
           </View>
         ) : (
@@ -236,7 +279,9 @@ export function KycSheet({
             // input into view — the platform's own handling, which a
             // KeyboardAvoidingView only approximates. Without this the
             // keyboard simply covered the bottom of every input step.
-            automaticallyAdjustKeyboardInsets={Platform.OS === 'ios' && !immersive}
+            automaticallyAdjustKeyboardInsets={
+              Platform.OS === "ios" && !immersive
+            }
           >
             {children}
           </ScrollView>
@@ -265,14 +310,20 @@ export function KycSheet({
 
 /** Whether a logo URI points at an SVG (extension check, query-safe). */
 function isSvgUri(uri: string): boolean {
-  const path = uri.split('?')[0] ?? uri;
-  return path.toLowerCase().endsWith('.svg');
+  const path = uri.split("?")[0] ?? uri;
+  return path.toLowerCase().endsWith(".svg");
 }
 
 // Persistent header brand — circular logo avatar + company name. A broken/missing
 // logo image collapses the whole brand bar (mirrors the web SDK's `onError` and
 // Flutter's `errorBuilder`), so the header never shows a broken-image box.
-function BrandBar({ logoUri, companyName }: { logoUri: string; companyName: string }): React.ReactElement | null {
+function BrandBar({
+  logoUri,
+  companyName,
+}: {
+  logoUri: string;
+  companyName: string;
+}): React.ReactElement | null {
   const { colors } = useTheme();
   const [broken, setBroken] = useState(false);
   const svg = isSvgUri(logoUri);
@@ -285,7 +336,9 @@ function BrandBar({ logoUri, companyName }: { logoUri: string; companyName: stri
     if (!svg) return;
     let cancelled = false;
     fetch(logoUri)
-      .then((r) => (r.ok ? r.text() : Promise.reject(new Error(String(r.status)))))
+      .then((r) =>
+        r.ok ? r.text() : Promise.reject(new Error(String(r.status))),
+      )
       .then((text) => {
         if (!cancelled) setXml(text);
       })
@@ -299,54 +352,83 @@ function BrandBar({ logoUri, companyName }: { logoUri: string; companyName: stri
   if (broken) return null;
   return (
     <>
+      {/* TWO layers, deliberately.
+
+          A shadow and `overflow: 'hidden'` CANNOT live on the same view on iOS:
+          overflow-hidden compiles to `masksToBounds`, which clips the shadow
+          away with everything else outside the bounds. Android draws `elevation`
+          outside the view, so it survived there — which is why the chip lost its
+          ring on iPhone only.
+
+          So the outer view owns the border and shadow and does NOT clip, and the
+          inner one clips the logo. Same split Flutter gets for free by putting
+          the border on the Container's decoration and the crop in a ClipOval. */}
       <View
         style={{
           width: 28,
           height: 28,
           borderRadius: radius.full,
-          backgroundColor: '#FFFFFF',
-          // Light border + soft shadow — the same treatment as the Flutter
-          // SDK's brand chip (black 5% ring, black 6% blur-4 y-1 shadow) and
-          // the web SDK's ring-1 ring-black/5.
+          backgroundColor: "#FFFFFF",
+          // Light ring + soft shadow — the same treatment as the Flutter SDK's
+          // brand chip (black 5% ring, black 6% blur-4 y-1 shadow) and the web
+          // SDK's ring-1 ring-black/5.
           borderWidth: 1,
-          borderColor: 'rgba(0,0,0,0.05)',
-          shadowColor: '#000000',
+          borderColor: "rgba(0,0,0,0.05)",
+          shadowColor: "#000000",
           shadowOpacity: 0.06,
           shadowRadius: 4,
           shadowOffset: { width: 0, height: 1 },
           elevation: 1,
-          overflow: 'hidden',
           marginRight: spacing.sm,
-          alignItems: 'center',
-          justifyContent: 'center',
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
-        {/* Fill + cover-crop the circle. The borderRadius is repeated on the
-            Image itself because iOS doesn't reliably clip an Image child to a
-            parent's rounded corners (mirrors Flutter's ClipOval + cover).
-            SVG logos (common — the brand import picks up site favicons) can't
-            be decoded by <Image>; the fetched markup renders via SvgXml at
-            the chip's inner size (26 = 28 minus the 1px border each side),
-            slice = cover-crop. */}
-        {svg ? (
-          xml ? (
-            <SvgXml
-              xml={xml}
-              width={26}
-              height={26}
-              preserveAspectRatio="xMidYMid slice"
+        <View
+          style={{
+            // Fills the parent's CONTENT box (inside its 1px border) and is the
+            // only thing that clips, so the logo reaches the ring on every side.
+            alignSelf: "stretch",
+            flex: 1,
+            borderRadius: radius.full,
+            overflow: "hidden",
+          }}
+        >
+          {/* Fill + cover-crop, matching Flutter's SizedBox.expand + BoxFit.cover.
+
+            Sized in PERCENTAGES, not the literal 26 this used to hardcode: that
+            number was "28 minus the 1px border on each side", so it silently
+            went wrong the moment either value changed, and it left the logo a
+            pixel short of the ring. The clipping parent now owns the geometry.
+
+            SVG logos are common here because the brand import picks up site
+            favicons, and <Image> cannot decode SVG at all — hence the fetched
+            markup through SvgXml. `slice` is the SVG spelling of cover-crop. */}
+          {svg ? (
+            xml ? (
+              <SvgXml
+                xml={xml}
+                width="100%"
+                height="100%"
+                preserveAspectRatio="xMidYMid slice"
+              />
+            ) : null
+          ) : (
+            <Image
+              source={{ uri: logoUri }}
+              style={{ width: "100%", height: "100%" }}
+              resizeMode="cover"
+              onError={() => setBroken(true)}
             />
-          ) : null
-        ) : (
-          <Image
-            source={{ uri: logoUri }}
-            style={{ width: '100%', height: '100%', borderRadius: radius.full }}
-            resizeMode="cover"
-            onError={() => setBroken(true)}
-          />
-        )}
+          )}
+        </View>
       </View>
-      <MyazaText variant="heading3" numberOfLines={1} color={colors.textDark} style={{ flexShrink: 1, fontSize: 14 }}>
+      <MyazaText
+        variant="heading3"
+        numberOfLines={1}
+        color={colors.textDark}
+        style={{ flexShrink: 1, fontSize: 14 }}
+      >
         {companyName}
       </MyazaText>
     </>

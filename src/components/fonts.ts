@@ -1,6 +1,10 @@
+import type { TextStyle } from 'react-native';
 import { useFonts } from 'expo-font';
 import { SpaceGrotesk_500Medium, SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
 import { Karla_400Regular, Karla_500Medium, Karla_600SemiBold, Karla_700Bold } from '@expo-google-fonts/karla';
+import { fontFamilyFor } from '../config/font-resolve';
+import { useTheme } from './theme-provider';
+
 export { fontFamilyFor, markFamilyName, brandFamilyName, BRAND_WEIGHTS } from '../config/font-resolve';
 
 
@@ -30,3 +34,22 @@ export function useMyazaFonts(): boolean {
  * Returns `undefined` until fonts are loaded so text falls back to the system
  * font + `fontWeight` without triggering an "unrecognized font" warning.
  */
+
+/**
+ * The body font family for a TEXT INPUT, at the given weight.
+ *
+ * `TextInput` does not inherit `fontFamily` from any ancestor the way web
+ * inputs inherit from a stylesheet — RN resolves it per-element — so an input
+ * that never sets one renders in the system face while every `MyazaText`
+ * beside it renders in the brand's. The placeholder follows the input's own
+ * family too, which is why it looked wrong as well.
+ *
+ * Goes through the same resolver as MyazaText so an org's uploaded brand font
+ * reaches inputs, not just text. Returns undefined until fonts load, which is
+ * the caller's cue to leave `fontFamily` unset rather than name a family the
+ * platform has not registered.
+ */
+export function useInputFontFamily(weight: TextStyle['fontWeight'] = '400'): string | undefined {
+  const { fontsLoaded, brandFonts } = useTheme();
+  return fontFamilyFor(false, weight, fontsLoaded, brandFonts);
+}

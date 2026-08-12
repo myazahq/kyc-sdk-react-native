@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Image, View } from 'react-native';
 
 import { spacing } from '../../config/theme';
@@ -8,7 +8,7 @@ import { MyazaButton } from '../../components/MyazaButton';
 import { Icon } from '../../components/Icon';
 import { useChipPortrait } from './useChipPortrait';
 import { NfcScannedSummary } from './NfcScannedSummary';
-import type { EmrtdReadResult } from '../../emrtd';
+import { parseDg1, type EmrtdReadResult } from '../../emrtd';
 import type { MrzScan } from '../../mrz/parse';
 
 // ---------------------------------------------------------------------------
@@ -41,7 +41,12 @@ export function NfcSuccessPanel({
   // component rejects) must degrade to the generic mark, not an empty circle.
   const [portraitBroken, setPortraitBroken] = useState(false);
   const portrait = portraitBroken ? null : portraitUri;
-  const name = [mrz?.firstName, mrz?.lastName].filter(Boolean).join(' ');
+  // Once the chip has been read, IT is the source — see emrtd/dg1.ts. The
+  // camera scan stays as the fallback for a chip whose DG1 we could not parse,
+  // so a read that otherwise worked still shows something.
+  const chip = useMemo(() => parseDg1(result.dg1), [result.dg1]);
+  const holder = chip ?? mrz;
+  const name = [holder?.firstName, holder?.lastName].filter(Boolean).join(' ');
 
   return (
     <View style={{ alignItems: 'center' }}>
@@ -132,12 +137,14 @@ export function NfcSuccessPanel({
       ) : null}
 
       {/* What was read, shown back — the same card the pre-read screen uses, so
-          the user checks the same two fields against the printed page. */}
-      {mrz ? (
+          the user checks the same two fields against the printed page. Before
+          the read that card can only show the camera's guess; here it shows the
+          chip's own values, which is both correct and a stronger check. */}
+      {holder ? (
         <>
           <View style={{ height: spacing.lg }} />
           <View style={{ alignSelf: 'stretch' }}>
-            <NfcScannedSummary scan={mrz} />
+            <NfcScannedSummary scan={holder} />
           </View>
         </>
       ) : null}

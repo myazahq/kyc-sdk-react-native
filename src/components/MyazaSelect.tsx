@@ -3,6 +3,7 @@ import { Modal, Pressable, ScrollView, TextInput, useWindowDimensions, View } fr
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from './runtime';
+import { useInputFontFamily } from './fonts';
 import { MyazaText } from './Typography';
 import { Icon } from './Icon';
 
@@ -72,6 +73,9 @@ export function MyazaSelect<T extends string | number>({
   searchable?: boolean;
 }): React.ReactElement {
   const { colors } = useTheme();
+  // TextInput does not inherit fontFamily in RN — set it or the search field
+  // (and its placeholder) renders in the system face.
+  const fontFamily = useInputFontFamily();
   const { height: windowHeight } = useWindowDimensions();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -207,6 +211,7 @@ export function MyazaSelect<T extends string | number>({
                     paddingHorizontal: spacing.sm,
                     color: colors.textDark,
                     fontSize: 15,
+                    fontFamily,
                   }}
                 />
                 {query !== '' ? (

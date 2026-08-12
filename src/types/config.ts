@@ -61,6 +61,9 @@ export type KYCStep =
 // Client-side SDK config  (MyazaKYC.show() / useMyazaKYC options)
 // ---------------------------------------------------------------------------
 
+/** How flow progress is drawn — see {@link MyazaKYCConfig.progressStyle}. */
+export type ProgressStyle = 'steps' | 'bar';
+
 export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> {
   /**
    * Bearer token. The key prefix is the single source of truth for the
@@ -202,6 +205,20 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> {
 
   /** Show a light/dark mode toggle button inside the modal header. Default `true`. */
   showThemeToggle?: boolean;
+
+  /**
+   * How progress through the flow is drawn in the header.
+   *
+   *   • `'steps'` (default) — numbered circles, one per step, connected. Shows
+   *     WHICH step you are on and how many there are, and collapses to a window
+   *     when they no longer fit.
+   *   • `'bar'` — a single thin bar pinned to the bottom edge of the header.
+   *     Quieter, and unaffected by step count, so it suits long flows and hosts
+   *     who would rather the chrome said less.
+   *
+   * Both convey the same fraction; the choice is how much room it takes.
+   */
+  progressStyle?: ProgressStyle;
 
   /**
    * Hide the close (X) button and block all user-initiated dismissal of the

@@ -27,6 +27,7 @@ import {
   type KycStore,
 } from './state';
 import { nextStepAfter, nfcDecision, previousStepBefore } from './derive';
+import { recordStep, resetStepLog } from '../lib/step-log';
 import { buildVerifyRequest } from './submit';
 import { applicantMediaCaptured, buildApplicantVerifyRequest } from './submitApplicant';
 
@@ -54,7 +55,7 @@ export function createKycStore(
   const baseUrl = resolveBaseUrl(config.apiKey, config.devUrl);
   const api = createKYCApi(baseUrl, config.apiKey);
 
-  return createStore<KycState>((set, get) => {
+  const store = createStore<KycState>((set, get) => {
     function emitStepChange(step: KYCStep): void {
       config.onStepChange?.(step);
     }
@@ -354,6 +355,11 @@ export function createKycStore(
       },
 
       reset() {
+        // Fresh step journey per session; the explicit record covers a store
+        // already sitting on 'consent' (the subscribe below only fires on
+        // change, and recordStep dedupes if it fires too).
+        resetStepLog();
+        recordStep('consent');
         set({
           currentStep: 'consent',
           selectedCountry: null,
@@ -383,6 +389,24 @@ export function createKycStore(
       },
     };
   });
+
+  // Step journey log — records every step the user reaches (the subscription
+  // catches ALL currentStep writes, whatever action made them; recordStep
+  // collapses consecutive duplicates). Rides the submission as
+  // metadata.device.stepLog for the dashboard timeline.
+  store.subscribe((s, prev) => {
+    if (s.currentStep !== prev.currentStep) recordStep(s.currentStep);
+  });
+
+  // A fresh store IS a fresh session: the runtime provider creates one per
+  // modal launch and reset() is NOT part of the open path, so the journey
+  // starts here — and the opening step must be recorded explicitly (the
+  // subscription above only fires on CHANGE, and a new store already sits on
+  // 'consent').
+  resetStepLog();
+  recordStep(store.getState().currentStep);
+
+  return store;
 }
 
 // Re-export the flow helpers for tests + screens that need to reason about
