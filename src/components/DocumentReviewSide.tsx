@@ -1,10 +1,14 @@
 import React from 'react';
-import { Image, Pressable, View } from 'react-native';
+import { Image, Pressable, View, type ViewStyle } from 'react-native';
 
 import { useTheme } from './runtime';
 import { Icon } from './Icon';
 import { MyazaText } from './Typography';
 import { radius, spacing } from '../config/theme';
+import { CHROME_SCRIM, ChromeGlass } from './glass/ChromeGlass';
+
+/** The chip's flat backing, and still the fallback off iOS 26. */
+const CHIP_SCRIM = CHROME_SCRIM;
 
 // ─── One captured side, and its enlarged view ─────────────────────────────────
 //
@@ -67,7 +71,7 @@ export function DocumentReviewThumb({
         {/* Enlarging is a tap on the image, which nothing announces — so the
             image says so itself. */}
         <View style={{ position: 'absolute', right: spacing.md, bottom: spacing.md }} pointerEvents="none">
-          <Chip icon>
+          <Chip icon glass>
             <Icon name="maximize" size={18} color="#FFFFFF" />
           </Chip>
         </View>
@@ -116,20 +120,36 @@ export function Chip({
   children,
   /** Icon chips are square and need room around the glyph, not text padding. */
   icon = false,
+  /**
+   * Render on Liquid Glass instead of the flat scrim.
+   *
+   * Only for a chip that ANNOUNCES AN ACTION. It looks like an exception to the
+   * "glass is for controls" rule, since the chip itself is `pointerEvents:
+   * none` — but the photo behind it is the button, and the chip sits inside
+   * that target, so a tap on it really does fire. The promise is kept.
+   *
+   * A chip that only labels something (FRONT / BACK) stays flat: glass would
+   * offer a tap it cannot honour.
+   */
+  glass = false,
 }: {
   children: React.ReactNode;
   icon?: boolean;
+  glass?: boolean;
 }): React.ReactElement {
-  return (
-    <View
-      style={{
-        paddingHorizontal: icon ? 8 : 10,
-        paddingVertical: icon ? 8 : 5,
-        borderRadius: radius.full,
-        backgroundColor: 'rgba(0,0,0,0.55)',
-      }}
-    >
-      {children}
-    </View>
-  );
+  const shape: ViewStyle = {
+    paddingHorizontal: icon ? 8 : 10,
+    paddingVertical: icon ? 8 : 5,
+    borderRadius: radius.full,
+  };
+  // Not `interactive`: the chip never receives the touch (the image below it
+  // does), so asking the glass to react to one would be asking for nothing.
+  if (glass) {
+    return (
+      <ChromeGlass scrim={CHIP_SCRIM} style={shape}>
+        {children}
+      </ChromeGlass>
+    );
+  }
+  return <View style={[shape, { backgroundColor: CHIP_SCRIM }]}>{children}</View>;
 }

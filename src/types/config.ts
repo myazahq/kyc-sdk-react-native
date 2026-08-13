@@ -62,7 +62,7 @@ export type KYCStep =
 // ---------------------------------------------------------------------------
 
 /** How flow progress is drawn — see {@link MyazaKYCConfig.progressStyle}. */
-export type ProgressStyle = 'steps' | 'bar';
+export type ProgressStyle = 'steps' | 'bar' | 'none';
 
 export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> {
   /**
@@ -215,8 +215,13 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> {
    *   • `'bar'` — a single thin bar pinned to the bottom edge of the header.
    *     Quieter, and unaffected by step count, so it suits long flows and hosts
    *     who would rather the chrome said less.
+   *   • `'none'` — no progress in the header at all. For hosts whose own
+   *     surface already communicates progress, or short flows where a
+   *     step count is more noise than reassurance. The header keeps its
+   *     brand row and controls; only the progress element is dropped.
    *
-   * Both convey the same fraction; the choice is how much room it takes.
+   * `'steps'` and `'bar'` convey the same fraction; the choice is how much room
+   * it takes. `'none'` opts out of conveying it here.
    */
   progressStyle?: ProgressStyle;
 

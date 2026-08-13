@@ -2,19 +2,19 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
   Keyboard,
-  Modal,
   Platform,
   Pressable,
   useWindowDimensions,
   View,
 } from 'react-native';
 
-import { radius, spacing } from '../config/theme';
+import { spacing } from '../config/theme';
 import { useTheme } from './runtime';
 import { MyazaText } from './Typography';
 import { MyazaInput } from './MyazaInput';
 import { Icon } from './Icon';
 import { CountryFlag } from './CountryFlag';
+import { FloatingSheet } from './glass/FloatingSheet';
 
 // ---------------------------------------------------------------------------
 // THE country sheet — the phone field's dial-code picker, generalised.
@@ -98,19 +98,14 @@ export function DialCodePicker({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={close}>
-      <Pressable style={{ flex: 1, backgroundColor: '#00000066' }} onPress={close} />
-      <View
-        style={{
-          maxHeight,
-          marginBottom: keyboard,
-          backgroundColor: colors.background,
-          borderTopLeftRadius: radius.lg,
-          borderTopRightRadius: radius.lg,
-          paddingTop: spacing.md,
-          paddingBottom: spacing.sm,
-        }}
-      >
+    <FloatingSheet
+      visible={visible}
+      onClose={close}
+      maxHeight={maxHeight}
+      // Ride above a raised keyboard — this sheet's whole job is a search box.
+      bottomOffset={keyboard}
+      closeLabel="Close country picker"
+    >
         <View style={{ paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}>
           <MyazaInput
             value={query}
@@ -141,8 +136,7 @@ export function DialCodePicker({
             />
           )}
         />
-      </View>
-    </Modal>
+    </FloatingSheet>
   );
 }
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { ActivityIndicator, Pressable, View, type ViewStyle } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { radius, spacing } from '../../config/theme';
@@ -7,6 +7,7 @@ import { useTheme } from '../runtime';
 import { MyazaText } from '../Typography';
 import { Icon } from '../Icon';
 import { CountryFlag } from '../CountryFlag';
+import { CHROME_SCRIM, ChromeGlass } from '../glass/ChromeGlass';
 
 // ---------------------------------------------------------------------------
 // Immersive capture chrome — 1:1 with the Flutter SDK's full-screen camera.
@@ -18,9 +19,16 @@ import { CountryFlag } from '../CountryFlag';
 //   • the side badge and document pill sit top, out of the frame's way.
 // ---------------------------------------------------------------------------
 
-const SCRIM = 'rgba(0,0,0,0.55)';
+const SCRIM = CHROME_SCRIM;
 
-/** Round translucent control — back, torch. */
+/**
+ * Round translucent control — back, torch.
+ *
+ * Liquid Glass when idle; SOLID brand fill when `active`. An "on" state has to
+ * be unmistakable, and a translucent material that samples the scene behind it
+ * cannot promise that — the torch would look on or off depending on what the
+ * camera happened to be pointed at.
+ */
 export function RoundControl({
   icon,
   label,
@@ -37,23 +45,27 @@ export function RoundControl({
   style: object;
 }): React.ReactElement {
   const { colors } = useTheme();
+  const fill: ViewStyle = {
+    flex: 1,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  };
+  const glyph = <Icon name={icon} size={20} color="#FFFFFF" />;
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={{
-        position: 'absolute',
-        width: size,
-        height: size,
-        borderRadius: radius.full,
-        backgroundColor: active ? colors.primary : SCRIM,
-        alignItems: 'center',
-        justifyContent: 'center',
-        ...style,
-      }}
+      style={{ position: 'absolute', width: size, height: size, ...style }}
     >
-      <Icon name={icon} size={20} color="#FFFFFF" />
+      {active ? (
+        <View style={[fill, { backgroundColor: colors.primary }]}>{glyph}</View>
+      ) : (
+        <ChromeGlass interactive style={fill}>
+          {glyph}
+        </ChromeGlass>
+      )}
     </Pressable>
   );
 }

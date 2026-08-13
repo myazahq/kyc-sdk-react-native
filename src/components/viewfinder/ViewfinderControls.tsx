@@ -1,11 +1,23 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { ActivityIndicator, Pressable, View, type ViewStyle } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../runtime';
 import { MyazaText } from '../Typography';
 import { Icon } from '../Icon';
+import { ChromeGlass } from '../glass/ChromeGlass';
+
+/** This overlay's own scrim, kept so non-glass devices look unchanged. */
+const OVERLAY_SCRIM = 'rgba(0,0,0,0.4)';
+
+/** Fills a sized Pressable with a round surface. */
+const ROUND_FILL: ViewStyle = {
+  flex: 1,
+  borderRadius: radius.full,
+  alignItems: 'center',
+  justifyContent: 'center',
+};
 
 /** Top offset that clears the status bar when the camera runs full-bleed. */
 export function topInset(fill: boolean): number {
@@ -49,7 +61,13 @@ export function HintBanner({
   );
 }
 
-/** A round overlay button — the torch and the immersive back control. */
+/**
+ * A round overlay button — the torch and the immersive back control.
+ *
+ * Liquid Glass when idle; SOLID brand fill when `active`. An "on" state has to
+ * be unmistakable, and a translucent material that samples the scene behind it
+ * cannot promise that.
+ */
 export function OverlayButton({
   icon,
   onPress,
@@ -77,13 +95,17 @@ export function OverlayButton({
         [side]: spacing.md,
         width: 36,
         height: 36,
-        borderRadius: radius.full,
-        backgroundColor: active ? colors.primary : 'rgba(0,0,0,0.4)',
-        alignItems: 'center',
-        justifyContent: 'center',
       }}
     >
-      <Icon name={icon} size={18} color="#FFFFFF" />
+      {active ? (
+        <View style={[ROUND_FILL, { backgroundColor: colors.primary }]}>
+          <Icon name={icon} size={18} color="#FFFFFF" />
+        </View>
+      ) : (
+        <ChromeGlass interactive scrim={OVERLAY_SCRIM} style={ROUND_FILL}>
+          <Icon name={icon} size={18} color="#FFFFFF" />
+        </ChromeGlass>
+      )}
     </Pressable>
   );
 }

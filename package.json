@@ -1,6 +1,6 @@
 {
   "name": "@myazahq/kyc-sdk-react-native",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "Myaza KYC SDK for React Native (Expo) — ID verification, liveness detection, and document capture",
   "author": "Flitstack Technologies Inc.",
   "repository": {
@@ -61,7 +61,6 @@
   "dependencies": {
     "@expo-google-fonts/karla": "^0.4.2",
     "@expo-google-fonts/space-grotesk": "^0.4.1",
-    "@expo/ui": "~56.0.16",
     "@expo/vector-icons": "^14.0.4",
     "country-flag-icons": "^1.6.17",
     "expo-application": "~56.0.3",

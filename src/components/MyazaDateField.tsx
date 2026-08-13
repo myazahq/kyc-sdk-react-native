@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import {
@@ -13,6 +13,7 @@ import {
 import { Icon } from './Icon';
 import { useTheme } from './runtime';
 import { MyazaText } from './Typography';
+import { FloatingSheet } from './glass/FloatingSheet';
 
 /**
  * A date field that opens a REAL calendar picker, replacing the "type
@@ -117,22 +118,8 @@ function DatePickerSheet({
     !!initial && initial.year === cursor.year && initial.month0 === cursor.month0 && initial.day === d;
 
   return (
-    <Modal transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable
-        onPress={onClose}
-        style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}
-      >
-        {/* Stop the backdrop press from closing when the card itself is tapped. */}
-        <Pressable
-          onPress={() => undefined}
-          style={{
-            backgroundColor: colors.background,
-            borderTopLeftRadius: radius.xl,
-            borderTopRightRadius: radius.xl,
-            padding: spacing.md,
-            paddingBottom: spacing.xl,
-          }}
-        >
+    <FloatingSheet visible onClose={onClose} closeLabel="Close date picker">
+          <View style={{ padding: spacing.md, paddingTop: spacing.sm }}>
           {/* Month header: step, or tap the title to jump years. */}
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm }}>
             <Pressable
@@ -233,8 +220,7 @@ function DatePickerSheet({
               ))}
             </>
           )}
-        </Pressable>
-      </Pressable>
-    </Modal>
+          </View>
+    </FloatingSheet>
   );
 }

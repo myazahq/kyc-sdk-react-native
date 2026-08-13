@@ -1,13 +1,25 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { ActivityIndicator, Pressable, View, type ViewStyle } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../runtime';
 import { MyazaText } from '../Typography';
 import { Icon } from '../Icon';
+import { CHROME_SCRIM, ChromeGlass } from '../glass/ChromeGlass';
 
-const SCRIM = 'rgba(0,0,0,0.55)';
+const SCRIM = CHROME_SCRIM;
+
+/** The torch's own scrim, kept as-is so non-glass devices look unchanged. */
+const TORCH_SCRIM = 'rgba(0,0,0,0.45)';
+
+/** Fills a sized Pressable with a round surface. */
+const ROUND_FILL: ViewStyle = {
+  flex: 1,
+  borderRadius: radius.full,
+  alignItems: 'center',
+  justifyContent: 'center',
+};
 
 /**
  * Fixed slots either side of the shutter.
@@ -147,22 +159,21 @@ export function BottomBar({
               onPress={onToggleTorch}
               accessibilityRole="button"
               accessibilityLabel={torch ? 'Turn off the torch' : 'Turn on the torch'}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: radius.full,
-                // Inverted when on, so "lit" reads at a glance rather than
-                // needing the icon to be decoded.
-                backgroundColor: torch ? '#FFFFFF' : 'rgba(0,0,0,0.45)',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
+              style={{ width: 36, height: 36 }}
             >
-              <Icon
-                name={torch ? 'zap' : 'zap-off'}
-                size={18}
-                color={torch ? colors.primary : '#FFFFFF'}
-              />
+              {torch ? (
+                // Inverted when on, so "lit" reads at a glance rather than
+                // needing the icon to be decoded. Solid rather than glass: a
+                // translucent surface samples the scene behind it, so "on"
+                // would look different depending on where the camera points.
+                <View style={[ROUND_FILL, { backgroundColor: '#FFFFFF' }]}>
+                  <Icon name="zap" size={18} color={colors.primary} />
+                </View>
+              ) : (
+                <ChromeGlass interactive scrim={TORCH_SCRIM} style={ROUND_FILL}>
+                  <Icon name="zap-off" size={18} color="#FFFFFF" />
+                </ChromeGlass>
+              )}
             </Pressable>
           ) : null}
         </View>

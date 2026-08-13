@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Modal, Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from './runtime';
 import { useInputFontFamily } from './fonts';
 import { MyazaText } from './Typography';
 import { Icon } from './Icon';
+import { FloatingSheet } from './glass/FloatingSheet';
 
 // ---------------------------------------------------------------------------
 // The select field — a collapsed value that opens a sheet of options.
@@ -131,45 +132,16 @@ export function MyazaSelect<T extends string | number>({
         <Icon name="chevron-down" size={18} color={colors.textSecondary} />
       </Pressable>
 
-      <Modal
+      <FloatingSheet
         visible={open}
-        transparent
-        animationType="slide"
-        onRequestClose={() => {
+        onClose={() => {
           setOpen(false);
           setQuery('');
         }}
+        // Long option lists stay inside the sheet and scroll.
+        maxHeight={windowHeight * 0.6}
+        closeLabel={`Close ${sheetTitle ?? hint}`}
       >
-        {/* Tapping the backdrop dismisses, matching the platform sheet. */}
-        <Pressable
-          onPress={() => {
-            setOpen(false);
-            setQuery('');
-          }}
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' }}
-        >
-          {/* Stops a tap inside the sheet from closing it. */}
-          <Pressable
-            onPress={() => {}}
-            style={{
-              backgroundColor: colors.background,
-              borderTopLeftRadius: radius.lg,
-              borderTopRightRadius: radius.lg,
-              paddingBottom: spacing.lg,
-              // Long option lists stay inside the sheet and scroll.
-              maxHeight: windowHeight * 0.6,
-            }}
-          >
-            <View
-              style={{
-                alignSelf: 'center',
-                width: 36,
-                height: 4,
-                borderRadius: radius.full,
-                backgroundColor: colors.border,
-                marginTop: spacing.sm,
-              }}
-            />
             <MyazaText
               variant="body"
               style={{
@@ -222,7 +194,13 @@ export function MyazaSelect<T extends string | number>({
               </View>
             ) : null}
 
-            <ScrollView bounces={false} keyboardShouldPersistTaps="handled">
+            <ScrollView
+              bounces={false}
+              keyboardShouldPersistTaps="handled"
+              // The floating shell has no bottom padding of its own, so the
+              // last option must not sit flush against the rounded corner.
+              contentContainerStyle={{ paddingBottom: spacing.lg }}
+            >
               {visible.length === 0 ? (
                 <MyazaText
                   variant="bodySmall"
@@ -280,9 +258,7 @@ export function MyazaSelect<T extends string | number>({
                 );
               })}
             </ScrollView>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      </FloatingSheet>
     </>
   );
 }

@@ -1,10 +1,11 @@
 import React, { useRef } from 'react';
-import { Modal, Platform, Pressable, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { Icon, type IconName } from './Icon';
 import { useTheme } from './runtime';
 import { MyazaText } from './Typography';
+import { FloatingSheet } from './glass/FloatingSheet';
 
 /**
  * The SDK's own "where is the document?" sheet.
@@ -61,46 +62,16 @@ export function MediaSourceSheet({
   };
 
   return (
-    <Modal
-      transparent
+    <FloatingSheet
       visible={open}
-      animationType="fade"
-      onRequestClose={onClose}
+      onClose={onClose}
       onDismiss={() => {
         const run = pendingRef.current;
         pendingRef.current = null;
         run?.();
       }}
     >
-      <Pressable
-        onPress={onClose}
-        style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}
-      >
-        {/* Swallow taps on the card so only the backdrop dismisses. */}
-        <Pressable
-          onPress={() => undefined}
-          style={{
-            backgroundColor: colors.background,
-            borderTopLeftRadius: radius.xl,
-            borderTopRightRadius: radius.xl,
-            padding: spacing.md,
-            paddingBottom: spacing.xl,
-          }}
-        >
-          {/* Grab handle — the affordance that says "sheet", and therefore
-              "swipe-away-able", without a close button competing with the
-              options. */}
-          <View
-            style={{
-              alignSelf: 'center',
-              width: 36,
-              height: 4,
-              borderRadius: 2,
-              backgroundColor: colors.border,
-              marginBottom: spacing.md,
-            }}
-          />
-
+      <View style={{ padding: spacing.md, paddingTop: spacing.sm }}>
           <MyazaText variant="heading3" style={{ textAlign: 'center', marginBottom: spacing.md }}>
             {title}
           </MyazaText>
@@ -156,8 +127,7 @@ export function MediaSourceSheet({
               Cancel
             </MyazaText>
           </Pressable>
-        </Pressable>
-      </Pressable>
-    </Modal>
+      </View>
+    </FloatingSheet>
   );
 }

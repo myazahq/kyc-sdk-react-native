@@ -1,21 +1,21 @@
-import React, { useEffect, useState } from "react";
-import { Image, Platform, ScrollView, StatusBar, View } from "react-native";
-import { SvgXml } from "react-native-svg";
+import React from "react";
+import { Platform, ScrollView, StatusBar, View } from "react-native";
 import { StatusBarController } from "./StatusBarController";
 import { initialWindowMetrics } from "react-native-safe-area-context";
 
-import { headerSurface, radius, spacing } from "../config/theme";
+import { headerSurface, spacing } from "../config/theme";
 import { useKeyboardInset } from "../lib/use-keyboard-inset";
 import type { SupportedCountry } from "../types/config";
 import { useKycConfig, useTheme } from "./runtime";
 import { useBranding } from "./useBranding";
-import { MyazaText } from "./Typography";
+import { BrandBar } from "./BrandBar";
 import { PoweredBy } from "./PoweredBy";
 import { StepHeader } from "./StepHeader";
 import { StepIndicator } from "./StepIndicator";
 import { ProgressBar } from "./ProgressBar";
 import { GlassIconButton } from "./GlassIconButton";
 import { GlassSurface } from "./glass/GlassSurface";
+import { SandboxBanner, useSandboxBannerVisible } from "./SandboxBanner";
 import { GlassGroup } from "./glass/GlassGroup";
 import { FlashOverlay } from "./FlashOverlay";
 
@@ -84,13 +84,31 @@ export function KycSheet({
   const keyboardInset = useKeyboardInset();
 
   const tint = headerSurface(colors, mode);
+  // Decides who absorbs the status-bar inset: the banner sits above the header,
+  // so when it renders it is the topmost element and takes it instead.
+  const bannerVisible = useSandboxBannerVisible();
   const hasProgress = progress != null && stepCount != null;
-  // The bar REPLACES the step row rather than joining it: two progress
-  // indicators on one header would be noise, and the point of the bar is that
-  // it costs no height.
-  const asBar = config.progressStyle === "bar";
-  const showIndicator = hasProgress && !asBar;
-  const showBar = hasProgress && asBar;
+  // The three styles are mutually exclusive: the bar REPLACES the step row
+  // rather than joining it (two progress indicators on one header would be
+  // noise, and the point of the bar is that it costs no height), and 'none'
+  // drops both. Switching on the resolved style rather than negating flags
+  // keeps a future fourth style from silently falling into the 'steps' branch.
+  const progressStyle = config.progressStyle ?? "steps";
+  const showIndicator = hasProgress && progressStyle === "steps";
+  const showBar = hasProgress && progressStyle === "bar";
+
+  // The header's bottom padding is the GAP to whatever sits under the brand
+  // row — the title block or the step row. With neither (a step that owns its
+  // own title, and progress off or drawn as the edge bar), that padding is
+  // space to a row that never renders, and the brand + controls read as
+  // sitting high in the band rather than centred on one line. Fall back to the
+  // row's own top padding so the two edges match.
+  //
+  // The bar is exempt: it is absolutely positioned ON the bottom edge, so the
+  // wider padding is what keeps it clear of the controls.
+  const hasRowBelowBrand = !!(title || onBack) || showIndicator;
+  const headerPaddingBottom =
+    hasRowBelowBrand || showBar ? spacing.md : spacing.sm;
   const showBrand = !hideBrand && !!logoUri;
 
   // On iOS the modal is a pageSheet by default (sits below the status bar), but
@@ -143,6 +161,11 @@ export function KycSheet({
         />
       ) : null}
       <View style={{ flex: 1 }}>
+        {/* Above the header block (and outside the immersive branch) so a
+            capture step that hides the chrome still says it is not live. It is
+            then the topmost element, so it — not the header — absorbs the
+            status-bar inset. */}
+        <SandboxBanner topInset={topInset} />
         {/* Header block (glass on iOS 26, tinted surface otherwise) — dropped
             entirely when the step owns the display. */}
         {immersive ? null : (
@@ -154,7 +177,7 @@ export function KycSheet({
               // border would double it.
               borderBottomWidth: showBar ? 0 : 1,
               borderBottomColor: colors.border,
-              paddingBottom: spacing.md,
+              paddingBottom: headerPaddingBottom,
             }}
           >
             {/* Row 1 — brand + controls */}
@@ -163,7 +186,10 @@ export function KycSheet({
                 flexDirection: "row",
                 alignItems: "center",
                 paddingHorizontal: spacing.md,
-                paddingTop: topInset + spacing.sm,
+                // The banner, when shown, already cleared the status bar above
+                // us — padding for it again would leave a gap the width of the
+                // notch between the strip and the brand row.
+                paddingTop: (bannerVisible ? 0 : topInset) + spacing.sm,
               }}
             >
               <View
@@ -305,132 +331,5 @@ export function KycSheet({
           by construction. */}
       <FlashOverlay />
     </View>
-  );
-}
-
-/** Whether a logo URI points at an SVG (extension check, query-safe). */
-function isSvgUri(uri: string): boolean {
-  const path = uri.split("?")[0] ?? uri;
-  return path.toLowerCase().endsWith(".svg");
-}
-
-// Persistent header brand — circular logo avatar + company name. A broken/missing
-// logo image collapses the whole brand bar (mirrors the web SDK's `onError` and
-// Flutter's `errorBuilder`), so the header never shows a broken-image box.
-function BrandBar({
-  logoUri,
-  companyName,
-}: {
-  logoUri: string;
-  companyName: string;
-}): React.ReactElement | null {
-  const { colors } = useTheme();
-  const [broken, setBroken] = useState(false);
-  const svg = isSvgUri(logoUri);
-  // SVG logos render through SvgXml with SELF-FETCHED markup — the exact
-  // pipeline the country flags use, which is proven on-device. SvgUri's own
-  // fetch/sizing was flaky here (the favicon rendered at intrinsic size
-  // instead of filling the chip).
-  const [xml, setXml] = useState<string | null>(null);
-  useEffect(() => {
-    if (!svg) return;
-    let cancelled = false;
-    fetch(logoUri)
-      .then((r) =>
-        r.ok ? r.text() : Promise.reject(new Error(String(r.status))),
-      )
-      .then((text) => {
-        if (!cancelled) setXml(text);
-      })
-      .catch(() => {
-        if (!cancelled) setBroken(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [logoUri, svg]);
-  if (broken) return null;
-  return (
-    <>
-      {/* TWO layers, deliberately.
-
-          A shadow and `overflow: 'hidden'` CANNOT live on the same view on iOS:
-          overflow-hidden compiles to `masksToBounds`, which clips the shadow
-          away with everything else outside the bounds. Android draws `elevation`
-          outside the view, so it survived there — which is why the chip lost its
-          ring on iPhone only.
-
-          So the outer view owns the border and shadow and does NOT clip, and the
-          inner one clips the logo. Same split Flutter gets for free by putting
-          the border on the Container's decoration and the crop in a ClipOval. */}
-      <View
-        style={{
-          width: 28,
-          height: 28,
-          borderRadius: radius.full,
-          backgroundColor: "#FFFFFF",
-          // Light ring + soft shadow — the same treatment as the Flutter SDK's
-          // brand chip (black 5% ring, black 6% blur-4 y-1 shadow) and the web
-          // SDK's ring-1 ring-black/5.
-          borderWidth: 1,
-          borderColor: "rgba(0,0,0,0.05)",
-          shadowColor: "#000000",
-          shadowOpacity: 0.06,
-          shadowRadius: 4,
-          shadowOffset: { width: 0, height: 1 },
-          elevation: 1,
-          marginRight: spacing.sm,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <View
-          style={{
-            // Fills the parent's CONTENT box (inside its 1px border) and is the
-            // only thing that clips, so the logo reaches the ring on every side.
-            alignSelf: "stretch",
-            flex: 1,
-            borderRadius: radius.full,
-            overflow: "hidden",
-          }}
-        >
-          {/* Fill + cover-crop, matching Flutter's SizedBox.expand + BoxFit.cover.
-
-            Sized in PERCENTAGES, not the literal 26 this used to hardcode: that
-            number was "28 minus the 1px border on each side", so it silently
-            went wrong the moment either value changed, and it left the logo a
-            pixel short of the ring. The clipping parent now owns the geometry.
-
-            SVG logos are common here because the brand import picks up site
-            favicons, and <Image> cannot decode SVG at all — hence the fetched
-            markup through SvgXml. `slice` is the SVG spelling of cover-crop. */}
-          {svg ? (
-            xml ? (
-              <SvgXml
-                xml={xml}
-                width="100%"
-                height="100%"
-                preserveAspectRatio="xMidYMid slice"
-              />
-            ) : null
-          ) : (
-            <Image
-              source={{ uri: logoUri }}
-              style={{ width: "100%", height: "100%" }}
-              resizeMode="cover"
-              onError={() => setBroken(true)}
-            />
-          )}
-        </View>
-      </View>
-      <MyazaText
-        variant="heading3"
-        numberOfLines={1}
-        color={colors.textDark}
-        style={{ flexShrink: 1, fontSize: 14 }}
-      >
-        {companyName}
-      </MyazaText>
-    </>
   );
 }

@@ -17,6 +17,7 @@ import {
   CreditCard,
   Fingerprint,
   FileText,
+  FlaskConical,
   IdCard,
   Image as ImageIcon,
   Landmark,
@@ -68,6 +69,7 @@ export type IconName =
   | 'check'
   | 'lock'
   | 'alert'
+  | 'flask'
   | 'refresh'
   | 'maximize'
   | 'calendar'
@@ -128,6 +130,9 @@ const ICONS: Record<IconName, LucideIcon> = {
   check: Check,
   lock: Lock,
   alert: CircleAlert,
+  // The environment banner's mark, shared with the web SDK (same lucide glyph)
+  // and mirrored by Flutter's Icons.science_outlined.
+  flask: FlaskConical,
   refresh: RefreshCw,
   maximize: Maximize2,
   calendar: Calendar,
