@@ -50,11 +50,13 @@ export function ApplicantRoleStep(): React.ReactElement {
   const { colors } = useTheme();
   const stored = useKyc((s) => s.businessApplication);
 
-  // The valid entered people, keeping their ORIGINAL index — the payload flag
-  // is index-based, so the list and the submission can never disagree.
+  // The valid entered PEOPLE, keeping their ORIGINAL index — the payload flag
+  // is index-based, so the list and the submission can never disagree. A
+  // corporate shareholder is excluded: "which of these is you?" is a question
+  // about humans, and a company can never be the person filling in the form.
   const people = stored.keyPeople
     .map((row, index) => ({ row, index }))
-    .filter(({ row }) => isKeyPersonRowValid(row));
+    .filter(({ row }) => !row.isCorporate && isKeyPersonRowValid(row));
   const hasPeople = people.length > 0;
 
   const propName = [config.userData?.firstName, config.userData?.lastName]
@@ -63,13 +65,15 @@ export function ApplicantRoleStep(): React.ReactElement {
 
   // Tri-state: a person's index, 'other', or nothing chosen yet. First arrival
   // pre-selects the applicant's own entry when the userData name matches
-  // (they still confirm) — a stored choice always wins.
+  // (they still confirm) — and when the name matches NOBODY listed, "I'm not
+  // one of these people" is what that fact means, so it is pre-selected
+  // instead (mirrors the web SDK). A stored choice always wins.
   const [selection, setSelection] = useState<number | 'other' | null>(() => {
     if (stored.applicantKeyPersonIndex !== null) return stored.applicantKeyPersonIndex;
     if (stored.applicantRole) return 'other';
     if (propName) {
       const match = people.find(({ row }) => namesLooselyMatch(propName, row.name));
-      if (match) return match.index;
+      return match ? match.index : people.length > 0 ? 'other' : null;
     }
     return null;
   });

@@ -109,8 +109,40 @@ dependencies {
   // CameraX core — for the ImageProxy / ExperimentalGetImage APIs.
   compileOnly 'androidx.camera:camera-core:1.3.4'
 
-  // Google ML Kit face detection — Android only. Same version as the Flutter SDK.
-  implementation 'com.google.mlkit:face-detection:16.1.6'
-  // On-device text recognition, for reading the MRZ off a passport or ID card.
+  // ── ML Kit: models fetched on demand by default ──────────────────────────
+  //
+  // Two variants of the same API exist. The `com.google.mlkit:*` artifacts embed
+  // the models in the APK; the `com.google.android.gms:play-services-mlkit-*`
+  // ones fetch them through Google Play Services on first use.
+  //
+  // Measured on a real integrator's release APK, the bundled pair cost
+  // **18.5 MB per device** (arm64: ocr_pipeline 10.55 MB + face_detector 7.95 MB)
+  // plus the .tflite files in assets/, which ship to EVERY device because assets
+  // are not split by ABI. Unbundled, that is ~0.4 MB of shims.
+  //
+  // The trade-off is real and is why the flag exists: the unbundled variants need
+  // Google Play Services, so they do not work on Huawei or AOSP builds without
+  // GMS. An org shipping to those devices sets `myazaKycBundledMlKit = true` in
+  // its root build.gradle ext and gets today's fully-offline behaviour back.
+  //
+  // Availability is NOT inferred per frame — `isModelReady()` is checked once
+  // before the camera opens (see HybridMyazaFaceDetector.kt), because a missing
+  // model would otherwise be indistinguishable from "no face in frame".
+  if (safeExtGet('myazaKycBundledMlKit', false).toString().toBoolean()) {
+    implementation 'com.google.mlkit:face-detection:16.1.6'
+  } else {
+    implementation 'com.google.android.gms:play-services-mlkit-face-detection:17.1.0'
+  }
+
+  // Text recognition is STILL BUNDLED, deliberately, and it is the larger of the
+  // two (10.55 MB vs 7.95 MB on arm64) — so this is the bigger half of the win,
+  // deferred rather than abandoned.
+  //
+  // Unbundling it needs the same isModelReady()/prepareModel() contract the face
+  // detector just gained. Without that, a missing OCR model is indistinguishable
+  // from "no text in frame": document auto-capture would simply never fire and
+  // MRZ scanning would never produce a key for the chip read, with nothing shown
+  // to the user. Shipping the dependency swap ahead of the availability handling
+  // would trade 10 MB for a silent failure on every fresh install.
   implementation 'com.google.mlkit:text-recognition:16.0.1'
 }

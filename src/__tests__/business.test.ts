@@ -97,11 +97,19 @@ describe('registry countries', () => {
 
 describe('company profile fields', () => {
   it('defaults every field to optional', () => {
+    // All nine — the four contact fields plus the five registry facts the
+    // applicant states (asked as their own answer; a divergence from the
+    // register is the finding).
     expect(companyInfoFieldModes(business())).toEqual({
       address: 'optional',
       email: 'optional',
       phone: 'optional',
       website: 'optional',
+      dateOfIncorporation: 'optional',
+      taxId: 'optional',
+      vatNumber: 'optional',
+      companyType: 'optional',
+      natureOfBusiness: 'optional',
     });
   });
 
@@ -205,8 +213,9 @@ describe('the application section', () => {
       ),
     ).toEqual([
       'business-details',
-      'business-key-people',
+      // Documents follow the company they belong to; people come after.
       'business-documents',
+      'business-key-people',
       'applicant-role',
     ]);
   });

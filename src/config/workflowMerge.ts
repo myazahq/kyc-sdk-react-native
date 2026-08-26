@@ -20,6 +20,7 @@ export const WORKFLOW_KEYS = [
   'country',
   'countries',
   'idTypes',
+  'multiId',
   'enableSelfie',
   'enableDocumentCapture',
   'allowDocumentUpload',
@@ -27,6 +28,7 @@ export const WORKFLOW_KEYS = [
   'livenessMode',
   'flashSequenceLength',
   'deviceIntelligence',
+  'keyPeopleLinkRecovery',
   'requireMobileDevice',
   'voiceGuidance',
   'showThemeToggle',
@@ -40,6 +42,8 @@ export const WORKFLOW_KEYS = [
   'questionnaire',
   'proofOfAddress',
   'nfc',
+  // Set only on a session a reviewer sent back, never on a published flow.
+  'resubmit',
 ] as const;
 
 export type WorkflowKey = (typeof WORKFLOW_KEYS)[number];
@@ -96,6 +100,7 @@ const APPLICANT_LEG_KEYS = [
   'country',
   'countries',
   'idTypes',
+  'multiId',
   'enableSelfie',
   'enableDocumentCapture',
   'allowDocumentUpload',

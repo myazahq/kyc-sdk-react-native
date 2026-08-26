@@ -106,12 +106,16 @@ export function DialCodePicker({
       bottomOffset={keyboard}
       closeLabel="Close country picker"
     >
-        <View style={{ paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}>
+        {/* Clear air between the header row (handle + close) and the search
+            field — flush against the close button they read as one control. */}
+        <View style={{ paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm }}>
+          {/* Deliberately NOT autofocused: springing the keyboard the instant
+              the sheet opens hides half the list before the person has even
+              seen it — search is one tap away for whoever wants it. */}
           <MyazaInput
             value={query}
             onChangeText={setQuery}
             placeholder={searchPlaceholder}
-            autoFocus
             prefix={<Icon name="search" size={18} color={colors.textSecondary} />}
           />
         </View>
@@ -159,19 +163,22 @@ function CountryRow({
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
+        // Roomier rows: a country list is a long scan, and cramped rows make
+        // every tap a precision job. Matches the web dropdown's row height.
+        paddingVertical: 12,
         backgroundColor: isSelected ? colors.primary50 : 'transparent',
       }}
     >
-      <CountryFlag country={option.code} size={24} />
+      <CountryFlag country={option.code} size={28} />
       <View style={{ width: spacing.md }} />
       {/* No line clamp: "Bosnia & Herzegovina" and the like must read in full,
-          which is what Flutter's Expanded(Text) gives. */}
-      <MyazaText variant="bodyMedium" style={{ flex: 1 }}>
+          which is what Flutter's Expanded(Text) gives. Full body size (16),
+          the web dropdown's reading size — 14 read small against the flags. */}
+      <MyazaText variant="body" style={{ flex: 1 }}>
         {option.name}
       </MyazaText>
       {option.dialCode != null ? (
-        <MyazaText variant="label" color={colors.textSecondary}>
+        <MyazaText variant="bodyMedium" color={colors.textSecondary}>
           {option.dialCode}
         </MyazaText>
       ) : null}

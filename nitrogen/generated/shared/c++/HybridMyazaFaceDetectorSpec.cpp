@@ -15,6 +15,8 @@ namespace margelo::nitro::myazakyc {
     // load custom methods/properties
     registerHybrids(this, [](Prototype& prototype) {
       prototype.registerHybridMethod("detectFace", &HybridMyazaFaceDetectorSpec::detectFace);
+      prototype.registerHybridMethod("isModelReady", &HybridMyazaFaceDetectorSpec::isModelReady);
+      prototype.registerHybridMethod("prepareModel", &HybridMyazaFaceDetectorSpec::prepareModel);
     });
   }
 

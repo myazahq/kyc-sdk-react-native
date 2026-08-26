@@ -55,6 +55,8 @@ namespace margelo::nitro::myazakyc {
   public:
     // Methods
     FaceResult detectFace(const std::shared_ptr<margelo::nitro::camera::HybridFrameSpec>& frame) override;
+    bool isModelReady() override;
+    std::shared_ptr<Promise<bool>> prepareModel() override;
 
   private:
     jni::global_ref<JHybridMyazaFaceDetectorSpec::JavaPart> _javaPart;

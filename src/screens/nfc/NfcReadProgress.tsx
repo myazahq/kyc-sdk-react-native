@@ -30,6 +30,7 @@ const STEPS: NfcReadStage[] = [
   'readingData',
   'readingSecurity',
   'readingPhoto',
+  'readingDetails',
 ];
 
 export function NfcReadProgress({ stage }: { stage: NfcReadStage }): React.ReactElement {

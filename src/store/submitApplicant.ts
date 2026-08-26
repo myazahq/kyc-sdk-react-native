@@ -14,6 +14,7 @@ import { collectDeviceMetadata } from '../services/deviceMetadata';
 import { generateRequestId } from '../utils/uuid';
 import { splitFullName } from '../config/keyPeople';
 import { effectiveCountry } from './derive';
+import { nfcPayload } from './submit';
 import type { ClientFingerprint } from '../services/fingerprint';
 import type { VerifyRequest } from '../services/api';
 import type { KycState } from './state';
@@ -53,17 +54,10 @@ export function buildApplicantVerifyRequest(
     ...(userData ? { userData } : {}),
     mediaIds: state.mediaIds,
     // The chip read, when the leg ran the NFC step (an overlaid applicant
-    // workflow can enable it). Same block as the individual flow's builder.
-    ...(state.chipData
-      ? {
-          nfc: {
-            dg1: state.chipData.dg1,
-            ...(state.chipData.sod ? { sod: state.chipData.sod } : {}),
-            ...(state.chipData.dg2 ? { dg2: state.chipData.dg2 } : {}),
-            chipAuth: state.chipData.chipAuth,
-          },
-        }
-      : {}),
+    // workflow can enable it). Built by the SHARED builder, not a second copy
+    // of the block: a hand-rolled twin drifts silently, and the applicant's
+    // chip must reach the server in the same shape as everyone else's.
+    ...(state.chipData ? { nfc: nfcPayload(state.chipData) } : {}),
     // NO top-level `userId` here on purpose: the server prefers it over
     // metadata.userId, so sending the org's own user ref would sever the
     // KeyPerson link this submission exists to make.

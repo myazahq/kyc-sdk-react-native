@@ -141,11 +141,26 @@ export interface WorkflowCountry {
   idTypes?: string[];
   /** Per-ID validation toggles — restrict-only; they never widen a grant. */
   idOptions?: Record<string, WorkflowIdOption>;
+  /** Multi-ID: which IDs THIS country offers for each verification in the run.
+   *  A pinned slot keeps its list; an absent entry offers everything. */
+  multiIdSlots?: Array<{ idTypes?: string[] }>;
   govDbCheck?: boolean;
   documentIntelligence?: boolean;
 }
 
 // ── Liveness ────────────────────────────────────────────────────────────────
+
+/**
+ * Multi-ID: several ID checks in ONE run, one selfie, one verification. The
+ * POLICY is workflow-level; WHICH IDs each verification offers is per country
+ * (`WorkflowCountry.multiIdSlots`), so multi-region flows work.
+ */
+export interface MultiIdConfig {
+  /** How many IDs the applicant completes (2–3). */
+  count: number;
+  /** How many must pass for the verification to be VERIFIED. */
+  minPassed: number;
+}
 
 /** Gestures (default), screen-reflection flash, or both. */
 export type LivenessMode = 'gestures' | 'flash' | 'both';

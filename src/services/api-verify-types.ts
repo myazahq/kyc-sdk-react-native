@@ -10,7 +10,26 @@
 export interface VerifyRequest {
   country: string;
   idType: string;
+  /** The attempt session this run happened under — the verification adopts its
+   *  id, and a registry check paid at selection is not paid again at submit. */
+  sessionId?: string;
   idNumber?: string;
+  /**
+   * Multi-ID: every check in the run, in pick order (2–3). ONE verification
+   * comes back, judged by the workflow's pass policy. The top-level
+   * idType/idNumber mirror the first entry.
+   */
+  idChecks?: Array<{
+    idType: string;
+    idNumber?: string;
+    documentFront?: string;
+    documentBack?: string;
+    /** Each check's OWN document recording. */
+    documentFrontVideo?: string;
+    documentBackVideo?: string;
+    /** This check's own chip read — the chip belongs to a PARTICULAR document. */
+    nfc?: VerifyRequest['nfc'];
+  }>;
   /** The org's user reference → Entity.externalUserId at the seam (not matched). */
   userId?: string;
   userData?: {
@@ -50,6 +69,13 @@ export interface VerifyRequest {
     email?: string;
     phone?: string;
     website?: string;
+    /** Registry facts the applicant states (the extended collectCompanyInfo
+     *  fields) — where they differ from the register, that is the finding. */
+    dateOfIncorporation?: string;
+    taxId?: string;
+    vatNumber?: string;
+    companyType?: string;
+    natureOfBusiness?: string;
     /** Uploaded supporting documents (honoured only when the workflow's
      *  `business.documents` block configures them). */
     documents?: Array<{ type: string; mediaId: string }>;
@@ -77,7 +103,33 @@ export interface VerifyRequest {
    * signer — and only the server may conclude a chip is genuine. `chipAuth`
    * reports how the chip was unlocked and is informational.
    */
-  nfc?: { dg1: string; sod?: string; dg2?: string; chipAuth?: string };
+  nfc?: {
+    dg1: string;
+    sod?: string;
+    dg2?: string;
+    dg7?: string;
+    dg11?: string;
+    dg12?: string;
+    /**
+     * DG15 (the chip's Active-Authentication public key) and its signature over
+     * the challenge the server issued — the ANTI-CLONE proof. Passive
+     * authentication proves the issuing state signed this data; only these
+     * prove it is the chip they signed it onto. Verified server-side against a
+     * SOD-bound DG15: a client that checked its own chip could be patched.
+     */
+    dg15?: string;
+    aaChallengeId?: string;
+    aaSignature?: string;
+    chipAuth?: string;
+    /**
+     * WHY the session is on that protocol. A chip reading over BAC because it
+     * offers no PACE is nothing to act on; one reading over BAC because our
+     * PACE broke is a bug, and `chipAuth` alone cannot tell them apart.
+     * Diagnostic only — the server records it and never judges on it.
+     */
+    paceOutcome?: string;
+    paceDetail?: string;
+  };
   /** The workflow that drove this flow — attributes the submission to it. */
   workflowId?: string;
   /**

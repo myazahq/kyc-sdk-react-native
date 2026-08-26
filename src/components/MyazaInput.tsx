@@ -39,6 +39,18 @@ export interface MyazaInputProps {
   /** Rendered inside the field, after the text — a unit like "%". Same
    *  bordered-row treatment as `prefix`. */
   suffix?: React.ReactNode;
+  /** Field height override — the results filter runs at 40 where every other
+   *  input is 48, matching the web SDK's h-10 filter beside h-12 inputs. */
+  height?: number;
+  /** Text size override, for the compact filter (web: text-sm = 14). */
+  fontSize?: number;
+  /**
+   * Off for proper-noun fields (company names, registration numbers): iOS
+   * autocorrect rewrites them right before the person submits, so a search
+   * for the company they typed silently becomes a search for a word the
+   * keyboard preferred. Defaults on, like the platform.
+   */
+  autoCorrect?: boolean;
   onFocus?: FocusHandler;
   onBlur?: BlurHandler;
 }
@@ -57,6 +69,9 @@ export function MyazaInput({
   autoFocus = false,
   prefix,
   suffix,
+  height,
+  fontSize,
+  autoCorrect = true,
   onFocus,
   onBlur,
 }: MyazaInputProps): React.ReactElement {
@@ -95,7 +110,7 @@ export function MyazaInput({
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            height: sizing.inputHeight,
+            height: height ?? sizing.inputHeight,
             borderWidth,
             borderColor,
             borderRadius: radius.sm,
@@ -112,12 +127,14 @@ export function MyazaInput({
             placeholderTextColor={colors.textMuted}
             keyboardType={keyboardType}
             autoCapitalize={autoCapitalize}
+            autoCorrect={autoCorrect}
+            spellCheck={autoCorrect}
             maxLength={maxLength}
             editable={editable}
             autoFocus={autoFocus}
             onFocus={handleFocus}
             onBlur={handleBlur}
-            style={{ flex: 1, height: '100%', color: colors.textDark, fontSize: 16, fontFamily }}
+            style={{ flex: 1, height: '100%', color: colors.textDark, fontSize: fontSize ?? 16, fontFamily }}
           />
           {suffix ? <View style={{ width: spacing.sm }} /> : null}
           {suffix}
@@ -130,13 +147,15 @@ export function MyazaInput({
           placeholderTextColor={colors.textMuted}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
+          autoCorrect={autoCorrect}
+          spellCheck={autoCorrect}
           maxLength={maxLength}
           editable={editable}
           autoFocus={autoFocus}
           onFocus={handleFocus}
           onBlur={handleBlur}
           style={{
-            height: sizing.inputHeight,
+            height: height ?? sizing.inputHeight,
             borderWidth,
             borderColor,
             borderRadius: radius.sm,
@@ -145,7 +164,7 @@ export function MyazaInput({
             paddingHorizontal: spacing.md + (2 - borderWidth),
             color: colors.textDark,
             backgroundColor: colors.background,
-            fontSize: 16,
+            fontSize: fontSize ?? 16,
             fontFamily,
           }}
         />

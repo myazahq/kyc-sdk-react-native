@@ -70,7 +70,7 @@ export function registrationNumberHint(
       tip: NG_TIP,
       isValidFormat: (value) => NG_PREFIX_RE.test(value.trim()),
       formatError:
-        'Start with RC, BN, IT, LP or LLP followed by the number — no spaces, e.g. RC0000000.',
+        'Start with RC, BN, IT, LP or LLP followed by the number, no spaces, e.g. RC0000000.',
     };
   }
 

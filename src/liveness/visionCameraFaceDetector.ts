@@ -46,6 +46,41 @@ const boxedDetector: BoxedHybridObject<MyazaFaceDetector> | null = detector
   : null;
 
 /**
+ * Start fetching the face model, so it is warm by the time liveness runs.
+ *
+ * Android fetches ML Kit's models through Play Services rather than bundling
+ * them, which keeps ~18.5 MB per device out of the APK but leaves a window on
+ * first launch where detection cannot work. Priming at flow start puts that
+ * download behind the consent and ID-type screens instead of in front of the
+ * camera.
+ *
+ * Best-effort and non-blocking, exactly like the web SDK's `primeFaceMesh()`:
+ * a failure here is not fatal, because {@link isFaceModelReady} is what the
+ * liveness step actually gates on. iOS resolves immediately (Apple Vision is a
+ * system framework).
+ */
+export function primeFaceModel(): void {
+  detector?.prepareModel().catch(() => {
+    /* best-effort: isFaceModelReady() is the real gate */
+  });
+}
+
+/**
+ * Whether face detection can run right now.
+ *
+ * Checked BEFORE the camera opens. `detectFace` cannot answer this — a missing
+ * model and an empty frame are both `faceCount: 0`, so gating on the per-frame
+ * result would strand the user on "position your face" with no explanation.
+ *
+ * `true` when the native module is absent entirely (Expo Go), because that path
+ * already degrades to the existing camera-unavailable screen and should not be
+ * reported as a model problem.
+ */
+export function isFaceModelReady(): boolean {
+  return detector?.isModelReady() ?? true;
+}
+
+/**
  * Maps the native {@link FaceResult} to a {@link LivenessFaceData}, or `null`
  * when no face is present (`faceCount === 0`). A worklet — runs on the camera
  * thread.

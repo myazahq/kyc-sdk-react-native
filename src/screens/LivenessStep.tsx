@@ -31,6 +31,7 @@ import {
 import { Icon } from '../components/Icon';
 import { useToast } from '../components/toast';
 import { CameraPermissionView, CameraUnavailableView, CameraPermissionPrimingView } from '../components/CameraPermissionView';
+import { useFaceModelReady } from '../liveness/useModelReady';
 import { ReadyPrimer } from '../components/ReadyPrimer';
 import { READY_LIVENESS } from '../components/readyPrimerContent';
 import { LivenessAvatar } from './LivenessAvatar';
@@ -113,6 +114,11 @@ export function LivenessStep(): React.ReactElement {
   const [perm, setPerm] = useState<'priming' | 'requesting' | 'granted' | 'denied'>(
     hasPermission ? 'granted' : 'priming',
   );
+
+  // Android fetches the face model through Play Services rather than bundling
+  // it, so it can be absent on a fresh install. Normally already 'ready' here —
+  // the flow primes the download at open, behind consent and ID-type selection.
+  const modelState = useFaceModelReady();
   const permReportedRef = useRef(false);
 
   // Camera-availability grace (a simulator has no front camera).
@@ -350,6 +356,18 @@ export function LivenessStep(): React.ReactElement {
   // ── Error states ────────────────────────────────────────────────────────────
   if (cameraUnavailable) {
     return <CameraUnavailableView />;
+  }
+  // The face model is fetched on demand on Android (see useModelReady), so it
+  // can be absent on a fresh install or a device without Play Services. Checked
+  // here, before the camera opens, because detectFace reports a missing model
+  // and an empty frame identically — gating on frames would leave the user on
+  // "position your face" forever with nothing to explain it.
+  if (modelState === 'unavailable') {
+    return (
+      <CameraUnavailableView
+        message="Face verification couldn't start on this device. Check your connection and try again, or use a different device."
+      />
+    );
   }
   // "Here's what happens next", BEFORE the OS prompt — and shown even when
   // permission is already granted, because it is about what the step will ask

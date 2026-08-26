@@ -97,8 +97,34 @@ describe('the business (KYB) flow', () => {
     expect(order).toEqual([
       'consent',
       'business-details',
-      'business-key-people',
+      // Documents follow the company they belong to; people come after.
       'business-documents',
+      'business-key-people',
+      'submitted',
+    ]);
+  });
+
+  it('asks the questionnaire BEFORE key people, inside the company section', () => {
+    // Its questions are about the COMPANY, so they stay with the company form —
+    // naming the directors hands the application over to other people, and the
+    // applicant's own questions must not trail that.
+    const order = buildStepOrder(
+      opts({
+        isBusiness: true,
+        hasQuestionnaire: true,
+        business: {
+          country: 'NG',
+          keyPeople: { enabled: true, collect: true },
+          documents: { enabled: true },
+        },
+      }),
+    );
+    expect(order).toEqual([
+      'consent',
+      'business-details',
+      'business-documents',
+      'questionnaire',
+      'business-key-people',
       'submitted',
     ]);
   });

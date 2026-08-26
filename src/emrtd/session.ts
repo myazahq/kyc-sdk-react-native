@@ -1,6 +1,8 @@
 import { fromBase64, toBase64 } from './bytes';
 import { buildBacChallenge, completeBac } from './bac';
 import { primitivesFromNative, type EmrtdPrimitives, type MrzKeyFields } from './crypto';
+import { readExtraGroups, type ExtraGroupReads } from './extras';
+import { readActiveAuth, type AaChallenge, type ActiveAuthRead } from './activeAuth';
 import { EF, readFile, type Transceive } from './files';
 import { readOptionalFile } from './optionalRead';
 import { PaceError, PREFER_PACE, tryPace, type PaceOutcome } from './open';
@@ -45,6 +47,22 @@ export interface EmrtdReadResult {
   sod?: string;
   /** DG2 — the portrait. Best-effort; the largest file and the likeliest to drop. */
   dg2?: string;
+  /** DG7 — the displayed signature image. Best-effort, COM-gated (see extras.ts). */
+  dg7?: string;
+  /** DG11 — additional personal details. Best-effort; many issuers omit it. */
+  dg11?: string;
+  /** DG12 — additional document details. Best-effort; many issuers omit it. */
+  dg12?: string;
+  /** DG15 — the chip's Active-Authentication public key. Absent on the many
+   *  chips that support no AA at all. */
+  dg15?: string;
+  /** The chip's signature over the SERVER's challenge — the anti-clone proof.
+   *  Verified server-side only; a client that checked its own chip could be
+   *  patched to say yes. */
+  aaSignature?: string;
+  /** Which server-issued challenge that signature answers — echoed back so the
+   *  server can spend it. Not read off the chip; carried through with it. */
+  aaChallengeId?: string;
   /** How the chip was unlocked. Reported to the server on the submission. */
   chipAuth: 'bac' | 'pace';
   /**
@@ -141,6 +159,12 @@ export async function readChip(
    * enough that silence reads as failure and prompts them to lift the document.
    */
   onStage?: (stage: NfcReadStage) => void,
+  /**
+   * The Active-Authentication challenge the SERVER issued, if it could. Ours to
+   * carry, never ours to choose: a client-chosen nonce makes a captured
+   * signature replayable, which is exactly the clone AA exists to catch.
+   */
+  aaChallenge?: AaChallenge,
 ): Promise<EmrtdReadResult> {
   const p = primitivesFromNative(native);
 
@@ -178,9 +202,20 @@ export async function readChip(
   const sod = await readOptionalFile(sm, transceive, EF.SOD, 'EF.SOD');
 
   let dg2: Uint8Array | null = null;
+  let extras: ExtraGroupReads = { dg7: null, dg11: null, dg12: null };
+  let activeAuth: ActiveAuthRead = {};
   if (sod) {
     onStage?.('readingPhoto');
     dg2 = await readOptionalFile(sm, transceive, EF.DG2, 'DG2');
+    // The optional detail groups come LAST: by now everything that matters is
+    // banked, so a drop here costs only nice-to-have context. Gated on the SOD
+    // like DG2 — the server authenticates each group against it.
+    onStage?.('readingDetails');
+    extras = await readExtraGroups(sm, transceive);
+    // The anti-clone challenge LAST: it is the only step that asks the chip to
+    // compute rather than read, so it is the slowest per byte and the one worth
+    // losing if the document leaves contact.
+    activeAuth = await readActiveAuth(sm, transceive, aaChallenge);
   }
   onStage?.('done');
 
@@ -188,6 +223,12 @@ export async function readChip(
     dg1: toBase64(dg1),
     ...(sod ? { sod: toBase64(sod) } : {}),
     ...(dg2 ? { dg2: toBase64(dg2) } : {}),
+    ...(extras.dg7 ? { dg7: toBase64(extras.dg7) } : {}),
+    ...(extras.dg11 ? { dg11: toBase64(extras.dg11) } : {}),
+    ...(extras.dg12 ? { dg12: toBase64(extras.dg12) } : {}),
+    ...(activeAuth.dg15 ? { dg15: activeAuth.dg15 } : {}),
+    ...(activeAuth.signature ? { aaSignature: activeAuth.signature } : {}),
+    ...(activeAuth.signature && aaChallenge ? { aaChallengeId: aaChallenge.id } : {}),
     chipAuth: access.chipAuth,
     paceOutcome: access.outcome,
     ...(access.detail ? { paceDetail: access.detail } : {}),

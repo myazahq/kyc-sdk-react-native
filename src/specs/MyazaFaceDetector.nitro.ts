@@ -51,4 +51,33 @@ export interface MyazaFaceDetector extends HybridObject<{ ios: 'swift'; android:
    * `faceCount: 0` when no face is present.
    */
   detectFace(frame: Frame): FaceResult;
+
+  /**
+   * Whether the detector can run RIGHT NOW.
+   *
+   * Android fetches its model through Google Play Services rather than bundling
+   * it (see android/build.gradle), so there is a window — first launch, or a
+   * device with no GMS at all — where detection cannot work. This MUST be
+   * checked before the camera opens: `detectFace` can only answer in
+   * `FaceResult`, where "model missing" and "no face in frame" are the same
+   * `faceCount: 0`, so relying on it would leave the user staring at
+   * "position your face" forever with nothing to explain why.
+   *
+   * iOS is always true — Apple Vision is a system framework with nothing to
+   * fetch.
+   */
+  isModelReady(): boolean;
+
+  /**
+   * Ask Play Services to download the model, resolving `true` once it is usable
+   * and `false` if it cannot be obtained (no GMS, no network, user declined).
+   *
+   * Call this EARLY — the SDK primes it at flow start, so the download overlaps
+   * the consent and ID-type screens and the model is warm by the time liveness
+   * runs. This mirrors the web SDK, which calls `primeFaceMesh()` on mount for
+   * exactly the same reason.
+   *
+   * Safe to call repeatedly; resolves immediately when already ready.
+   */
+  prepareModel(): Promise<boolean>;
 }

@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 
 import { nativeModule } from './native';
 import { readChip, type EmrtdReadResult, EmrtdSessionError } from './session';
+import type { AaChallenge } from './activeAuth';
 import {
   MAX_CHIP_ATTEMPTS,
   chipRetryDelayMs,
@@ -37,6 +38,12 @@ export interface ChipReadOptions {
   successMessage?: string;
   /** Read progress, so the UI can narrate an otherwise invisible operation. */
   onStage?: (stage: NfcReadStage) => void;
+  /**
+   * The Active-Authentication challenge issued by the SERVER (8 bytes). Absent
+   * ⇒ the anti-clone step is skipped and the read is exactly what it was
+   * before — the whole capability null-degrades rather than failing.
+   */
+  aaChallenge?: AaChallenge;
 }
 
 /**
@@ -151,7 +158,7 @@ export async function readPassportChip(
 
     try {
       onStage('waiting');
-      const result = await readChip(native, mrz, onStage);
+      const result = await readChip(native, mrz, onStage, options.aaChallenge);
       if (!result.sod && attempt < MAX_CHIP_ATTEMPTS && !abandoned()) {
         partial = result;
         devLog(attempt, 'security-file', new Error('EF.SOD missing — retrying for a complete read'));

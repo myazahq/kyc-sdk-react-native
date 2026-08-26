@@ -9,6 +9,10 @@ import com.google.mlkit.vision.face.Face
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
+import com.google.android.gms.common.moduleinstall.ModuleInstall
+import com.google.android.gms.common.moduleinstall.ModuleInstallRequest
+import com.margelo.nitro.NitroModules
+import com.margelo.nitro.core.Promise
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -38,6 +42,67 @@ class HybridMyazaFaceDetector : HybridMyazaFaceDetectorSpec() {
       .setMinFaceSize(0.15f)
       .build(),
   )
+
+  // ── Model availability ───────────────────────────────────────────────────
+  //
+  // The default build fetches ML Kit's models through Play Services instead of
+  // bundling them (android/build.gradle), which is what keeps ~18.5 MB per
+  // device out of the APK. The cost is a window where detection cannot run:
+  // first launch before the download completes, or a device with no GMS at all.
+  //
+  // `detectFace` CANNOT report that. Its only channel is FaceResult, where a
+  // missing model and an empty frame are both `faceCount: 0` — so a user on a
+  // fresh install would watch "position your face" forever with nothing to
+  // explain it. Hence a separate, explicit contract, checked before the camera
+  // opens rather than inferred per frame.
+  //
+  // Cached rather than queried live: `areModulesAvailable` is asynchronous and
+  // `isModelReady` is a synchronous Nitro call, so blocking the worklet thread
+  // to answer it would be worse than the problem. The flag starts false and is
+  // set by prepareModel(), which the SDK primes at flow start.
+  @Volatile private var modelReady = false
+
+  override fun isModelReady(): Boolean = modelReady
+
+  override fun prepareModel(): Promise<Boolean> = Promise.async {
+    if (modelReady) return@async true
+
+    val ctx = NitroModules.applicationContext
+      ?: return@async false // No context — cannot ask Play Services anything.
+
+    val latch = CountDownLatch(1)
+    var ok = false
+    try {
+      val client = ModuleInstall.getClient(ctx)
+      // areModulesAvailable() answers "is it already here"; deferredInstall()
+      // asks Play Services to fetch it in the background if not. Requesting the
+      // install unconditionally is simpler AND correct — it is a no-op when the
+      // module is already present, and starting it early is the entire point.
+      client.areModulesAvailable(detector)
+        .addOnSuccessListener { response ->
+          ok = response.areModulesAvailable()
+          if (!ok) {
+            client.deferredInstall(
+              ModuleInstallRequest.newBuilder().addApi(detector).build(),
+            )
+          }
+          latch.countDown()
+        }
+        .addOnFailureListener {
+          // Thrown on devices without Google Play Services at all (Huawei, bare
+          // AOSP). Not an error to retry — it will never succeed on this device.
+          // Such orgs should build with `myazaKycBundledMlKit = true`.
+          ok = false
+          latch.countDown()
+        }
+      latch.await(MODEL_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+    } catch (_: Throwable) {
+      ok = false
+    }
+
+    modelReady = ok
+    ok
+  }
 
   @ExperimentalGetImage
   override fun detectFace(frame: HybridFrameSpec): FaceResult {
@@ -218,4 +283,14 @@ class HybridMyazaFaceDetector : HybridMyazaFaceDetectorSpec() {
     faceG = -1.0,
     faceB = -1.0,
   )
+
+  private companion object {
+    /**
+     * Bound on the availability query. It is a local Play Services call, not the
+     * model download — the download runs in the background afterwards. Generous
+     * enough for a cold Play Services process, short enough that a wedged one
+     * cannot stall flow start.
+     */
+    const val MODEL_CHECK_TIMEOUT_MS = 3_000L
+  }
 }

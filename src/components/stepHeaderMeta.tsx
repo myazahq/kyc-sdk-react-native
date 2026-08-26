@@ -47,7 +47,9 @@ export function stepHeaderMeta(
       case 'id-type':
         return { title: 'Select ID Type', description: "Choose the type of identification document you'd like to use." };
       case 'id-input':
-        return { title: 'Enter Your Details', description: `Provide your ${label} for verification.` };
+        // The number is all this step asks for. The name comes from the
+        // integrator (mount props / the session), never the applicant.
+        return { title: `Enter your ${label}`, description: 'We’ll check this against the official record.' };
       case 'document-capture':
         // Phase-aware title/description live in the header (synced from the
         // capture screen via `documentCapturePhase`) — mirrors Flutter.

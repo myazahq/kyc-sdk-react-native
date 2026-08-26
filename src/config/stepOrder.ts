@@ -11,8 +11,8 @@
 //               capture → (nfc) → (liveness) → (poa) → (questionnaire) →
 //               submitted
 //   business:   consent → (email) → (phone) → business-details →
-//               (key-people) → (documents) → (applicant-role → capture leg) →
-//               (questionnaire) → submitted
+//               (documents) → (questionnaire) → (key-people) →
+//               (applicant-role → country-select → capture leg) → submitted
 //
 // Mirrors the web SDK's `lib/step-order.ts`, plus the `nfc` step, which is a
 // real step here — the web SDK can't do ISO-DEP so it only previews the screen.
@@ -20,6 +20,7 @@
 
 import type { WorkflowBusinessConfig } from '../types/business';
 import type { KYCStep } from '../types/config';
+import { applyResubmitSteps, type ResubmitConfig } from '../lib/resubmit';
 import { businessSectionSteps, hasApplicantVerification } from './businessSteps';
 
 export interface StepOrderOptions {
@@ -34,6 +35,14 @@ export interface StepOrderOptions {
   hasPhoneVerification: boolean;
   hasPoa: boolean;
   hasQuestionnaire: boolean;
+  /**
+   * A reviewer sent this back to redo specific steps.
+   *
+   * Applied LAST, over the fully-built order, so it narrows whatever the flow
+   * would otherwise have been rather than having to know how that order was
+   * assembled — which differs between the individual and KYB branches below.
+   */
+  resubmit?: ResubmitConfig | null;
 }
 
 // Contact-verification OTP steps sit right after consent (both flows) — a cheap
@@ -56,10 +65,22 @@ function captureLeg(o: StepOrderOptions): KYCStep[] {
 }
 
 export function buildStepOrder(o: StepOrderOptions): KYCStep[] {
+  return applyResubmitSteps(fullStepOrder(o), o.resubmit);
+}
+
+/** The flow as configured, before any reviewer narrowing. */
+function fullStepOrder(o: StepOrderOptions): KYCStep[] {
   // Business (KYB) flow — the application section, then (when the workflow
   // requires applicant verification) the ordinary individual capture leg.
   if (o.isBusiness) {
-    const steps: KYCStep[] = ['consent', ...contactSteps(o), ...businessSectionSteps(o.business)];
+    // The questionnaire sits INSIDE the business section (before key people) —
+    // its questions are about the company, so it stays with the company form
+    // rather than trailing the applicant's own capture leg.
+    const steps: KYCStep[] = [
+      'consent',
+      ...contactSteps(o),
+      ...businessSectionSteps(o.business, o.hasQuestionnaire),
+    ];
     if (hasApplicantVerification(o.business)) {
       // The applicant may hold an ID issued anywhere the org can verify —
       // more than one granted country (hasCountrySelect, derived from the
@@ -68,7 +89,6 @@ export function buildStepOrder(o: StepOrderOptions): KYCStep[] {
       if (o.hasCountrySelect) steps.push('country-select');
       steps.push('id-type', ...captureLeg(o));
     }
-    if (o.hasQuestionnaire) steps.push('questionnaire');
     steps.push('submitted');
     return steps;
   }

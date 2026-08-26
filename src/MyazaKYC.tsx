@@ -16,6 +16,7 @@ import { KycRuntimeProvider, MyazaThemeProvider } from './components/runtime';
 import { WorkflowGate } from './components/WorkflowGate';
 import { useWorkflowMount } from './components/useWorkflowMount';
 import { safeReportError } from './services/errors';
+import { primeFaceModel } from './liveness/visionCameraFaceDetector';
 import { KycFlow, type BackResult } from './components/KycFlow';
 import { MyazaButton } from './components/MyazaButton';
 
@@ -97,6 +98,17 @@ function MyazaKYCTrigger({
   const { state, retry, refresh } = useWorkflowMount(config);
   const settled = state.status !== 'resolving';
   const open = wantOpen && settled;
+
+  // Start fetching the face model the moment the user opens the flow, so the
+  // download overlaps consent and ID-type selection rather than stalling in
+  // front of the camera. Mirrors the web SDK's primeFaceMesh() on mount; the
+  // liveness step still gates on isFaceModelReady(), so this is best-effort.
+  const primedRef = useRef(false);
+  useEffect(() => {
+    if (!wantOpen || primedRef.current) return;
+    primedRef.current = true;
+    primeFaceModel();
+  }, [wantOpen]);
 
   // Reported only once the user has actually tried to start. Prefetching must
   // not fire a consumer's error handler for a flow they never opened.

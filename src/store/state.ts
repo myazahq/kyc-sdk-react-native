@@ -9,7 +9,7 @@ import type { FlashHole } from '../components/flashHoleGeometry';
 
 import type { StoreApi } from 'zustand/vanilla';
 
-import type { KYCApi, KeyPersonInvite } from '../services/api';
+import type { BusinessCompanyRecord, KYCApi, KeyPersonInvite, RegistryOfficer } from '../services/api';
 import type { IdType, KYCStep, ResolvedKYCConfig } from '../types/config';
 import type { PoaDocumentType } from '../types/workflow';
 import type { ApplicantRole } from '../types/business';
@@ -35,7 +35,7 @@ export interface KYCMediaIds {
 
 export interface KYCSubmissionResult {
   verificationId: string;
-  status: 'pending';
+  status: 'processing';
 }
 
 export type DocumentScanPhase = 'front' | 'back' | 'complete';
@@ -48,12 +48,69 @@ export interface BusinessState {
   product: string | null;
   registrationNumber: string;
   registrationName: string;
+  /** Dev/sandbox only: pins the canned outcome served instead of calling the
+   *  register. Sent as metadata.sandboxOutcome; production ignores it. */
+  sandboxOutcome: string;
+  /** ISO 3166-2 registry region, for the four countries whose register is
+   *  split by state or emirate. Empty for everywhere else. Rides the search
+   *  and the selection-time check; the submission relies on the prepaid
+   *  record, mirroring the web SDK. */
+  subdivisionCode: string;
   /** Where key-people invite links are emailed. */
   contactEmail: string;
   address: string;
   email: string;
   phone: string;
   website: string;
+  /** Registry facts the applicant states; submitted as their own answer. */
+  dateOfIncorporation: string;
+  taxId: string;
+  vatNumber: string;
+  companyType: string;
+  natureOfBusiness: string;
+}
+
+/**
+ * The registry check run when the applicant confirms their company.
+ *
+ * `skipped` and `limit_reached` are normal outcomes, not failures: the
+ * organisation could not be charged (or this application has spent its lookup
+ * budget), so the flow carries on and the check happens at submission instead.
+ * Mirrors the web SDK's BusinessCheckState — keep the two in lockstep.
+ */
+export interface BusinessCheckState {
+  status: 'idle' | 'checking' | 'found' | 'not_found' | 'skipped' | 'unavailable' | 'limit_reached';
+  /** What the register holds, when it answered. */
+  company: BusinessCompanyRecord | null;
+  /** The officers on file — what makes the key-people question a confirmation. */
+  officers: RegistryOfficer[];
+  /** Which company was checked (normalised), so a changed number re-runs it. */
+  checkedNumber: string | null;
+  /**
+   * Which form fields the REGISTER filled, as opposed to the applicant.
+   *
+   * Kept so that changing which company this is can clear exactly those and
+   * nothing else. Without it, switching company left the previous register's
+   * address and email sitting in the form under the new company's name — and
+   * because the prefill only writes into empty fields, those leftovers also
+   * blocked the new register's real values from ever landing.
+   */
+  prefilled: (keyof BusinessState)[];
+}
+
+export const EMPTY_BUSINESS_CHECK: BusinessCheckState = {
+  status: 'idle',
+  company: null,
+  officers: [],
+  checkedNumber: null,
+  prefilled: [],
+};
+
+/** What `checkBusiness` resolves with. Only a definitive "not on the register"
+ *  stops the flow; the company record is handed back for the prefill. */
+export interface BusinessCheckResult {
+  canContinue: boolean;
+  company: BusinessCompanyRecord | null;
 }
 
 /** One uploaded supporting document. */
@@ -83,6 +140,13 @@ export interface BusinessApplicationState {
    * one screening, no duplicate invite.
    */
   applicantKeyPersonIndex: number | null;
+  /**
+   * The applicant attests that no natural person qualifies as a UBO (public
+   * share structures, complex trusts, nominee arrangements) - the FATF
+   * fallback. An attestation the server records and the org can branch on,
+   * never a verdict; the registry lookup still says what it says.
+   */
+  uboUnidentifiable: boolean;
 }
 
 export const EMPTY_BUSINESS_APPLICATION: BusinessApplicationState = {
@@ -91,6 +155,7 @@ export const EMPTY_BUSINESS_APPLICATION: BusinessApplicationState = {
   applicantRole: null,
   applicantName: '',
   applicantKeyPersonIndex: null,
+  uboUnidentifiable: false,
 };
 
 export const EMPTY_BUSINESS: BusinessState = {
@@ -98,11 +163,18 @@ export const EMPTY_BUSINESS: BusinessState = {
   product: null,
   registrationNumber: '',
   registrationName: '',
+  sandboxOutcome: '',
+  subdivisionCode: '',
   contactEmail: '',
   address: '',
   email: '',
   phone: '',
   website: '',
+  dateOfIncorporation: '',
+  taxId: '',
+  vatNumber: '',
+  companyType: '',
+  natureOfBusiness: '',
 };
 
 export interface ContactState {
@@ -112,6 +184,16 @@ export interface ContactState {
   emailToken?: string;
   /** Single-use proof from a passed phone check. */
   phoneToken?: string;
+  /**
+   * Channels whose proof the SERVER refused at submit (422
+   * contact_verification_required). Proofs are single-use and expire ~30
+   * minutes after the OTP check, but they ride session progress and are
+   * restored on resume — so a resumed attempt can carry a dead proof while
+   * the step still shows "verified". This routes the person back to
+   * re-verify instead of a retry that resubmits the same dead token forever;
+   * setContactVerified clears its channel.
+   */
+  expired?: Array<'email' | 'phone'>;
 }
 
 /** Document-capture sub-phase — drives the sheet header title/description. */
@@ -120,11 +202,47 @@ export type DocumentCapturePhase = 'front' | 'front-preview' | 'back' | 'review'
 /** The mediaIds keys settable via `setMediaId`. */
 export type MediaIdKey = keyof KYCMediaIds;
 
+/** One committed multi-ID check. `documentFront/Back` are mediaIds; the
+ *  `*Image` fields are LOCAL previews and never reach the wire. */
+export interface MultiIdSlot {
+  idType: IdType;
+  idNumber?: string;
+  documentFront?: string;
+  documentBack?: string;
+  /** Each check records its OWN document capture. The row's flat
+   *  documentFrontVideo column holds one, so a multi-ID run keeps them per
+   *  check or loses all but one. */
+  documentFrontVideo?: string;
+  documentBackVideo?: string;
+  /** This check's own chip read. The chip belongs to a PARTICULAR document, so
+   *  sending it top-level attributed it to the primary check — which is how a
+   *  passport's chip read was dropped for being submitted alongside a BVN. */
+  chipData?: EmrtdReadResult | null;
+  documentFrontImage?: string;
+  documentBackImage?: string;
+}
+
 export interface KycState {
   config: ResolvedKYCConfig;
   api: KYCApi;
 
   currentStep: KYCStep;
+  /**
+   * The attempt SESSION this run is recorded under (`/session/start`). Null
+   * when minting failed or preview — verifying is never conditional on it. It
+   * rides the /verify body so the verification adopts the session's id, and it
+   * is what the registry check at selection anchors its charge on.
+   */
+  sessionId: string | null;
+  /** The session's own hosted web page (see SessionStartResponse.url). */
+  sessionUrl: string | null;
+  /**
+   * What the register said about the company the applicant identified — the
+   * paid check run at SELECTION (`/business/select`), so the officer list is
+   * already here by the time the key-people step asks for it. `officers` is
+   * the prefill's input; `checkedNumber` stops a re-check of the same company.
+   */
+  businessCheck: BusinessCheckState;
   /**
    * The country picked on the multi-region country-select step. Null on a
    * single-country flow, where `config.country` is the answer.
@@ -132,6 +250,22 @@ export interface KycState {
   selectedCountry: string | null;
   selectedIdType: IdType | null;
   idNumber: string | null;
+  /**
+   * Multi-ID: which check the applicant is on (0-based), and the ones already
+   * committed. A committed slot keeps its LOCAL preview images as well as its
+   * mediaIds, so stepping back into it restores what was captured rather than
+   * asking for a document that is still perfectly good.
+   */
+  multiIdSlotIndex: number;
+  multiIdSlots: MultiIdSlot[];
+  /**
+   * Capture previews handed back when stepping BACK into a committed slot.
+   *
+   * RN keeps document previews in the capture screen's own state, so a restored
+   * slot has to hand them somewhere the remounting screen can read them. Null
+   * on the forward journey.
+   */
+  multiIdRestored: { front?: string; back?: string } | null;
   mediaIds: KYCMediaIds;
   submissionResult: KYCSubmissionResult | null;
   serverConfig: ServerConfigState;
@@ -219,13 +353,32 @@ export interface KycState {
   setCountry: (country: string) => void;
   setIdType: (idType: IdType) => void;
   setIdNumber: (idNumber: string) => void;
+  /** Commit the current slot's evidence and move to the next check. The
+   *  previews come from the capture screen, which owns them. */
+  commitMultiIdSlot: (nextStep: KYCStep, previews?: { front?: string; back?: string }) => void;
+  /** Step BACK into the previous slot, restoring what it captured. */
+  uncommitMultiIdSlot: (step: KYCStep) => void;
   setMediaId: (key: MediaIdKey, mediaId: string) => void;
   setDocumentMediaId: (mediaId: string, side: 'front' | 'back') => void;
   setQuestionnaireAnswer: (key: string, value: QuestionnaireAnswerValue | undefined) => void;
   setContactVerified: (channel: 'email' | 'phone', destination: string, token: string) => void;
   setContactDestination: (channel: 'email' | 'phone', destination: string) => void;
+  /** The server refused these channels' proofs at submit — drop the tokens and
+   *  flag the channels so their steps re-verify then resubmit. */
+  clearContactProofs: (channels: Array<'email' | 'phone'>) => void;
   setBusinessField: <K extends keyof BusinessState>(key: K, value: BusinessState[K]) => void;
+  /** Writes the register's answers into empty fields + records which ones it
+   *  filled, in one set — so a company change can clear exactly those. */
+  applyBusinessPrefill: (
+    patch: Partial<BusinessState>,
+    prefilled: (keyof BusinessState)[],
+  ) => void;
+  setSessionId: (sessionId: string, sessionUrl?: string | null) => void;
+  /** Run the paid registry check for the typed company. Never blocks the flow. */
+  checkBusiness: () => Promise<BusinessCheckResult>;
   setKeyPeople: (rows: KeyPersonEntry[]) => void;
+  /** The UBO-exemption attestation (FATF fallback) — see BusinessApplicationState. */
+  setUboUnidentifiable: (checked: boolean) => void;
   setBusinessDocument: (doc: BusinessDocumentUpload) => void;
   removeBusinessDocument: (type: string) => void;
   setApplicant: (role: ApplicantRole, name: string, keyPersonIndex?: number | null) => void;

@@ -28,6 +28,14 @@ import NitroModules
 // ---------------------------------------------------------------------------
 
 final class HybridMyazaFaceDetector: HybridMyazaFaceDetectorSpec {
+  // Apple Vision ships with the OS — there is no model to fetch, no Play
+  // Services equivalent, and no window in which detection is unavailable. These
+  // exist only because Android fetches ML Kit's models on demand; iOS answers
+  // "ready" unconditionally so the shared TS flow needs no platform branch.
+  func isModelReady() throws -> Bool { true }
+
+  func prepareModel() throws -> Promise<Bool> { Promise.resolved(withResult: true) }
+
   func detectFace(frame: any HybridFrameSpec) throws -> FaceResult {
     guard
       let nativeFrame = frame as? NativeFrame,

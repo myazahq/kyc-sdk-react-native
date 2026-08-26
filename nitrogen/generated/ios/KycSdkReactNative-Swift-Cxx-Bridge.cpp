@@ -84,6 +84,14 @@ namespace margelo::nitro::myazakyc::bridge::swift {
     return margelo::nitro::camera::bridge::swift::get_std__shared_ptr_HybridFrameSpec_(cppType);
   }
   
+  // pragma MARK: std::function<void(bool /* result */)>
+  Func_void_bool create_Func_void_bool(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = KycSdkReactNative::Func_void_bool::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](bool result) mutable -> void {
+      swiftClosure.call(result);
+    };
+  }
+  
   // pragma MARK: std::shared_ptr<HybridMyazaFaceDetectorSpec>
   std::shared_ptr<HybridMyazaFaceDetectorSpec> create_std__shared_ptr_HybridMyazaFaceDetectorSpec_(void* NON_NULL swiftUnsafePointer) noexcept {
     KycSdkReactNative::HybridMyazaFaceDetectorSpec_cxx swiftPart = KycSdkReactNative::HybridMyazaFaceDetectorSpec_cxx::fromUnsafe(swiftUnsafePointer);

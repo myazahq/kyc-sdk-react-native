@@ -91,6 +91,7 @@ describe('NFC read stages', () => {
       'readingData',
       'readingSecurity',
       'readingPhoto',
+      'readingDetails',
       'done',
     ]);
   });

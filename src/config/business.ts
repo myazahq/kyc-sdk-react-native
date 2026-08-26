@@ -7,6 +7,7 @@
 // here needs to be authoritative, only honest about what to type.
 // ---------------------------------------------------------------------------
 
+import { COMPANY_INFO_FIELDS } from '../types/business';
 import type {
   CompanyInfoField,
   CompanyInfoMode,
@@ -159,12 +160,11 @@ export function companyInfoFieldModes(
 ): Record<CompanyInfoField, CompanyInfoMode> {
   const off = business?.collectCompanyInfo === false;
   const modes = business?.companyInfo ?? {};
-  return {
-    address: off ? 'off' : (modes.address ?? 'optional'),
-    email: off ? 'off' : (modes.email ?? 'optional'),
-    phone: off ? 'off' : (modes.phone ?? 'optional'),
-    website: off ? 'off' : (modes.website ?? 'optional'),
-  };
+  // Built from the field list so adding one on the server means adding it in a
+  // single place here, rather than a line that is easy to forget.
+  return Object.fromEntries(
+    COMPANY_INFO_FIELDS.map((f) => [f, off ? 'off' : (modes[f] ?? 'optional')]),
+  ) as Record<CompanyInfoField, CompanyInfoMode>;
 }
 
 /** Company-profile fields still missing that the workflow marks required. */

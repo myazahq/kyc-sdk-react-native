@@ -17,8 +17,21 @@ export type KeyPersonRole = 'director' | 'beneficial_owner' | 'signatory' | 'sha
  *  plus 'authorized_representative' (someone filing on the company's behalf). */
 export type ApplicantRole = KeyPersonRole | 'authorized_representative';
 
-/** Supporting-document kinds a KYB workflow can request from the applicant. */
-export const COMPANY_INFO_FIELDS = ['address', 'email', 'phone', 'website'] as const;
+/** Company-profile fields a KYB workflow can ask for. The last five are
+ *  registry facts the applicant STATES (asked as their own answer rather than
+ *  filled from the register, because where the two differ that is the
+ *  finding). Mirrors the web SDK's CompanyInfoField exactly. */
+export const COMPANY_INFO_FIELDS = [
+  'address',
+  'email',
+  'phone',
+  'website',
+  'dateOfIncorporation',
+  'taxId',
+  'vatNumber',
+  'companyType',
+  'natureOfBusiness',
+] as const;
 export type CompanyInfoField = (typeof COMPANY_INFO_FIELDS)[number];
 export type CompanyInfoMode = 'off' | 'optional' | 'required';
 
@@ -55,12 +68,20 @@ export interface WorkflowKeyPeopleConfig {
   requirement?: 'all_in_scope' | 'ubos_only' | 'advisory';
   /** Per-role verification depth overrides (win over `level`). */
   perRole?: Partial<Record<KeyPersonRole, KeyPeopleLevel>>;
+  /** Emails are mandatory for the roles that are sent a verification link. */
+  requireEmail?: boolean;
+  /** Explicit override of WHICH roles must carry an email. */
+  requireEmailRoles?: KeyPersonRole[];
   /** Invite distribution for full-KYC people. */
   invite?: {
     channel?: string;
     /** The KYC workflow the per-person invite links run through. */
     workflowId?: string;
   };
+  /** Nested KYB: a corporate shareholder is invited into its OWN business
+   *  application (the server mints the link; the SDK only tells the applicant
+   *  the truth about what happens to a company they list). */
+  corporateKyb?: { enabled?: boolean; workflowId?: string };
 }
 
 /**

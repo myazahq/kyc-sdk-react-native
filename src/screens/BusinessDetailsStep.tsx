@@ -2,34 +2,33 @@ import React, { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
-import { useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
+import { useKyc, useKycConfig, useKycStore } from '../components/runtime';
 import { MyazaButton } from '../components/MyazaButton';
-import { MyazaInput } from '../components/MyazaInput';
-import { MyazaSelect } from '../components/MyazaSelect';
-import { CountryField } from '../components/CountryField';
-import { CompanyInfoFields } from './CompanyInfoFields';
+import { BusinessRegistryPickers } from './BusinessRegistryPickers';
+import { BusinessSearch } from './BusinessSearch';
+import { BusinessPickedSection } from './BusinessPickedSection';
+import { BusinessDetailsFields } from './BusinessDetailsFields';
+import { BusinessCheckPanel } from './BusinessCheckPanel';
 import {
   businessCountriesFor,
-  businessCountryName,
   businessProductsForCountry,
   companyInfoFieldModes,
   getBusinessProductDef,
   keyPeopleNeedsContactEmail,
-  missingRequiredCompanyInfo,
 } from '../config/business';
 import { registrationNumberHint } from '../config/registrationHint';
-import { isValidContactEmail } from '../config/contact';
-import type { CompanyInfoField } from '../types/business';
+import { registerPrefillPatch } from '../config/businessPrefill';
+import { businessDetailsValid, checkPanelVisible } from '../config/businessDetailsValidity';
 
 // ---------------------------------------------------------------------------
-// Business (KYB) registry details.
+// Business (KYB) registry details — two screens in one step.
 //
-// The registry lookup verifies that a business EXISTS. Registration numbers are
-// public, so it proves nothing about who is filling this in — that is what the
-// rest of the KYB application (key people, documents, the applicant's own KYC)
-// is for. This step collects the number, the registry country and product, and
-// the company profile the workflow asks for.
+// 'pick' is choosing WHICH company. 'details' is confirming what the register
+// then said about it. They are separate because the register has not been
+// asked yet while you are still picking, so showing the detail fields there
+// would invite somebody to fill in answers we are about to overwrite.
+// Continue is what runs the paid check and moves between them. Mirrors the
+// web SDK's BusinessDetailsStep — keep the two in lockstep.
 // ---------------------------------------------------------------------------
 
 export const businessDetailsMeta = {
@@ -41,172 +40,159 @@ export const businessDetailsMeta = {
 export function BusinessDetailsStep(): React.ReactElement {
   const config = useKycConfig();
   const store = useKycStore();
-  const { colors } = useTheme();
   const business = useKyc((s) => s.business);
-  const [touched, setTouched] = useState(false);
+  const check = useKyc((s) => s.businessCheck);
+  const [phase, setPhase] = useState<'pick' | 'details'>('pick');
+  // Production never shows the test-result toggle, and never honours a pin.
+  const isSandbox = useKyc((s) => s.serverConfig.environment) !== 'PRODUCTION';
 
   const workflowBusiness = config.business;
   const countries = useMemo(() => businessCountriesFor(workflowBusiness), [workflowBusiness]);
-  // Precedence mirrors the web SDK exactly: the visitor's pick, then the
-  // workflow's PRIMARY country, then the list head. The primary is always in
-  // the offered list but not necessarily FIRST — preferring `countries[0]`
-  // defaulted the picker to the wrong registry whenever the primary sat later.
+  // Precedence mirrors the web SDK: the visitor's pick, then the workflow's
+  // PRIMARY country, then the list head.
   const country = business.country ?? workflowBusiness?.country ?? countries[0] ?? '';
   const products = useMemo(
     () => businessProductsForCountry(workflowBusiness, country),
     [workflowBusiness, country],
   );
-  // Re-derived per country rather than remembered: a product the picked country
-  // does not offer would be rejected at submit.
   const product = products.includes(business.product ?? '') ? business.product! : products[0]!;
   const productDef = getBusinessProductDef(product);
 
   const modes = companyInfoFieldModes(workflowBusiness);
-  const companyFields = (Object.keys(modes) as CompanyInfoField[]).filter(
-    (field) => modes[field] !== 'off',
-  );
-  const needsContactEmail = keyPeopleNeedsContactEmail(workflowBusiness);
+  const showCompanyInfo = Object.values(modes).some((m) => m !== 'off');
+  const showContactEmail = keyPeopleNeedsContactEmail(workflowBusiness);
 
   const set = <K extends keyof typeof business>(key: K, value: (typeof business)[K]): void =>
     store.getState().setBusinessField(key, value);
 
-  const missingCompanyInfo = missingRequiredCompanyInfo(workflowBusiness, {
-    address: business.address,
-    email: business.email,
-    phone: business.phone,
-    website: business.website,
-  });
-  const contactEmailInvalid =
-    needsContactEmail && business.contactEmail.trim() !== '' && !isValidContactEmail(business.contactEmail);
-  const nameMissing =
-    workflowBusiness?.requireRegistrationName === true && business.registrationName.trim() === '';
-
-  // Country-aware registration-number guidance (NG: CAC prefix rules + format
-  // validation; elsewhere: placeholder + registry tip). Mirrors the web SDK.
   const regHint = registrationNumberHint(country, productDef);
   const regNumber = business.registrationNumber;
+  // A company has been named, so the card replaces the search. The NUMBER is
+  // what names it (a prefilled session sends one without a name; the register
+  // supplies the name on Continue, so an unnamed card is momentary).
+  const picked = regNumber.trim() !== '';
+  const nameRequired = workflowBusiness?.requireRegistrationName === true;
   const formatOk =
     !regHint.isValidFormat || regNumber.trim() === '' || regHint.isValidFormat(regNumber);
   const numberValid = regNumber.trim().length >= 2 && formatOk;
-  const canContinue =
-    numberValid && !nameMissing && missingCompanyInfo.length === 0 && !contactEmailInvalid;
 
-  const handleContinue = (): void => {
-    setTouched(true);
-    if (!canContinue) return;
+  const isFormValid = businessDetailsValid({
+    phase,
+    business,
+    modes,
+    product,
+    numberValid,
+    nameRequired,
+    showContactEmail,
+  });
+
+  const checking = check.status === 'checking';
+
+  const handleContinue = async (): Promise<void> => {
+    if (!isFormValid || checking) return;
     // Persist the resolved country/product so the submission uses exactly what
-    // was on screen, not a re-derivation from a config that may have changed.
-    set('country', country);
-    set('product', product);
+    // was on screen. Only when different: these are identity keys, and writing
+    // an unchanged value would needlessly reset the check we just ran.
+    if (business.country !== country) set('country', country);
+    if (business.product !== product) set('product', product);
+
+    // The paid registry check — awaited, so the details screen opens already
+    // holding what the register said. Only a definitive "not on the register"
+    // stops the flow: everything else (a short balance, an outage) continues
+    // and is checked at submission, as it was before.
+    const { canContinue, company } = await store.getState().checkBusiness();
+    if (!canContinue) return;
+
+    // First Continue ends at the details screen rather than the next step: the
+    // register has only just answered, and this is where what it said gets put
+    // in front of them to confirm or correct.
+    if (phase === 'pick') {
+      const { patch, prefilled } = registerPrefillPatch(company, store.getState().business);
+      if (prefilled.length > 0) store.getState().applyBusinessPrefill(patch, prefilled);
+      setPhase('details');
+      return;
+    }
     store.getState().nextStep();
   };
 
   return (
     <View>
-      {countries.length > 1 ? (
-        <>
-          <MyazaText variant="bodySmall" style={{ fontWeight: '600', marginBottom: spacing.xs }}>
-            Country of registration
-          </MyazaText>
-          {/* The SAME sheet as the phone field's dial-code picker — restricted
-              to the workflow's registry countries. */}
-          <CountryField
-            value={country}
-            options={countries.map((code) => ({ code, name: businessCountryName(code) }))}
-            onChange={(code) => {
-              set('country', code);
-              // The product list narrows per country, so a stale pick is
-              // cleared rather than carried into a refused submission.
-              set('product', null);
-            }}
-          />
-          <View style={{ height: spacing.md }} />
-        </>
-      ) : null}
-
-      {products.length > 1 ? (
-        <>
-          <MyazaText variant="bodySmall" style={{ fontWeight: '600', marginBottom: spacing.xs }}>
-            Verification type
-          </MyazaText>
-          <MyazaSelect
-            value={product}
-            sheetTitle="Verification type"
-            options={products.map((key) => ({
-              value: key,
-              label: getBusinessProductDef(key).label,
-            }))}
-            onChange={(key) => set('product', key)}
-          />
-          <View style={{ height: spacing.md }} />
-        </>
-      ) : null}
-
-      <MyazaInput
-        label={productDef.inputLabel}
-        value={business.registrationNumber}
-        onChangeText={(text) => set('registrationNumber', text)}
-        placeholder={regHint.placeholder}
-        autoCapitalize="characters"
-        autoFocus
-        // Live like the web SDK: a wrong CAC prefix is corrected on the spot,
-        // not discovered on Continue. The registry tip fills the same slot
-        // until there is an error to show.
-        error={
-          regNumber !== '' && !numberValid
-            ? (!formatOk && regHint.formatError) ||
-              `Enter a valid ${productDef.inputLabel.toLowerCase()}.`
-            : null
-        }
-        helper={regHint.tip ?? undefined}
-      />
-
-      <View style={{ height: spacing.sm }} />
-      <MyazaInput
-        label={`Registered business name${workflowBusiness?.requireRegistrationName ? '' : ' (optional)'}`}
-        value={business.registrationName}
-        onChangeText={(text) => set('registrationName', text)}
-        placeholder="Enter the registered business name"
-        error={touched && nameMissing ? 'Enter the registered business name.' : null}
-      />
-
-      <CompanyInfoFields
-        fields={companyFields}
-        modes={modes}
-        values={{
-          address: business.address,
-          email: business.email,
-          phone: business.phone,
-          website: business.website,
+      <BusinessRegistryPickers
+        country={country}
+        countries={countries}
+        product={product}
+        products={products}
+        onCountry={(code) => {
+          set('country', code);
+          // The product list narrows per country, so a stale pick is cleared
+          // rather than carried into a refused submission.
+          set('product', null);
         }}
-        missing={missingCompanyInfo}
-        showErrors={touched}
-        onChange={(field, text) => set(field, text)}
+        onProduct={(key) => set('product', key)}
       />
 
-      {needsContactEmail ? (
+      {/* HIDDEN, not unmounted, once a company is chosen: unmounting threw
+          away the query and results, so "Change" dropped somebody back to an
+          empty box. Hiding keeps the picker alive, which makes Change cheap. */}
+      <View style={{ display: phase === 'pick' && country && !picked ? 'flex' : 'none' }}>
+        <BusinessSearch
+          country={country}
+          onPicked={(hit) => {
+            // Names the company and nothing more: the register is asked on
+            // Continue, and the fields it fills live on the screen after.
+            set('registrationNumber', hit.registrationNumber);
+            set('registrationName', hit.name);
+          }}
+          onManualEntry={() => setPhase('details')}
+        />
+      </View>
+
+      {phase === 'pick' && picked ? (
+        <BusinessPickedSection
+          country={country}
+          name={business.registrationName}
+          registrationNumber={regNumber}
+          isSandbox={isSandbox}
+          onChange={() => {
+            // Back to the search rather than an undo: they are changing WHICH
+            // company this is about, and the fields belong to the old one.
+            set('registrationNumber', '');
+            set('registrationName', '');
+          }}
+        />
+      ) : null}
+
+      {phase === 'details' ? (
+        <BusinessDetailsFields
+          business={business}
+          productDef={productDef}
+          regHint={regHint}
+          numberValid={numberValid}
+          formatOk={formatOk}
+          requireName={nameRequired}
+          country={country}
+          modes={modes}
+          showCompanyInfo={showCompanyInfo}
+          showContactEmail={showContactEmail}
+          onChange={set}
+        />
+      ) : null}
+
+      {checkPanelVisible(check.status) ? (
         <>
-          <View style={{ height: spacing.sm }} />
-          <MyazaInput
-            label="Contact email for owner verification (optional)"
-            value={business.contactEmail}
-            onChangeText={(text) => set('contactEmail', text)}
-            placeholder="admin@company.com"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            helper="We'll email this address a link for your directors and owners to verify their identity."
-            error={touched && contactEmailInvalid ? 'Enter a valid email address.' : null}
-          />
+          <View style={{ height: spacing.lg }} />
+          <BusinessCheckPanel check={check} />
         </>
       ) : null}
 
-      <View style={{ height: spacing.md }} />
-      <MyazaButton label="Continue" onPress={handleContinue} disabled={touched && !canContinue} />
-      {touched && !canContinue ? (
-        <MyazaText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.xs, textAlign: 'center' }}>
-          Please complete the highlighted fields.
-        </MyazaText>
-      ) : null}
+      <View style={{ height: spacing.lg }} />
+      <MyazaButton
+        label={checking ? 'Checking…' : phase === 'details' ? 'Confirm details & continue' : 'Continue'}
+        onPress={() => void handleContinue()}
+        loading={checking}
+        disabled={!isFormValid || checking}
+      />
     </View>
   );
 }
+

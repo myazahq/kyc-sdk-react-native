@@ -1,5 +1,5 @@
 import React from 'react';
-import { type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { useTheme } from '../runtime';
 import { GlassSurface } from './GlassSurface';
@@ -29,9 +29,21 @@ export interface GlassSheetProps {
 }
 
 export function GlassSheet({ children, style }: GlassSheetProps): React.ReactElement {
-  const { colors } = useTheme();
+  const { colors, mode } = useTheme();
   return (
     <GlassSurface glassStyle="regular" fallbackColor={colors.background} style={style}>
+      {/* A WHISPER of scrim between the glass and the content — the sheet
+          must stay glass (the flow showing through is the point). This only
+          takes the edge off a strongly tinted flow so body text keeps
+          contrast; anything critical sits on its own alert panel besides.
+          Slightly heavier in light mode, where the wash was worst. */}
+      <View
+        pointerEvents="none"
+        style={[
+          StyleSheet.absoluteFill,
+          { backgroundColor: colors.background, opacity: mode === 'light' ? 0.35 : 0.18 },
+        ]}
+      />
       {children}
     </GlassSurface>
   );

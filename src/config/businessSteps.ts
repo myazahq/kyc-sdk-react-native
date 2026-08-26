@@ -86,10 +86,21 @@ export type BusinessSectionStep =
 /** The ordered business-application steps this workflow configures. */
 export function businessSectionSteps(
   business: WorkflowBusinessConfig | undefined,
-): BusinessSectionStep[] {
-  const steps: BusinessSectionStep[] = ['business-details'];
-  if (hasKeyPeopleCollection(business)) steps.push('business-key-people');
+  withQuestionnaire = false,
+): (BusinessSectionStep | 'questionnaire')[] {
+  const steps: (BusinessSectionStep | 'questionnaire')[] = ['business-details'];
+  // Documents BEFORE key people: they are about the company the applicant has
+  // just identified, so they follow that thread, and the register's officer
+  // list - which the key-people step is a confirmation of - is what should
+  // still be in mind when they get to naming people.
   if (hasBusinessDocumentsStep(business)) steps.push('business-documents');
+  // The questionnaire BEFORE key people: its questions are about the COMPANY
+  // (volumes, source of funds), so they belong with the company section — and
+  // naming the directors leads into their verification, which is where the
+  // application hands over to other people and stops being the applicant's
+  // own form to finish. Mirrors the web SDK.
+  if (withQuestionnaire) steps.push('questionnaire');
+  if (hasKeyPeopleCollection(business)) steps.push('business-key-people');
   if (hasApplicantVerification(business)) steps.push('applicant-role');
   return steps;
 }

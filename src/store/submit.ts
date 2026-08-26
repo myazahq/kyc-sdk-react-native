@@ -15,11 +15,38 @@
 import { collectDeviceMetadata } from '../services/deviceMetadata';
 import { generateRequestId } from '../utils/uuid';
 import { hasActiveQuestionnaire, questionnairePayload } from '../config/questionnaire';
+import { multiIdWireSlots } from '../lib/multi-id';
 import { isBusinessFlow } from '../config/business';
 import { businessSubmission, effectiveCountry } from './derive';
 import type { ClientFingerprint } from '../services/fingerprint';
 import type { VerifyRequest } from '../services/api';
 import type { KycState } from './state';
+
+/** The chip payload as the wire wants it. One builder, so a slot's chip and a
+ *  single-ID run's are byte-identical to the server. */
+export function nfcPayload(
+  chip: NonNullable<KycState['chipData']>,
+): NonNullable<VerifyRequest['nfc']> {
+  return {
+    dg1: chip.dg1,
+    ...(chip.sod ? { sod: chip.sod } : {}),
+    ...(chip.dg2 ? { dg2: chip.dg2 } : {}),
+    ...(chip.dg7 ? { dg7: chip.dg7 } : {}),
+    ...(chip.dg11 ? { dg11: chip.dg11 } : {}),
+    ...(chip.dg12 ? { dg12: chip.dg12 } : {}),
+    ...(chip.dg15 ? { dg15: chip.dg15 } : {}),
+    ...(chip.aaSignature ? { aaSignature: chip.aaSignature } : {}),
+    ...(chip.aaChallengeId ? { aaChallengeId: chip.aaChallengeId } : {}),
+    chipAuth: chip.chipAuth,
+    // The PACE diagnostic. Read on every session and, until now, dropped here:
+    // every RN chip read reached the server with paceOutcome null, so the one
+    // question the field exists to answer — did this chip decline PACE, or did
+    // ours fail? — was unanswerable for the whole install base. Flutter has
+    // always sent it.
+    ...(chip.paceOutcome ? { paceOutcome: chip.paceOutcome } : {}),
+    ...(chip.paceDetail ? { paceDetail: chip.paceDetail } : {}),
+  };
+}
 
 export function buildVerifyRequest(
   state: KycState,
@@ -30,15 +57,38 @@ export function buildVerifyRequest(
   // capture media at all.
   const business = isBusinessFlow(state.config) ? businessSubmission(state) : null;
 
+  // Multi-ID: every check was committed as a slot, and the whole run submits as
+  // ONE verification the server judges by the workflow's pass policy. The FIRST
+  // slot fills the single-ID fields, so anything reading a verification's own
+  // idType/idNumber keeps one meaning.
+  const multiSlots = !business && state.multiIdSlots.length >= 2 ? state.multiIdSlots : null;
+  const primary = multiSlots?.[0];
+
   return {
   country: business ? business.country : effectiveCountry(state),
-  idType: business ? business.product : (state.selectedIdType ?? ''),
-  idNumber: business ? undefined : (state.idNumber ?? undefined),
+  idType: business ? business.product : (primary?.idType ?? state.selectedIdType ?? ''),
+  idNumber: business ? undefined : (primary?.idNumber ?? state.idNumber ?? undefined),
+  ...(multiSlots
+    ? {
+        idChecks: multiIdWireSlots(multiSlots).map((wire, i) => {
+          const chip = multiSlots[i]?.chipData;
+          return chip ? { ...wire, nfc: nfcPayload(chip) } : wire;
+        }),
+      }
+    : {}),
   ...(business ? { business: business.payload } : {}),
   // The org's user reference (becomes Entity.externalUserId at the KYC seam).
   ...(state.config.userId ? { userId: state.config.userId } : {}),
   userData: business ? undefined : state.config.userData,
-  mediaIds: business ? {} : state.mediaIds,
+  // Multi-ID: the slot documents ride idChecks; only the RUN-level media (the
+  // one selfie and its video) sit at the top level. Sending a slot's document
+  // here too would file the last ID's capture as though it were the
+  // verification's own.
+  mediaIds: business
+    ? {}
+    : multiSlots
+      ? { ...state.mediaIds, documentFront: undefined, documentBack: undefined }
+      : state.mediaIds,
   ...(state.config.workflowId ? { workflowId: state.config.workflowId } : {}),
   ...(state.poaDocumentType ? { proofOfAddressType: state.poaDocumentType } : {}),
   ...(state.contact.emailToken || state.contact.phoneToken
@@ -60,16 +110,9 @@ export function buildVerifyRequest(
   // Omitted entirely when absent rather than sent empty: the server treats a
   // present-but-hollow block as a failed read, which is not the same as a
   // document whose chip was never scanned.
-  ...(state.chipData
-    ? {
-        nfc: {
-          dg1: state.chipData.dg1,
-          ...(state.chipData.sod ? { sod: state.chipData.sod } : {}),
-          ...(state.chipData.dg2 ? { dg2: state.chipData.dg2 } : {}),
-          chipAuth: state.chipData.chipAuth,
-        },
-      }
-    : {}),
+  // Multi-ID: the chip rides its OWN check (above) — a top-level payload could
+  // only ever be attributed to the primary one.
+  ...(!multiSlots && state.chipData ? { nfc: nfcPayload(state.chipData) } : {}),
   // Only sent when the flow actually asked — an inactive questionnaire
   // must not put an empty object on the verification record.
   ...(hasActiveQuestionnaire(state.config.questionnaire)
@@ -80,12 +123,19 @@ export function buildVerifyRequest(
         ),
       }
     : {}),
+  // The attempt session this run happened under: the verification adopts its
+  // id, and any registry check paid at selection is not paid again at submit.
+  ...(state.sessionId ? { sessionId: state.sessionId } : {}),
   // `metadata` is free-form passthrough. The SDK-owned keys (`requestId` —
   // the server's idempotency key — and `device`) are written AFTER the
   // caller's metadata so consumer keys can never clobber them. The user
   // reference is the top-level `userId` above. Identical on web + Flutter.
   metadata: {
     ...(state.config.metadata ?? {}),
+    // Ignored by production, so it is safe to send whenever it is set.
+    ...(business && state.business.sandboxOutcome
+      ? { sandboxOutcome: state.business.sandboxOutcome }
+      : {}),
     requestId: generateRequestId(),
     device: {
       ...(collectDeviceMetadata() as unknown as Record<string, unknown>),

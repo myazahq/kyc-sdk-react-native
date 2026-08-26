@@ -5,6 +5,7 @@ import { radius, spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
 import { MyazaText } from '../components/Typography';
 import { Icon } from '../components/Icon';
+import { DashedBorder } from '../components/DashedBorder';
 
 // ---------------------------------------------------------------------------
 // One business-document upload slot — mirrors the web SDK's
@@ -134,15 +135,13 @@ export function BusinessDocumentSlot({
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        borderWidth: 2,
-        borderStyle: 'dashed',
-        borderColor: colors.border,
         borderRadius: radius.sm,
         padding: spacing.md,
         marginBottom: spacing.sm + 4,
         opacity: uploading ? 0.7 : 1,
       }}
     >
+      <DashedBorder color={colors.border} radius={radius.sm} />
       {uploading ? (
         <ActivityIndicator size="small" color={colors.primary} />
       ) : (

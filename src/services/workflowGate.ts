@@ -102,6 +102,7 @@ export async function resolveWorkflow(
         status: 'ready',
         idTypes: res.idTypes,
         branding: res.branding,
+        geoCountry: res.geoCountry,
         environment: res.environment,
         fatal: false,
       },

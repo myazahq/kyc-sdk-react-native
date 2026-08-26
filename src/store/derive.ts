@@ -76,6 +76,10 @@ export function stepOrderOptions(state: KycState): StepOrderOptions {
     hasPhoneVerification: config.phoneVerification?.enabled === true,
     hasPoa: hasProofOfAddressStep(config.proofOfAddress),
     hasQuestionnaire: hasActiveQuestionnaire(config.questionnaire),
+    // Present only on a session a reviewer sent back. Narrows the order to the
+    // steps they ticked, so somebody fixing one blurry photo is not walked
+    // through the whole flow again.
+    resubmit: config.resubmit,
   };
 }
 
@@ -148,6 +152,15 @@ export function businessSubmission(state: KycState): {
       ...(text(b.email) ? { email: text(b.email) } : {}),
       ...(text(b.phone) ? { phone: text(b.phone) } : {}),
       ...(text(b.website) ? { website: text(b.website) } : {}),
+      // The five registry facts, sent only when filled. The server drops any
+      // the workflow has switched off, so an over-send is validate-and-drop
+      // rather than an error, and an under-send is what the required-field
+      // 422 is for.
+      ...(text(b.dateOfIncorporation) ? { dateOfIncorporation: text(b.dateOfIncorporation) } : {}),
+      ...(text(b.taxId) ? { taxId: text(b.taxId) } : {}),
+      ...(text(b.vatNumber) ? { vatNumber: text(b.vatNumber) } : {}),
+      ...(text(b.companyType) ? { companyType: text(b.companyType) } : {}),
+      ...(text(b.natureOfBusiness) ? { natureOfBusiness: text(b.natureOfBusiness) } : {}),
       // Extras ride along ONLY when the workflow configures them — the server
       // ignores an unconfigured block, but sending one is a claim we did not
       // collect properly.
@@ -155,6 +168,8 @@ export function businessSubmission(state: KycState): {
         ? { documents: app.documents.map((d) => ({ type: d.type, mediaId: d.mediaId })) }
         : {}),
       ...(hasKeyPeopleCollection(config) && people.length > 0 ? { keyPeople: people } : {}),
+      // The FATF fallback, attested: no natural person qualifies as a UBO.
+      ...(app.uboUnidentifiable ? { uboUnidentifiable: true } : {}),
       ...(hasApplicantVerification(config) && app.applicantRole
         ? {
             applicant: {

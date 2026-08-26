@@ -1,6 +1,7 @@
 import React from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {
+  Info,
   BadgeCheck,
   BookUser,
   Building2,
@@ -31,6 +32,7 @@ import {
   Moon,
   MoveLeft,
   Nfc,
+  Filter,
   Pencil,
   Smartphone,
   RefreshCw,
@@ -43,6 +45,7 @@ import {
   Sun,
   Timer,
   Upload,
+  Plus,
   UserRound,
   UserRoundPlus,
   Link2,
@@ -83,10 +86,13 @@ export type IconName =
   | 'building-2'
   | 'user'
   | 'user-plus'
+  | 'plus'
+  | 'info'
   | 'users'
   | 'scan-line'
   | 'scan-face'
   | 'nfc'
+  | 'filter'
   | 'pencil'
   | 'search'
   | 'zap'
@@ -144,7 +150,9 @@ const ICONS: Record<IconName, LucideIcon> = {
   'badge-check': BadgeCheck,
   'building-2': Building2,
   user: UserRound,
+  info: Info,
   'user-plus': UserRoundPlus,
+  plus: Plus,
   link: Link2,
   copy: Copy,
   share: Share2,
@@ -152,6 +160,7 @@ const ICONS: Record<IconName, LucideIcon> = {
   'scan-line': ScanLine,
   'scan-face': ScanFace,
   nfc: Nfc,
+  filter: Filter,
   pencil: Pencil,
   search: Search,
   zap: Zap,

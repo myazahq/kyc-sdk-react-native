@@ -14,6 +14,8 @@ namespace margelo::nitro::camera { class HybridFrameSpec; }
 
 #include "FaceResult.hpp"
 #include "JFaceResult.hpp"
+#include <NitroModules/Promise.hpp>
+#include <NitroModules/JPromise.hpp>
 #include <memory>
 #include <VisionCamera/HybridFrameSpec.hpp>
 #include <VisionCamera/JHybridFrameSpec.hpp>
@@ -55,6 +57,27 @@ namespace margelo::nitro::myazakyc {
     static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JFaceResult>(jni::alias_ref<margelo::nitro::camera::JHybridFrameSpec::JavaPart> /* frame */)>("detectFace");
     auto __result = method(_javaPart, std::dynamic_pointer_cast<margelo::nitro::camera::JHybridFrameSpec>(frame)->getJavaPart());
     return __result->toCpp();
+  }
+  bool JHybridMyazaFaceDetectorSpec::isModelReady() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jboolean()>("isModelReady");
+    auto __result = method(_javaPart);
+    return static_cast<bool>(__result);
+  }
+  std::shared_ptr<Promise<bool>> JHybridMyazaFaceDetectorSpec::prepareModel() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>()>("prepareModel");
+    auto __result = method(_javaPart);
+    return [&]() {
+      auto __promise = Promise<bool>::create();
+      __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& __boxedResult) {
+        auto __result = jni::static_ref_cast<jni::JBoolean>(__boxedResult);
+        __promise->resolve(static_cast<bool>(__result->value()));
+      });
+      __result->cthis()->addOnRejectedListener([=](const jni::alias_ref<jni::JThrowable>& __throwable) {
+        jni::JniException __jniError(__throwable);
+        __promise->reject(std::make_exception_ptr(__jniError));
+      });
+      return __promise;
+    }();
   }
 
 } // namespace margelo::nitro::myazakyc

@@ -18,6 +18,8 @@ import { BusinessKeyPeopleStep } from '../screens/BusinessKeyPeopleStep';
 import { BusinessDocumentsStep } from '../screens/BusinessDocumentsStep';
 import { ApplicantRoleStep } from '../screens/ApplicantRoleStep';
 import { NfcStep } from '../screens/NfcStep';
+import { MultiIdProgress } from './MultiIdProgress';
+import { useMultiIdPlan } from '../lib/use-multi-id-plan';
 
 // ---------------------------------------------------------------------------
 // The step router — which screen a step renders.
@@ -26,7 +28,31 @@ import { NfcStep } from '../screens/NfcStep';
 // and the step order, and nothing else.
 // ---------------------------------------------------------------------------
 
+/** The steps a multi-ID run walks once PER ID — the ones whose screen is about
+ *  one particular check and therefore needs the position strip above it. */
+const MULTI_ID_STEPS: readonly KYCStep[] = [
+  'id-type',
+  'id-input',
+  'document-capture',
+  'nfc',
+  'liveness',
+];
+
+/** Wraps a step's screen with the multi-ID position strip when a run is active. */
 export function StepView({ step, onClose }: { step: KYCStep; onClose: () => void }): React.ReactElement {
+  const plan = useMultiIdPlan();
+  if (plan && MULTI_ID_STEPS.includes(step)) {
+    return (
+      <View style={{ flex: 1 }}>
+        <MultiIdProgress plan={plan} />
+        <View style={{ flex: 1 }}>{stepScreen(step, onClose)}</View>
+      </View>
+    );
+  }
+  return stepScreen(step, onClose);
+}
+
+function stepScreen(step: KYCStep, onClose: () => void): React.ReactElement {
   switch (step) {
     case 'consent':
       return <ConsentStep />;

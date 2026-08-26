@@ -4,7 +4,7 @@
 
 export interface KYCSubmission {
   verificationId: string;
-  status: 'pending';
+  status: 'processing';
   metadata: Record<string, string>;
   submittedAt: string;
 }

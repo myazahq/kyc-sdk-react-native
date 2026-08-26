@@ -22,13 +22,43 @@ import { INITIAL_SERVER_CONFIG, describeConfigError, type ServerConfigState } fr
 import {
   EMPTY_BUSINESS,
   EMPTY_BUSINESS_APPLICATION,
+  EMPTY_BUSINESS_CHECK,
   type KYCSubmissionResult,
   type KycState,
   type KycStore,
 } from './state';
 import { nextStepAfter, nfcDecision, previousStepBefore } from './derive';
+
+/** The steps that make up ONE ID's evidence. Leaving this set is what ends a
+ *  multi-ID check — the leg has several exits depending on the ID. */
+const ID_EVIDENCE_STEPS = new Set<KYCStep>(['id-input', 'document-capture', 'nfc']);
+
+/** The 1-based check the applicant is on, or undefined outside a multi-ID run.
+ *  Only emitted once a slot has been COMMITTED — on an ordinary run the field
+ *  would be a constant 1 on every entry, which is noise. */
+function multiIdSlotOf(s: KycState): number | undefined {
+  return s.multiIdSlots.length > 0 ? s.multiIdSlots.length + 1 : undefined;
+}
+
+/** The ID selected at this moment — see StepLogEntry.idType. */
+function selectedIdTypeOf(s: KycState): string | undefined {
+  return s.selectedIdType ?? undefined;
+}
+
+/** The active multi-ID plan for the store's current state, or null. */
+function multiIdPlanFor(s: KycState): ReturnType<typeof multiIdPlan> {
+  return multiIdPlan(
+    { ...s.config, country: s.selectedCountry ?? s.config.country },
+    { multiIdSlotIndex: s.multiIdSlotIndex, multiIdSlots: s.multiIdSlots },
+    s.serverConfig.status === 'ready' ? s.serverConfig.idTypes : [],
+  );
+}
 import { recordStep, resetStepLog } from '../lib/step-log';
+import { multiIdPlan } from '../lib/multi-id';
+import { resolveIdTypeDefinition } from '../config/idTypes';
 import { buildVerifyRequest } from './submit';
+import { resetBusinessCheck, runBusinessCheck } from './businessCheck';
+import { startAttemptSession, watchSessionProgress } from './session';
 import { applicantMediaCaptured, buildApplicantVerifyRequest } from './submitApplicant';
 
 export * from './state';
@@ -65,9 +95,15 @@ export function createKycStore(
       api,
 
       currentStep: 'consent',
+      sessionId: null,
+      sessionUrl: null,
+      businessCheck: { ...EMPTY_BUSINESS_CHECK },
       selectedCountry: null,
       selectedIdType: null,
       idNumber: null,
+      multiIdSlotIndex: 0,
+      multiIdSlots: [],
+      multiIdRestored: null,
       mediaIds: {},
       submissionResult: null,
       serverConfig: serverConfig ?? INITIAL_SERVER_CONFIG,
@@ -106,6 +142,7 @@ export function createKycStore(
               status: 'ready',
               idTypes: res.idTypes,
               branding,
+              geoCountry: res.geoCountry,
               environment: res.environment,
               fatal: false,
             },
@@ -122,11 +159,90 @@ export function createKycStore(
         // Changing country invalidates the ID choice: the same key can mean a
         // different document (or none) elsewhere, so it is cleared rather than
         // silently carried across.
-        set((s) => ({
-          selectedCountry: country,
-          selectedIdType: s.selectedCountry === country ? s.selectedIdType : null,
-          idNumber: s.selectedCountry === country ? s.idNumber : null,
-        }));
+        set((s) => {
+          const same = s.selectedCountry === country;
+          return {
+            selectedCountry: country,
+            selectedIdType: same ? s.selectedIdType : null,
+            idNumber: same ? s.idNumber : null,
+            // A multi-ID run's committed slots belong to the country they were
+            // picked in; carrying them into a new one would offer an ID no
+            // register there can verify.
+            multiIdSlotIndex: same ? s.multiIdSlotIndex : 0,
+            multiIdSlots: same ? s.multiIdSlots : [],
+            multiIdRestored: same ? s.multiIdRestored : null,
+          };
+        });
+      },
+
+      commitMultiIdSlot(nextStep, previews) {
+        set((s) => {
+          if (!s.selectedIdType) return {};
+          const slot = {
+            idType: s.selectedIdType,
+            ...(s.idNumber ? { idNumber: s.idNumber } : {}),
+            ...(s.mediaIds.documentFront ? { documentFront: s.mediaIds.documentFront } : {}),
+            ...(s.mediaIds.documentBack ? { documentBack: s.mediaIds.documentBack } : {}),
+            ...(s.mediaIds.documentFrontVideo
+              ? { documentFrontVideo: s.mediaIds.documentFrontVideo }
+              : {}),
+            ...(s.mediaIds.documentBackVideo
+              ? { documentBackVideo: s.mediaIds.documentBackVideo }
+              : {}),
+            ...(s.chipData ? { chipData: s.chipData } : {}),
+            ...(previews?.front ? { documentFrontImage: previews.front } : {}),
+            ...(previews?.back ? { documentBackImage: previews.back } : {}),
+          };
+          // The working evidence is cleared for the next check; the SELFIE and
+          // its video are run-level and deliberately untouched.
+          return {
+            multiIdSlots: [...s.multiIdSlots, slot],
+            multiIdSlotIndex: s.multiIdSlotIndex + 1,
+            selectedIdType: null,
+            idNumber: null,
+            multiIdRestored: null,
+            mediaIds: {
+              ...s.mediaIds,
+              documentFront: undefined,
+              documentBack: undefined,
+              documentFrontVideo: undefined,
+              documentBackVideo: undefined,
+            },
+            // The chip belongs to the check just committed; the next one reads
+            // its own document (or none).
+            chipData: null,
+            documentScanPhase: 'front' as const,
+            currentStep: nextStep,
+          };
+        });
+      },
+
+      uncommitMultiIdSlot(step) {
+        set((s) => {
+          const last = s.multiIdSlots[s.multiIdSlots.length - 1];
+          if (!last) return {};
+          // Restore what that check captured — changing an earlier ID must not
+          // mean re-photographing a document that is still perfectly good.
+          return {
+            multiIdSlots: s.multiIdSlots.slice(0, -1),
+            multiIdSlotIndex: Math.max(s.multiIdSlots.length - 1, 0),
+            selectedIdType: last.idType,
+            idNumber: last.idNumber ?? null,
+            multiIdRestored: {
+              ...(last.documentFrontImage ? { front: last.documentFrontImage } : {}),
+              ...(last.documentBackImage ? { back: last.documentBackImage } : {}),
+            },
+            mediaIds: {
+              ...s.mediaIds,
+              documentFront: last.documentFront,
+              documentBack: last.documentBack,
+              documentFrontVideo: last.documentFrontVideo,
+              documentBackVideo: last.documentBackVideo,
+            },
+            chipData: last.chipData ?? null,
+            currentStep: step,
+          };
+        });
       },
 
       setIdType(idType) {
@@ -163,11 +279,29 @@ export function createKycStore(
       },
 
       setContactVerified(channel, destination, token) {
+        set((s) => {
+          // A fresh proof clears its channel's "server refused this" flag.
+          const expired = (s.contact.expired ?? []).filter((c) => c !== channel);
+          return {
+            contact:
+              channel === 'email'
+                ? { ...s.contact, emailAddress: destination, emailToken: token, expired }
+                : { ...s.contact, phoneNumber: destination, phoneToken: token, expired },
+          };
+        });
+      },
+
+      clearContactProofs(channels) {
+        // The server refused these proofs at submit (single-use tokens expire
+        // ~30 min after the OTP check, and session restore can resurrect a
+        // dead one). Drop the tokens, keep the destinations, flag the steps.
         set((s) => ({
-          contact:
-            channel === 'email'
-              ? { ...s.contact, emailAddress: destination, emailToken: token }
-              : { ...s.contact, phoneNumber: destination, phoneToken: token },
+          contact: {
+            ...s.contact,
+            ...(channels.includes('email') ? { emailToken: undefined } : {}),
+            ...(channels.includes('phone') ? { phoneToken: undefined } : {}),
+            expired: channels,
+          },
         }));
       },
 
@@ -180,12 +314,52 @@ export function createKycStore(
         }));
       },
 
+      setSessionId(sessionId, sessionUrl) {
+        set({ sessionId, ...(sessionUrl !== undefined ? { sessionUrl } : {}) });
+      },
+
+      async checkBusiness() {
+        return runBusinessCheck(get, set);
+      },
+
       setBusinessField(key, value) {
-        set((s) => ({ business: { ...s.business, [key]: value } }));
+        // Any change to WHICH company this is about invalidates the answer we
+        // hold, so the check never describes one business while the field names
+        // another. Everything the previous register told us about the old
+        // company goes with it — only what the REGISTER wrote: an applicant who
+        // typed their own address meant it. Clearing it also unblocks the next
+        // lookup, whose prefill only ever writes into an empty field, so
+        // leftovers were not merely stale, they were suppressing the real
+        // answer. Mirrors the web SDK's setDetails.
+        const identityChanged =
+          key === 'registrationNumber' || key === 'country' || key === 'product';
+        set((s) => {
+          const business = { ...s.business, [key]: value };
+          if (identityChanged) {
+            for (const prefilledKey of s.businessCheck.prefilled) {
+              if (prefilledKey !== key) (business as Record<string, unknown>)[prefilledKey] = '';
+            }
+          }
+          return { business };
+        });
+        if (identityChanged) resetBusinessCheck(set);
+      },
+
+      applyBusinessPrefill(patch, prefilled) {
+        set((s) => ({
+          business: { ...s.business, ...patch },
+          businessCheck: { ...s.businessCheck, prefilled },
+        }));
       },
 
       setKeyPeople(rows) {
         set((s) => ({ businessApplication: { ...s.businessApplication, keyPeople: rows } }));
+      },
+
+      setUboUnidentifiable(checked) {
+        set((s) => ({
+          businessApplication: { ...s.businessApplication, uboUnidentifiable: checked },
+        }));
       },
 
       setBusinessDocument(doc) {
@@ -276,6 +450,26 @@ export function createKycStore(
 
       nextStep() {
         const next = nextStepAfter(get().currentStep, get());
+
+        // Multi-ID: the run walks the capture leg once PER ID. Intercepted here
+        // rather than in each screen because it is one rule — "the applicant
+        // finished this check" — and the leg has several exits (a number-only
+        // ID leaves from id-input, a document ID from document-capture or the
+        // chip read after it).
+        const plan = multiIdPlanFor(get());
+        if (plan && ID_EVIDENCE_STEPS.has(get().currentStep) && !ID_EVIDENCE_STEPS.has(next)) {
+          const previews = get().multiIdRestored ?? undefined;
+          if (!plan.last) {
+            // Another ID to go: commit this one and hand the picker back.
+            get().commitMultiIdSlot('id-type', previews);
+            emitStepChange('id-type');
+            return;
+          }
+          // The final check: commit it, then carry on to the shared selfie.
+          get().commitMultiIdSlot(next, previews);
+          emitStepChange(next);
+          return;
+        }
         // Leaving document capture is the moment the chip step either appears or
         // silently does not. Four independent gates can remove it and a missing
         // step looks the same however it went missing, so say which one.
@@ -294,6 +488,22 @@ export function createKycStore(
       },
 
       previousStep() {
+        // Multi-ID: stepping back from the picker means re-doing the PREVIOUS
+        // check, not leaving the flow. The slot is uncommitted so its ID number
+        // and captures come back — changing an earlier ID must not mean
+        // re-photographing a document that is still perfectly good.
+        const slots = get().multiIdSlots;
+        if (get().currentStep === 'id-type' && slots.length > 0) {
+          const last = slots[slots.length - 1]!;
+          const def = resolveIdTypeDefinition(
+            get().selectedCountry ?? get().config.country ?? '',
+            last.idType,
+          );
+          const step: KYCStep = def?.requiresDocumentCapture === false ? 'id-input' : 'document-capture';
+          get().uncommitMultiIdSlot(step);
+          emitStepChange(step);
+          return;
+        }
         const prev = previousStepBefore(get().currentStep, get());
         if (prev !== get().currentStep) {
           set({ currentStep: prev, immersiveCapture: false, navDirection: 'back' });
@@ -322,7 +532,7 @@ export function createKycStore(
           const res = await withRetry(() => api.verify(request), { onRetry });
           const result: KYCSubmissionResult = {
             verificationId: res.verificationId,
-            status: 'pending',
+            status: 'processing',
           };
           set({
             submissionResult: result,
@@ -359,18 +569,24 @@ export function createKycStore(
         // already sitting on 'consent' (the subscribe below only fires on
         // change, and recordStep dedupes if it fires too).
         resetStepLog();
-        recordStep('consent');
+        recordStep('consent', multiIdSlotOf(get()), selectedIdTypeOf(get()));
         set({
           currentStep: 'consent',
           selectedCountry: null,
           selectedIdType: null,
           idNumber: null,
+          multiIdSlotIndex: 0,
+          multiIdSlots: [],
+          multiIdRestored: null,
           mediaIds: {},
           submissionResult: null,
           documentScanPhase: 'front',
           documentCapturePhase: 'front',
           immersiveCapture: false,
           flashPaint: null,
+          sessionId: null,
+          sessionUrl: null,
+          businessCheck: { ...EMPTY_BUSINESS_CHECK },
           questionnaireAnswers: {},
           contact: {},
           contactChallenge: null,
@@ -395,7 +611,9 @@ export function createKycStore(
   // collapses consecutive duplicates). Rides the submission as
   // metadata.device.stepLog for the dashboard timeline.
   store.subscribe((s, prev) => {
-    if (s.currentStep !== prev.currentStep) recordStep(s.currentStep);
+    if (s.currentStep !== prev.currentStep) {
+      recordStep(s.currentStep, multiIdSlotOf(s), selectedIdTypeOf(s));
+    }
   });
 
   // A fresh store IS a fresh session: the runtime provider creates one per
@@ -404,7 +622,16 @@ export function createKycStore(
   // subscription above only fires on CHANGE, and a new store already sits on
   // 'consent').
   resetStepLog();
-  recordStep(store.getState().currentStep);
+  recordStep(
+    store.getState().currentStep,
+    multiIdSlotOf(store.getState()),
+    selectedIdTypeOf(store.getState()),
+  );
+
+  // The attempt session: minted at launch (a fresh store IS a fresh attempt),
+  // with progress written as the user moves. Both best-effort by contract.
+  startAttemptSession(store);
+  watchSessionProgress(store);
 
   return store;
 }

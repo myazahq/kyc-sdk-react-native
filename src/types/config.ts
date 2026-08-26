@@ -1,3 +1,4 @@
+import type { ResubmitConfig } from '../lib/resubmit';
 // ---------------------------------------------------------------------------
 // The SDK's public configuration.
 //
@@ -23,6 +24,7 @@ import type {
   ProofOfAddressConfig,
   QuestionnaireConfig,
   WorkflowCountry,
+  MultiIdConfig,
 } from './workflow';
 
 export type * from './workflow';
@@ -155,6 +157,12 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> {
    * reflection flash, or both. Workflow-driven.
    */
   livenessMode?: LivenessMode;
+  /**
+   * KYB success screen: after submitting with key people still to verify,
+   * tapping Done offers the session's own web page so the applicant can reach
+   * the invite links again after the app closes. Default true.
+   */
+  keyPeopleLinkRecovery?: boolean;
 
   /** Colours in the flash sequence (2–5, default 4). Flash modes only. */
   flashSequenceLength?: number;
@@ -175,6 +183,10 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> {
    */
   countries?: WorkflowCountry[];
 
+  /** Multi-ID policy: several ID checks in one run, judged by a pass policy.
+   *  KYC only — publish rejects it on a KYB workflow. */
+  multiId?: MultiIdConfig;
+
   /** Email OTP possession check, right after consent. */
   emailVerification?: EmailVerificationConfig;
 
@@ -186,6 +198,15 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> {
 
   /** Compliance declarations asked just before submission. */
   questionnaire?: QuestionnaireConfig;
+
+  /**
+   * A reviewer sent this attempt back to redo specific steps.
+   *
+   * Never set by a consumer and never part of a published workflow — it is
+   * stamped onto ONE session's config snapshot when somebody clicks "Send back".
+   * Absent means the ordinary full flow.
+   */
+  resubmit?: ResubmitConfig;
 
   /** eMRTD chip read for chip-capable documents. */
   nfc?: NfcConfig;
@@ -255,7 +276,7 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> {
   onStepChange?: (step: KYCStep) => void;
   /**
    * Fires immediately after the user submits. The submission is always
-   * status: 'pending' — results arrive async via webhook.
+   * status: 'processing' — results arrive async via webhook.
    */
   onSubmit?: (submission: KYCSubmission) => void;
   onClose?: () => void;

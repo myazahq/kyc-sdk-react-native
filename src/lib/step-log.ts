@@ -11,6 +11,20 @@
 export interface StepLogEntry {
   step: string;
   at: string;
+  /**
+   * Which multi-ID check the applicant was on (1-based). Absent on ordinary
+   * runs and on the first check.
+   *
+   * The SERVER cannot tell a slot advance from a back-press: a multi-ID run
+   * legitimately returns to the ID picker for its next ID, and by step name
+   * that is identical to pressing Back. Only the client knows a slot was
+   * committed, so only the client can say.
+   */
+  slot?: number;
+  /** The ID type selected AT THAT MOMENT — a slot's final pick is not what the
+   *  applicant was doing earlier in it (pick one ID, go back, settle on
+   *  another, and the earlier step would be named for an ID not yet chosen). */
+  idType?: string;
 }
 
 export interface StepLog {
@@ -29,10 +43,17 @@ export function resetStepLog(): void {
 
 /** Records a step visit. Consecutive duplicates are collapsed; back-and-forth
  *  navigation is kept — repeat visits are honest journey data. */
-export function recordStep(step: string): void {
+export function recordStep(step: string, slot?: number, idType?: string): void {
   if (entries.length >= MAX_ENTRIES) return;
-  if (entries[entries.length - 1]?.step === step) return;
-  entries.push({ step, at: new Date().toISOString() });
+  const last = entries[entries.length - 1];
+  // A revisit on a NEW check, or on a DIFFERENT ID, is a different visit.
+  if (last?.step === step && last.slot === slot && last.idType === idType) return;
+  entries.push({
+    step,
+    at: new Date().toISOString(),
+    ...(slot ? { slot } : {}),
+    ...(idType ? { idType } : {}),
+  });
 }
 
 /** Snapshot attached to the verify submission. Null when nothing was recorded

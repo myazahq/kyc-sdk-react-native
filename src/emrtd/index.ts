@@ -29,3 +29,4 @@ export {
 export { parseDg1 } from './dg1';
 export { decodeChipImage, isNfcAvailable, nfcUnavailableReason } from './native';
 export { cancelChipRead, readPassportChip, type ChipReadOptions } from './read';
+export { AA_CHALLENGE_BYTES, readActiveAuth, type AaChallenge, type ActiveAuthRead } from './activeAuth';

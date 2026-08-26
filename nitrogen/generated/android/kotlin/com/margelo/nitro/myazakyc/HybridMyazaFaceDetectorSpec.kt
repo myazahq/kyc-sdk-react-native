@@ -11,6 +11,7 @@ import androidx.annotation.Keep
 import com.facebook.jni.HybridData
 import com.facebook.proguard.annotations.DoNotStrip
 import com.margelo.nitro.camera.HybridFrameSpec
+import com.margelo.nitro.core.Promise
 import com.margelo.nitro.core.HybridObject
 
 /**
@@ -32,6 +33,14 @@ abstract class HybridMyazaFaceDetectorSpec: HybridObject() {
   @DoNotStrip
   @Keep
   abstract fun detectFace(frame: com.margelo.nitro.camera.HybridFrameSpec): FaceResult
+  
+  @DoNotStrip
+  @Keep
+  abstract fun isModelReady(): Boolean
+  
+  @DoNotStrip
+  @Keep
+  abstract fun prepareModel(): Promise<Boolean>
 
   // Default implementation of `HybridObject.toString()`
   override fun toString(): String {

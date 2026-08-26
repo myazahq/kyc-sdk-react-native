@@ -15,6 +15,8 @@ public protocol HybridMyazaFaceDetectorSpec_protocol: HybridObject {
 
   // Methods
   func detectFace(frame: (any HybridFrameSpec)) throws -> FaceResult
+  func isModelReady() throws -> Bool
+  func prepareModel() throws -> Promise<Bool>
 }
 
 public extension HybridMyazaFaceDetectorSpec_protocol {

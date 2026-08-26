@@ -1,10 +1,16 @@
 import { SDK_VERSION } from './deviceMetadata';
 import type {
+  BusinessRegionsResponse,
+  BusinessSearchResponse,
+  BusinessSelectResponse,
   ContactCheckResponse,
+  NfcChallengeResponse,
   ContactSendResponse,
   HealthResponse,
   MediaUploadType,
   SdkConfigResponse,
+  SessionStartResponse,
+  SessionSummaryResponse,
   UploadFile,
   UploadResponse,
   VerificationStatusResponse,
@@ -234,6 +240,18 @@ export function createKYCApi(baseUrl: string, apiKey: string) {
       });
     },
 
+    /**
+     * A fresh Active-Authentication challenge for a chip read — the nonce the
+     * chip signs to prove it is the original document rather than a copy of
+     * one. It has to come from the SERVER: a nonce the client chose would let
+     * a captured signature be replayed forever, which is the clone the check
+     * exists to catch. Best-effort by contract at every call site — a chip
+     * read without one is exactly the read we did before.
+     */
+    async nfcChallenge(): Promise<NfcChallengeResponse> {
+      return request<NfcChallengeResponse>('/nfc/challenge', { method: 'POST' });
+    },
+
     async config(signal?: AbortSignal): Promise<SdkConfigResponse> {
       return request<SdkConfigResponse>('/config', signal ? { signal } : {});
     },
@@ -248,6 +266,92 @@ export function createKYCApi(baseUrl: string, apiKey: string) {
         `/workflows/${encodeURIComponent(workflowId)}`,
         signal ? { signal } : {},
       );
+    },
+
+    /**
+     * Begin (or resume) a verification ATTEMPT session. Best-effort by
+     * contract: sessions power resumability, the dashboard's live attempt
+     * view, and the registry check at selection — verifying is never
+     * conditional on one existing.
+     */
+    async startSession(input: {
+      externalUserId?: string;
+      workflowId?: string;
+      /** Persistent device id — the anonymous-mount resume fallback. */
+      deviceRef?: string;
+    }): Promise<SessionStartResponse> {
+      return request<SessionStartResponse>('/session/start', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      });
+    },
+
+    /**
+     * A submitted session, rebuilt server-side — the reconciled key-people
+     * list the success screen polls. Same body a hosted link reads by token,
+     * so mobile and hosted success screens cannot tell different stories
+     * about one application.
+     */
+    async sessionSummary(sessionId: string): Promise<SessionSummaryResponse> {
+      return request<SessionSummaryResponse>(`/session/${sessionId}/summary`);
+    },
+
+    /**
+     * Save where the user has got to. Losing a save costs some re-typing on
+     * resume and must never interrupt them now — callers swallow failures.
+     */
+    async saveProgress(sessionId: string, progress: unknown): Promise<void> {
+      await request(`/session/${encodeURIComponent(sessionId)}/progress`, {
+        method: 'PUT',
+        body: JSON.stringify(progress),
+      });
+    },
+
+    /**
+     * Find a business by name. FREE — no provider charge here or upstream, so
+     * the applicant may look as many times as they need. Throws on a provider
+     * failure so the caller can show "unavailable" rather than an empty list,
+     * which would read as "this business is not registered".
+     */
+    async businessSearch(params: {
+      country: string;
+      subdivisionCode?: string;
+      query: string;
+      limit?: number;
+    }): Promise<BusinessSearchResponse> {
+      const qs = new URLSearchParams({ country: params.country, query: params.query });
+      if (params.subdivisionCode) qs.set('subdivisionCode', params.subdivisionCode);
+      if (params.limit) qs.set('limit', String(params.limit));
+      return request<BusinessSearchResponse>(`/business/search?${qs.toString()}`);
+    },
+
+    /** Registry regions for a country. Empty when it has a single register. */
+    async businessRegions(country: string): Promise<BusinessRegionsResponse> {
+      return request<BusinessRegionsResponse>(
+        `/business/regions?country=${encodeURIComponent(country)}`,
+      );
+    },
+
+    /**
+     * The PAID registry check for the company the applicant identified, run at
+     * selection so the register's key people come back BEFORE the form asks
+     * for them. Never fails the flow: a short balance, unconfigured pricing or
+     * a spent lookup budget returns `checked: false` and the lookup happens at
+     * submit as before.
+     */
+    async businessSelect(body: {
+      sessionId: string;
+      country: string;
+      subdivisionCode?: string;
+      product?: string;
+      registrationNumber: string;
+      registrationName?: string;
+      sandboxOutcome?: string;
+    }): Promise<BusinessSelectResponse> {
+      return request<BusinessSelectResponse>('/business/select', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
     },
 
     async health(): Promise<HealthResponse> {

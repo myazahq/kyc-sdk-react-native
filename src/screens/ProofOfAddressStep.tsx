@@ -8,6 +8,7 @@ import { MyazaButton } from '../components/MyazaButton';
 import { Icon } from '../components/Icon';
 import { MediaSourceSheet } from '../components/MediaSourceSheet';
 import { MyazaSelect } from '../components/MyazaSelect';
+import { DashedBorder } from '../components/DashedBorder';
 import { withRetry } from '../services/retry';
 import { compressDocumentImage } from '../services/mediaCompress';
 import { poaDocumentTypes, poaMaxAgeDays, poaTypeLabel } from '../config/proofOfAddress';
@@ -201,11 +202,13 @@ export function ProofOfAddressStep(): React.ReactElement {
             paddingVertical: spacing.xl,
             paddingHorizontal: spacing.lg,
             borderRadius: radius.md,
-            borderWidth: 1.5,
-            borderStyle: 'dashed',
-            borderColor: colors.border,
           }}
         >
+          <DashedBorder
+            color={colors.border}
+            radius={radius.md}
+            strokeWidth={1.5}
+          />
           {busy ? (
             <ActivityIndicator size="small" color={colors.primary} />
           ) : (

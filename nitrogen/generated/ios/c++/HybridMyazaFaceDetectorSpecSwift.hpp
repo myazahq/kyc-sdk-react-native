@@ -20,6 +20,7 @@ namespace margelo::nitro::camera { class HybridFrameSpec; }
 #include "FaceResult.hpp"
 #include <memory>
 #include <VisionCamera/HybridFrameSpec.hpp>
+#include <NitroModules/Promise.hpp>
 
 #include "KycSdkReactNative-Swift-Cxx-Umbrella.hpp"
 
@@ -73,6 +74,22 @@ namespace margelo::nitro::myazakyc {
     // Methods
     inline FaceResult detectFace(const std::shared_ptr<margelo::nitro::camera::HybridFrameSpec>& frame) override {
       auto __result = _swiftPart.detectFace(frame);
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline bool isModelReady() override {
+      auto __result = _swiftPart.isModelReady();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<bool>> prepareModel() override {
+      auto __result = _swiftPart.prepareModel();
       if (__result.hasError()) [[unlikely]] {
         std::rethrow_exception(__result.error());
       }

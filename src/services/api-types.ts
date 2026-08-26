@@ -47,9 +47,32 @@ export interface KeyPersonInvite {
   inviteUrl: string;
 }
 
+/**
+ * The one status vocabulary, shared by `GET /api/kyc/status/:id`, the
+ * secret-key result route and every verification webhook.
+ *
+ * `status` is what happened; `checkStatus` beside it is what the CHECKS found.
+ * They differ when a person overrode the automated result, which is the case
+ * worth being able to see: `approved` with `checkStatus: 'failed'` means
+ * somebody accepted the applicant despite a failed check, and the reason says
+ * what they accepted them despite.
+ */
+export type SessionStatus =
+  | 'not_started'
+    | 'in_progress'
+    | 'processing'
+    | 'in_review'
+    | 'awaiting_resubmission'
+    | 'approved'
+    | 'declined'
+    | 'abandoned'
+    | 'expired'
+    | 'error';
+
 export interface VerifyResponse {
   verificationId: string;
-  status: 'pending';
+  /** Always `processing`: accepted, checks running. */
+  status: 'processing';
   /**
    * KYB with applicant verification: the KeyPerson row the applicant's OWN
    * identity check must link back to, via `metadata.userId` on a second,
@@ -66,7 +89,9 @@ export interface VerifyResponse {
  */
 export interface VerificationStatusResponse {
   verificationId: string;
-  status: 'pending' | 'verified' | 'failed' | 'not_found' | 'error';
+  status: SessionStatus;
+  /** What the CHECKS found, unchanged by any later decision. */
+  checkStatus?: 'pending' | 'verified' | 'failed' | 'not_found' | 'error';
   reason?: string | null;
   reasonCode?: string | null;
   createdAt: string;
@@ -109,6 +134,14 @@ export interface SdkConfigResponse {
   environment: 'DEVELOPMENT' | 'SANDBOX' | 'PRODUCTION';
   idTypes: SdkConfigIdType[];
   branding?: SdkConfigBranding;
+  /**
+   * The visitor's country, resolved from their IP.
+   *
+   * A GUESS and only ever a DEFAULT — nothing branches on it and it never
+   * reaches a verification. Deliberately not evidence: device intelligence
+   * carries the same lookup as a RISK signal, and the two must not be confused.
+   */
+  geoCountry?: string | null;
 }
 
 /**
@@ -141,6 +174,14 @@ export interface WorkflowResolutionResponse {
   /** Org allowlist + per-ID feature flags (same shape as /config). */
   idTypes: SdkConfigIdType[];
   branding?: SdkConfigBranding;
+  /**
+   * The visitor's country, resolved from their IP.
+   *
+   * A GUESS and only ever a DEFAULT — nothing branches on it and it never
+   * reaches a verification. Deliberately not evidence: device intelligence
+   * carries the same lookup as a RISK signal, and the two must not be confused.
+   */
+  geoCountry?: string | null;
   /** KYB only: the mapped applicant workflow, when configured and resolvable. */
   applicantWorkflow?: ApplicantWorkflowPayload | null;
 }
@@ -157,8 +198,123 @@ export interface ContactCheckResponse {
   token: string;
 }
 
+/**
+ * A server-issued Active-Authentication challenge. `challenge` is base64 of the
+ * 8 bytes handed to the chip; `challengeId` is what rides the submission so the
+ * server can spend it (single-use — a replayed one is refused).
+ */
+export interface NfcChallengeResponse {
+  challengeId: string;
+  challenge: string;
+  expiresAt: string;
+}
+
 export interface HealthResponse {
   status: string;
 }
 
 // The mime types the server accepts (must mirror the server's upload allowlist).
+
+/** `POST /session/start` — mint (or resume) an attempt session. */
+export interface SessionStartResponse {
+  sessionId: string;
+  expiresAt: string;
+  resumed: boolean;
+  /** The session's own hosted web page. After a KYB submission it is the
+   *  rehydrated success screen with every key person's invite link — the
+   *  applicant's way back to those links once the app closes. */
+  url?: string;
+  /** Where the user got to, when resuming. Media references are already
+   *  pruned server-side of anything that has since expired. */
+  progress?: {
+    step?: string;
+    mediaIds?: Record<string, string>;
+    data?: Record<string, unknown>;
+  };
+}
+
+/** One person a submitted KYB application is still waiting on (the server's
+ *  reconciled view — registry discovery can add people the applicant never
+ *  listed, so this list supersedes the submit-time invites). */
+export interface AwaitingPersonPayload {
+  id: string;
+  name: string;
+  role: string;
+  ownershipPct: number | null;
+  /** ISO-2, or null when the register gave free text no flag matches. */
+  country: string | null;
+  status: 'verified' | 'failed' | 'submitted' | 'pending' | 'not_needed';
+  /** Null once their check is done, or when they never needed one. */
+  inviteUrl: string | null;
+  isApplicant: boolean;
+  /** A company completes a KYB application, not a KYC - the list labels it so. */
+  isCorporate?: boolean;
+}
+
+/** `GET /session/:sessionId/summary` — a submitted session, rebuilt server-side. */
+export interface SessionSummaryResponse {
+  status: 'completed';
+  /** False while registry discovery is still reconciling the people list. */
+  keyPeopleSettled?: boolean;
+  keyPeople: AwaitingPersonPayload[];
+}
+
+/** One officer as the register names them — the key-people prefill's input. */
+export interface RegistryOfficer {
+  name: string | null;
+  designation: string | null;
+  /** Everything else the register said about them (older servers omit these). */
+  roles?: string[] | null;
+  ownershipPct?: number | null;
+  email?: string | null;
+  isCorporate?: boolean | null;
+  registrationNumber?: string | null;
+}
+
+/** What the register holds about a company, when it answered. Everything is
+ *  nullable because no register answers all of it for every company. */
+export interface BusinessCompanyRecord {
+  name: string | null;
+  registrationNumber: string;
+  registrationDate: string | null;
+  typeOfEntity: string | null;
+  companyStatus: string | null;
+  address: string | null;
+  email: string | null;
+  phone: string | null;
+  taxId: string | null;
+  vatNumber: string | null;
+  natureOfBusiness: string | null;
+  city: string | null;
+  state: string | null;
+}
+
+/** `POST /business/select` — the paid registry check at selection. */
+export interface BusinessSelectResponse {
+  checked: boolean;
+  /** Why the pre-flight did not run (`checked: false`) — the submit-time lookup
+   *  still happens, so this is informational, never an error. */
+  reason?: string;
+  found?: boolean;
+  charged?: boolean;
+  business?: (BusinessCompanyRecord & { keyPeople: RegistryOfficer[] }) | null;
+}
+
+/** One candidate from the FREE name search — picking one is what runs the paid check. */
+export interface BusinessSearchHit {
+  name: string;
+  registrationNumber: string;
+  status?: string;
+}
+
+/** `GET /business/search` — find a business by name. */
+export interface BusinessSearchResponse {
+  results: BusinessSearchHit[];
+  /** Which source answered; a degraded fallback names itself here. */
+  source: string;
+}
+
+/** `GET /business/regions` — the registry regions of a split register. */
+export interface BusinessRegionsResponse {
+  regions: { code: string; name: string }[];
+}

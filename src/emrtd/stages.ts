@@ -23,6 +23,8 @@ export type NfcReadStage =
   | 'readingSecurity'
   /** Reading DG2 — the chip's portrait. */
   | 'readingPhoto'
+  /** Reading the optional detail groups (DG7/DG11/DG12) — small and quick. */
+  | 'readingDetails'
   /** Everything that could be read has been. */
   | 'done';
 
@@ -33,6 +35,7 @@ export const NFC_STAGE_ORDER: NfcReadStage[] = [
   'readingData',
   'readingSecurity',
   'readingPhoto',
+  'readingDetails',
   'done',
 ];
 
@@ -49,6 +52,8 @@ export function nfcStageLabel(stage: NfcReadStage): string {
       return 'Reading security data';
     case 'readingPhoto':
       return 'Reading photo';
+    case 'readingDetails':
+      return 'Reading extra details';
     case 'done':
       return 'Chip read complete';
   }
@@ -73,6 +78,8 @@ export function nfcStageDetail(stage: NfcReadStage): string {
       return 'Downloading the chip’s digital signature. This is the largest part and takes the longest — keep holding.';
     case 'readingPhoto':
       return 'Copying the photo stored on the chip.';
+    case 'readingDetails':
+      return 'Copying the optional details stored on the chip. These are small and quick.';
     case 'done':
       return 'Everything was read successfully.';
   }
@@ -98,6 +105,8 @@ export function nfcSheetMessage(stage: NfcReadStage): string {
       return 'Verifying security data — keep holding…';
     case 'readingPhoto':
       return 'Reading your photo — keep holding…';
+    case 'readingDetails':
+      return 'Almost done — keep holding…';
     case 'done':
       return 'Chip read complete';
   }
@@ -116,6 +125,8 @@ export function nfcStageProgress(stage: NfcReadStage): number {
       return 0.6;
     case 'readingPhoto':
       return 0.85;
+    case 'readingDetails':
+      return 0.95;
     case 'done':
       return 1;
   }

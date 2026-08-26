@@ -74,8 +74,16 @@ export function mapToKycError(err: unknown, context: ErrorContext): KYCError {
               : err.message || 'This verification feature is currently disabled for your organization.';
       return new KYCError('feature_disabled', message);
     }
-    if (err.statusCode >= 500 || err.statusCode === 0) {
-      // Transient server error that survived retries.
+    // Nothing came back at all — DNS, routing, a refused connection. Kept
+    // SEPARATE from a 5xx: telling somebody the server errored when their
+    // request never arrived sends them looking through server logs for a
+    // request that was never made.
+    if (err.statusCode === 0) {
+      const code: KYCErrorCode = context === 'upload' ? 'upload_failed' : 'network_error';
+      return new KYCError(code, "Couldn't reach the server. Check your connection and try again.");
+    }
+    if (err.statusCode >= 500) {
+      // Transient server error that survived retries — the request DID arrive.
       const code: KYCErrorCode = context === 'upload' ? 'upload_failed' : 'network_error';
       return new KYCError(code, 'A server error occurred. Please try again in a moment.');
     }

@@ -21,6 +21,7 @@ namespace margelo::nitro::camera { class HybridFrameSpec; }
 #include "FaceResult.hpp"
 #include <memory>
 #include <VisionCamera/HybridFrameSpec.hpp>
+#include <NitroModules/Promise.hpp>
 
 namespace margelo::nitro::myazakyc {
 
@@ -54,6 +55,8 @@ namespace margelo::nitro::myazakyc {
     public:
       // Methods
       virtual FaceResult detectFace(const std::shared_ptr<margelo::nitro::camera::HybridFrameSpec>& frame) = 0;
+      virtual bool isModelReady() = 0;
+      virtual std::shared_ptr<Promise<bool>> prepareModel() = 0;
 
     protected:
       // Hybrid Setup

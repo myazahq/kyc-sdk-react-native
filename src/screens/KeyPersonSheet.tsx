@@ -1,53 +1,65 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Keyboard,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { Keyboard, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 
-import { radius, spacing } from '../config/theme';
+import { spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
 import { MyazaText } from '../components/Typography';
 import { MyazaButton } from '../components/MyazaButton';
-import { Icon } from '../components/Icon';
+import { FloatingSheet } from '../components/glass/FloatingSheet';
 import { KeyPersonForm } from './KeyPersonForm';
 import { isKeyPersonRowValid, type KeyPersonEntry } from '../config/keyPeople';
+import type { KeyPeopleSection as SectionKey } from '../config/keyPeopleSections';
+import type { KeyPersonRole } from '../types/business';
+
+/** What the sheet calls itself, per the section that opened it. */
+const ADD_TITLES: Record<SectionKey, string> = {
+  ubos: 'Add a beneficial owner',
+  shareholders: 'Add a shareholder',
+  representatives: 'Add a representative',
+};
 
 // ---------------------------------------------------------------------------
 // The add/edit key-person sheet. The list step stays a clean stack of summary
-// cards; the FORM lives here — slide-up sheet, grab handle, the five fields,
-// and a pinned primary action. Editing adds a visually separated destructive
-// "Remove this person" beneath the save (never beside it — HIG destructive
-// separation).
+// cards; the FORM lives here — the same liquid-glass FloatingSheet every other
+// picker in the SDK rides (handle, glass surface, swipe-down), so the two
+// sheet kinds feel like one system. Editing adds a visually separated
+// destructive "Remove this person" beneath the save (never beside it — HIG
+// destructive separation).
 //
 // Keyboard handling mirrors DialCodePicker: the sheet is lifted above the keys
 // and sized against the space that remains, so the focused field is never
 // underneath the keyboard.
 //
-// Save is enabled once the draft is valid. A combined-ownership overshoot
-// WARNS here but never blocks saving — the fix may live on a different
-// person's %, and trapping the user inside this sheet would force them to
-// discard their work to go adjust it.
+// Save is enabled once the draft is valid (including a REQUIRED email when the
+// workflow demands one for the role). A combined-ownership overshoot WARNS
+// here but never blocks saving — the fix may live on a different person's %,
+// and trapping the user inside this sheet would force them to discard their
+// work to go adjust it.
 // ---------------------------------------------------------------------------
 
 export function KeyPersonSheet({
   mode,
+  section,
+  corporateKyb = false,
   initial,
   uboThreshold,
   otherPctTotal,
+  emailRequiredFor,
   onSave,
   onRemove,
   onClose,
 }: {
   mode: 'add' | 'edit';
+  /** The section whose add-tile or card opened the sheet. */
+  section: SectionKey;
+  /** The workflow sends corporate shareholders their own KYB application. */
+  corporateKyb?: boolean;
   initial: KeyPersonEntry;
   uboThreshold?: number;
   /** Sum of every OTHER person's ownership % — for the combined warning. */
   otherPctTotal: number;
+  /** Roles whose email is mandatory (they are sent a verification link). */
+  emailRequiredFor?: ReadonlySet<KeyPersonRole>;
   onSave: (entry: KeyPersonEntry) => void;
   /** Edit mode only — removes the person and closes. */
   onRemove?: () => void;
@@ -82,103 +94,75 @@ export function KeyPersonSheet({
   const fmtPct = (n: number): string => (Number.isInteger(n) ? String(n) : n.toFixed(1));
   const combinedPctError =
     combinedTotal > 100
-      ? `Combined ownership would be ${fmtPct(combinedTotal)}% — over by ${fmtPct(combinedTotal - 100)}%.`
+      ? `Combined ownership would be ${fmtPct(combinedTotal)}%, over by ${fmtPct(combinedTotal - 100)}%.`
       : null;
 
-  const canSave = isKeyPersonRowValid(draft) && draft.name.trim().length >= 2;
+  const canSave =
+    isKeyPersonRowValid(draft, emailRequiredFor ?? new Set()) && draft.name.trim().length >= 2;
 
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      {/* Same wrapper as MyazaSelect's option sheet: a flex-end backdrop with
-          the sheet inside it, so the top corners round identically. Tapping
-          the backdrop dismisses; a tap inside the sheet does not. */}
-      <Pressable
-        onPress={onClose}
-        accessibilityLabel="Close"
+    <FloatingSheet
+      visible
+      onClose={onClose}
+      maxHeight={maxHeight}
+      // Ride above a raised keyboard — this sheet is a form.
+      bottomOffset={keyboard}
+      closeLabel="Close person editor"
+    >
+      <MyazaText
+        variant="body"
         style={{
-          flex: 1,
-          backgroundColor: 'rgba(0,0,0,0.45)',
-          justifyContent: 'flex-end',
+          fontWeight: '700',
+          paddingHorizontal: spacing.md,
+          // Tight under the handle, the way the system sheet titles sit.
+          paddingTop: spacing.xs,
+          paddingBottom: spacing.sm,
         }}
       >
-        <Pressable
-          onPress={() => {}}
-          style={{
-            maxHeight,
-            marginBottom: keyboard,
-            backgroundColor: colors.background,
-            borderTopLeftRadius: radius.lg,
-            borderTopRightRadius: radius.lg,
-            overflow: 'hidden',
-          }}
-        >
-        <View
-          style={{
-            alignSelf: 'center',
-            width: 36,
-            height: 4,
-            borderRadius: radius.full,
-            backgroundColor: colors.border,
-            marginTop: spacing.sm,
-          }}
+        {mode === 'add' ? ADD_TITLES[section] : draft.isCorporate ? 'Edit company' : 'Edit person'}
+      </MyazaText>
+
+      <ScrollView
+        bounces={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}
+      >
+        <KeyPersonForm
+          entry={draft}
+          section={section}
+          corporateKyb={corporateKyb}
+          onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))}
+          uboThreshold={uboThreshold}
+          combinedPctError={combinedPctError}
+          emailRequiredFor={emailRequiredFor}
         />
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingHorizontal: spacing.md,
-            paddingTop: spacing.sm + 4,
-            paddingBottom: spacing.sm,
-          }}
-        >
-          <MyazaText variant="body" style={{ flex: 1, fontWeight: '700' }}>
-            {mode === 'add' ? 'Add a person' : 'Edit person'}
-          </MyazaText>
-          <Pressable onPress={onClose} hitSlop={12} accessibilityRole="button" accessibilityLabel="Close">
-            <Icon name="x" size={20} color={colors.textSecondary} />
+      </ScrollView>
+
+      <View style={{ paddingHorizontal: spacing.md, paddingTop: spacing.sm }}>
+        <MyazaButton
+          label={mode === 'add' ? (draft.isCorporate ? 'Add company' : 'Add person') : 'Save changes'}
+          onPress={canSave ? () => onSave(draft) : undefined}
+          disabled={!canSave}
+        />
+        {mode === 'edit' && onRemove ? (
+          <Pressable
+            onPress={onRemove}
+            accessibilityRole="button"
+            accessibilityLabel="Remove this person"
+            style={({ pressed }) => ({
+              height: 44,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginTop: spacing.xs,
+              opacity: pressed ? 0.7 : 1,
+            })}
+          >
+            <MyazaText variant="bodyMedium" color={colors.error} style={{ fontWeight: '600' }}>
+              {draft.isCorporate ? 'Remove this company' : 'Remove this person'}
+            </MyazaText>
           </Pressable>
-        </View>
-
-        <ScrollView
-          bounces={false}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}
-        >
-          <KeyPersonForm
-            entry={draft}
-            onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))}
-            uboThreshold={uboThreshold}
-            combinedPctError={combinedPctError}
-          />
-        </ScrollView>
-
-        <View style={{ paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.lg }}>
-          <MyazaButton
-            label={mode === 'add' ? 'Add person' : 'Save changes'}
-            onPress={canSave ? () => onSave(draft) : undefined}
-            disabled={!canSave}
-          />
-          {mode === 'edit' && onRemove ? (
-            <Pressable
-              onPress={onRemove}
-              accessibilityRole="button"
-              accessibilityLabel="Remove this person"
-              style={({ pressed }) => ({
-                height: 44,
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginTop: spacing.xs,
-                opacity: pressed ? 0.7 : 1,
-              })}
-            >
-              <MyazaText variant="bodySmall" color={colors.error} style={{ fontWeight: '600' }}>
-                Remove this person
-              </MyazaText>
-            </Pressable>
-          ) : null}
-          </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
+        ) : null}
+      </View>
+    </FloatingSheet>
   );
 }

@@ -32,7 +32,7 @@ import { loadDocumentPicker } from '../services/documentPicker';
 export const businessDocumentsMeta = {
   title: 'Business documents',
   description:
-    'Upload the supporting documents for your business. Required documents are marked with *.',
+    'Upload the supporting documents for your business. Each one must clearly show the registered business name and registration number. Required documents are marked with *.',
 };
 
 export function BusinessDocumentsStep(): React.ReactElement {

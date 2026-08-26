@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
 import { useEffectiveCountry, useKyc, useKycConfig, useKycStore } from '../components/runtime';
 import { MyazaButton } from '../components/MyazaButton';
+import { MyazaAlert } from '../components/MyazaAlert';
 import { ContactDestinationField } from './ContactDestinationField';
 import { ContactVerifiedPanel } from './ContactVerifiedPanel';
 import { ContactCodeStep } from './ContactCodeStep';
@@ -17,6 +18,7 @@ import {
   type PhoneOtpChannel,
 } from '../config/contact';
 import { attemptsRemaining, describeCheckError, describeSendError } from '../services/contactErrors';
+import { stepAfterContactVerified } from '../lib/contact-recovery';
 
 // ---------------------------------------------------------------------------
 // Contact-verification OTP step — email or phone, one component, two mounts.
@@ -37,6 +39,7 @@ export function ContactVerificationStep({
   const country = useEffectiveCountry();
   const store = useKycStore();
   const contact = useKyc((s) => s.contact);
+  const serverConfig = useKyc((s) => s.serverConfig);
 
   const isEmail = channel === 'email';
   const stepConfig = isEmail ? config.emailVerification : config.phoneVerification;
@@ -69,7 +72,20 @@ export function ContactVerificationStep({
   const value = isEmail ? destination.trim() : phone.e164;
   const canSend = isEmail ? isValidContactEmail(value) : phone.isValid;
 
-  const advance = useCallback(() => store.getState().nextStep(), [store]);
+  // Entered via submit recovery? (The server refused this channel's proof at
+  // submit — the token had expired or was already claimed.) Captured at mount:
+  // verifying clears the flag, and Continue must still route back to
+  // 'submitted' afterwards (which auto-submits with the fresh proof).
+  const recovery = useRef((contact.expired ?? []).includes(channel)).current;
+  const advance = useCallback(() => {
+    const target = stepAfterContactVerified({
+      recovery,
+      expired: store.getState().contact.expired ?? [],
+      channel,
+    });
+    if (target) store.getState().goToStep(target);
+    else store.getState().nextStep();
+  }, [store, channel, recovery]);
 
   // The sheet header is rendered by the shell and cannot see this step's state,
   // so publish what it needs to caption: the channel in play now, and the
@@ -159,12 +175,27 @@ export function ContactVerificationStep({
         />
       ) : (
         <>
+          {recovery && (
+            <>
+              <MyazaAlert
+                variant="warning"
+                title="Please verify again"
+                message={`Your earlier confirmation has expired, so please verify ${isEmail ? 'your email' : 'your number'} once more. Everything else is saved, and we will submit again straight after.`}
+              />
+              <View style={{ height: spacing.md }} />
+            </>
+          )}
           <ContactDestinationField
             isEmail={isEmail}
             email={destination}
             onEmailChange={setDestination}
             onPhoneChange={setPhone}
-            defaultCountry={config.phoneVerification?.defaultCountry ?? country ?? undefined}
+            defaultCountry={
+              config.phoneVerification?.defaultCountry ??
+              country ??
+              serverConfig.geoCountry ??
+              undefined
+            }
             error={error}
             disabled={busy}
           />

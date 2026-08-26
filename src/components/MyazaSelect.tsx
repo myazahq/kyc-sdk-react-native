@@ -147,7 +147,8 @@ export function MyazaSelect<T extends string | number>({
               style={{
                 fontWeight: '700',
                 paddingHorizontal: spacing.md,
-                paddingTop: spacing.md,
+                // Tight under the handle, the way the system sheet titles sit.
+                paddingTop: spacing.xs,
                 paddingBottom: spacing.sm,
               }}
             >

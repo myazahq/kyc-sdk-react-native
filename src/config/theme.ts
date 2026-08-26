@@ -37,7 +37,13 @@ export const LIGHT_COLORS: MyazaColorScheme = {
   backgroundSecondary: '#F6F5FE',
   textDark: '#070330',
   textSecondary: '#5A5775',
-  textMuted: '#828197',
+  // React's muted-foreground, exactly. The mobile SDKs had invented a THIRD,
+  // dimmer text tier that web does not have, and it failed WCAG AA in both
+  // modes: 3.79:1 on white and 2.97:1 on the default dark, dropping to 2.45:1
+  // on the dark backgrounds orgs actually brand with. Nothing is gained by a
+  // tier nobody can read, so it takes the same value as the tier above it, the
+  // way web does with one token for both.
+  textMuted: '#5A5775',
   border: '#D3CFFC',
   primary: '#5645F5',
   onPrimary: '#FFFFFF',
@@ -61,7 +67,7 @@ export const DARK_COLORS: MyazaColorScheme = {
   backgroundSecondary: '#0F0C2E',
   textDark: '#F6F5FE',
   textSecondary: '#ACABBA',
-  textMuted: '#5A5775',
+  textMuted: '#ACABBA',
   border: '#302D53',
   primary: '#7B6EF7',
   onPrimary: '#FFFFFF',

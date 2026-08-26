@@ -19,6 +19,8 @@ export interface ServerConfigState {
   status: ServerConfigStatus;
   idTypes: SdkConfigIdType[];
   branding?: SdkConfigBranding;
+  /** The visitor's country from their IP — a default, never evidence. */
+  geoCountry?: string | null;
   environment?: 'DEVELOPMENT' | 'SANDBOX' | 'PRODUCTION';
   /** HTTP status of a failed config fetch (if any). */
   statusCode?: number;

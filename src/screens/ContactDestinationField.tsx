@@ -53,6 +53,7 @@ export function ContactDestinationField({
       <PhoneNumberInput
         defaultCountry={defaultCountry}
         disabled={disabled}
+        autoFocus
         onChange={onPhoneChange}
       />
       {error ? <ErrorLine text={error} /> : null}

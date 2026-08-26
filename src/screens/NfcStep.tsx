@@ -8,6 +8,7 @@ import { MyazaButton } from '../components/MyazaButton';
 import { MyazaPulseLoader } from '../components/MyazaPulseLoader';
 import { Icon } from '../components/Icon';
 import { cancelChipRead, nfcUnavailableReason, readPassportChip, type EmrtdReadResult } from '../emrtd';
+import { fromBase64 } from '../emrtd/bytes';
 import { useNfcAvailability } from './nfc/useNfcAvailability';
 import { readErrorMessage } from './nfc/readErrorMessage';
 import { successHaptic } from '../services/haptics';
@@ -136,6 +137,18 @@ export function NfcStep(): React.ReactElement {
     stageRef.current = 'waiting';
     readingRef.current = true;
     try {
+      // The anti-clone challenge, asked for BEFORE the read so the whole thing
+      // happens in one session on the document. Best-effort by design: the
+      // server may not answer, and a chip read without a challenge is exactly
+      // the read this SDK did before Active Authentication existed. It must
+      // never be the reason a passport cannot be scanned.
+      const aaChallenge = await store
+        .getState()
+        .api.nfcChallenge()
+        .then((res) => ({ id: res.challengeId, bytes: fromBase64(res.challenge) }))
+        .catch(() => undefined);
+      if (!liveRef.current || seq !== readSeqRef.current) return;
+
       const result = await readPassportChip(
         {
           documentNumber: mrz.documentNumber,
@@ -143,6 +156,7 @@ export function NfcStep(): React.ReactElement {
           dateOfExpiry: toMrzDate(mrz.dateOfExpiry),
         },
         {
+          ...(aaChallenge ? { aaChallenge } : {}),
           onStage: (s) => {
             if (!liveRef.current || seq !== readSeqRef.current) return;
             stageRef.current = s;

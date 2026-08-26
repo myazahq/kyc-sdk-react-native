@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import {
@@ -34,13 +34,25 @@ import { COUNTRY_NAMES } from '../config/countryNames.g';
 // ---------------------------------------------------------------------------
 
 export function PhoneNumberInput({
+  value,
   defaultCountry,
   disabled,
+  autoFocus = false,
   onChange,
 }: {
+  /**
+   * E.164 seed. The field itself stays uncontrolled (the formatter owns the
+   * text), but a value arriving after mount — the register's, prefilled a
+   * moment later — has to reach the field, or we hold a number the applicant
+   * can neither see nor correct and submit it as though they gave it.
+   */
+  value?: string;
   /** Seeds the picker (ISO-2). Falls back to NG. */
   defaultCountry?: string;
   disabled?: boolean;
+  /** Focus + keyboard on mount. Opt-in: right for a single-field OTP screen,
+   *  wrong for a row in a company-profile form. */
+  autoFocus?: boolean;
   /** Fires on every edit with the E.164 value ('' until parseable) + validity. */
   onChange: (value: { e164: string; isValid: boolean; country: string }) => void;
 }): React.ReactElement {
@@ -64,11 +76,32 @@ export function PhoneNumberInput({
     [],
   );
 
-  const seed = (defaultCountry?.toUpperCase() ?? 'NG') as CountryCode;
+  // A supplied number decides its OWN dial code — it is a fact, where the
+  // country prop is a guess. Falls through to the guess when there is no
+  // number or it cannot be parsed.
+  const supplied = value ? parsePhoneNumberFromString(value) : null;
+  const seed = (supplied?.country ??
+    defaultCountry?.toUpperCase() ??
+    'NG') as CountryCode;
   const [country, setCountry] = useState<CountryCode>(
     options.some((o) => o.code === seed) ? seed : ('NG' as CountryCode),
   );
-  const [national, setNational] = useState('');
+  const [national, setNational] = useState(() =>
+    supplied ? formatNationalNumber(supplied.nationalNumber, seed) : '',
+  );
+  // A number that arrives AFTER mount — the register's, prefilled a moment
+  // later — has to reach the field. Seeding is one-way and keyed on the value,
+  // so the applicant's own edits are never fought.
+  const seededRef = useRef(value ?? '');
+  useEffect(() => {
+    if (!value || value === seededRef.current) return;
+    seededRef.current = value;
+    const parsed = parsePhoneNumberFromString(value);
+    if (!parsed) return;
+    const next = (parsed.country ?? country) as CountryCode;
+    setCountry(next);
+    setNational(formatNationalNumber(parsed.nationalNumber, next));
+  }, [value, country]);
   const [open, setOpen] = useState(false);
 
   const selected = options.find((o) => o.code === country);
@@ -132,7 +165,7 @@ export function PhoneNumberInput({
             placeholder="803 123 4567"
             keyboardType="phone-pad"
             editable={!disabled}
-            autoFocus
+            autoFocus={autoFocus}
           />
         </View>
       </View>

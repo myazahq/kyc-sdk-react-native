@@ -26,6 +26,11 @@ export const EF = {
   COM: 0x011e,
   DG1: 0x0101,
   DG2: 0x0102,
+  DG7: 0x0107,
+  DG11: 0x010b,
+  DG12: 0x010c,
+  /** DG15 — the Active-Authentication public key (see activeAuth.ts). */
+  DG15: 0x010f,
   SOD: 0x011d,
 } as const;
 

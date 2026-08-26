@@ -9,6 +9,7 @@ import { MyazaText } from '../components/Typography';
 import { MyazaButton } from '../components/MyazaButton';
 import { Icon } from '../components/Icon';
 import { buildConsentModel } from './consent/model';
+import { resubmitNote } from '../lib/resubmit';
 
 // Consent / welcome screen — 1:1 with the web SDK's ConsentStep and the
 // Flutter SDK's ConsentScreen: shield hero, token-filled greeting, a "DURING
@@ -27,9 +28,39 @@ export function ConsentStep(): React.ReactElement {
   const { isBusiness, title, description, steps, capturesFace, recordsVideo } =
     buildConsentModel(config);
 
+  // A reviewer sent this applicant back. Say so, and say why — the note is the
+  // only thing on screen that explains a flow which has silently lost most of
+  // its steps. Above the hero so it is read before the instructions.
+  const redoNote = resubmitNote(config.resubmit);
+
   return (
     <View>
       <View style={{ height: spacing.sm }} />
+
+      {redoNote ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: spacing.sm,
+            borderRadius: radius.lg,
+            borderWidth: 1,
+            borderColor: `${colors.warning}66`,
+            backgroundColor: colors.warningBg,
+            padding: spacing.md,
+            marginBottom: spacing.lg,
+          }}
+        >
+          <Icon name="refresh" size={16} color={colors.warning} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <MyazaText variant="bodyMedium" color={colors.warning}>
+              A few things to redo
+            </MyazaText>
+            <MyazaText variant="bodySmall" color={colors.textSecondary}>
+              {redoNote}
+            </MyazaText>
+          </View>
+        </View>
+      ) : null}
 
       {/* Shield hero — concentric tinted rings + primary badge */}
       <View style={{ alignItems: 'center' }}>

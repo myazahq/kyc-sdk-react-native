@@ -3,6 +3,7 @@ import { Pressable, View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { ID_TYPES, resolveIdTypeDefinition } from '../config/idTypes';
+import { useMultiIdPlan } from '../lib/use-multi-id-plan';
 import type { IdType, IdTypeDefinition } from '../types/config';
 import {
   useEffectiveCountry,
@@ -54,6 +55,10 @@ export function IdTypeStep(): React.ReactElement {
   const store = useKycStore();
   const serverConfig = useKyc((s) => s.serverConfig);
   const selectedIdType = useKyc((s) => s.selectedIdType);
+  // Multi-ID: this picker is for ONE check of several. It may only offer picks
+  // that leave every later check something to offer — the server validates the
+  // same rule, so an unsafe pick would be a submission it rejects.
+  const plan = useMultiIdPlan();
 
   // Select AND advance in one tap. Both go through the store so `nextStep`
   // routes off the value just written — a document ID to document-capture, a
@@ -104,13 +109,15 @@ export function IdTypeStep(): React.ReactElement {
   // what makes the disabled step actually disappear from the live flow rather
   // than still offering passports and licences that then have nowhere to be
   // captured. Mirrors the web SDK's IdTypeStep.
-  const visible = useMemo<IdTypeDefinition[]>(
-    () =>
+  const visible = useMemo<IdTypeDefinition[]>(() => {
+    const base =
       config.enableDocumentCapture === false
         ? available.filter((t) => !t.requiresDocumentCapture)
-        : available,
-    [available, config.enableDocumentCapture],
-  );
+        : available;
+    // Multi-ID: only the picks that are still free AND leave every later check
+    // an option. An ID already used earlier in the run is simply not offered.
+    return plan ? base.filter((t) => plan.safeOptions.includes(t.key)) : base;
+  }, [available, config.enableDocumentCapture, plan]);
 
   if (serverConfig.status === 'loading') {
     return (
