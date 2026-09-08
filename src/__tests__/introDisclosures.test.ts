@@ -1,5 +1,4 @@
-import { readFileSync } from 'fs';
-import { join } from 'path';
+import { describeInMonorepo, readPackageFile as read } from './helpers/monorepo';
 
 // ─── The address intro gate: its disclosures actually open, and say the same
 //     thing on every SDK ──────────────────────────────────────────────────────
@@ -10,9 +9,6 @@ import { join } from 'path';
 // clipped, collapsed parent left every row expanding to an empty box. And they
 // must say the same thing everywhere: three files in three languages carry one
 // piece of copy, so it is pinned here rather than left to drift.
-
-const PACKAGES = join(__dirname, '../../..');
-const read = (rel: string) => readFileSync(join(PACKAGES, rel), 'utf8');
 
 const DISCLOSURES = {
   web: 'kyc-sdk-react/src/steps/address/IntroDisclosures.tsx',
@@ -41,7 +37,7 @@ const COPY = [
   "Location summaries are used only to confirm this address and are handled under your country's data protection rules.",
 ];
 
-describe('the disclosure copy is one text on three SDKs', () => {
+describeInMonorepo('the disclosure copy is one text on three SDKs', () => {
   it.each(Object.entries(DISCLOSURES))('%s carries every line', (_name, rel) => {
     const source = flatten(read(rel));
     for (const line of COPY) expect(source).toContain(flatten(line));
@@ -64,7 +60,7 @@ describe('an open disclosure shows its body', () => {
   });
 });
 
-describe('the eyebrow pill wears the same mark everywhere', () => {
+describeInMonorepo('the eyebrow pill wears the same mark everywhere', () => {
   it.each([
     ['web', GATES.web, /<MapPinCheck className=/],
     ['rn', GATES.rn, /name="map-pin-check"/],

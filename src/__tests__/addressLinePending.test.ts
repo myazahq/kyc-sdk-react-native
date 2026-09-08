@@ -1,8 +1,6 @@
-import { readFileSync } from 'fs';
-import { join } from 'path';
-
 import { displayAddressLine } from '../lib/address-flow';
 import { ADDRESS_LINE_PENDING, ADDRESS_LINE_UNAVAILABLE } from '../lib/address-line';
+import { describeInMonorepo, readPackageFile as read } from './helpers/monorepo';
 
 // ─── A pin without an address never shows its coordinates ────────────────────
 //
@@ -12,16 +10,13 @@ import { ADDRESS_LINE_PENDING, ADDRESS_LINE_UNAVAILABLE } from '../lib/address-l
 // return NOTHING there and say whether an answer is on its way, so the rule is
 // pinned across the monorepo the way the map protocol is.
 
-const PACKAGES = join(__dirname, '../../..');
-const read = (rel: string) => readFileSync(join(PACKAGES, rel), 'utf8');
-
 const LINE_SOURCES = {
   web: 'kyc-sdk-react/src/steps/address/flow-steps.ts',
   rn: 'kyc-sdk-react-native/src/lib/address-line.ts',
   flutter: 'kyc-sdk-flutter/lib/src/config/address_flow.dart',
 };
 
-describe('no SDK falls back to coordinates', () => {
+describeInMonorepo('no SDK falls back to coordinates', () => {
   it.each(Object.entries(LINE_SOURCES))('%s', (_name, rel) => {
     const source = read(rel);
     expect(source).not.toMatch(/toFixed\(5\)|toStringAsFixed\(5\)/);
@@ -32,7 +27,7 @@ describe('no SDK falls back to coordinates', () => {
   });
 });
 
-describe('the waiting copy is one text on three SDKs', () => {
+describeInMonorepo('the waiting copy is one text on three SDKs', () => {
   it.each(Object.entries(LINE_SOURCES))('%s carries both lines', (_name, rel) => {
     const source = read(rel);
     expect(source).toContain(ADDRESS_LINE_PENDING);
@@ -57,7 +52,7 @@ const PENDING_SURFACES = {
   'flutter review': 'kyc-sdk-flutter/lib/src/screens/address/address_review_card.dart',
 };
 
-describe('the wait is a skeleton line, not a spinner', () => {
+describeInMonorepo('the wait is a skeleton line, not a spinner', () => {
   it.each(Object.entries(PENDING_SURFACES))('%s draws the skeleton', (_name, rel) => {
     expect(read(rel)).toMatch(/LineSkeleton/);
   });

@@ -1,12 +1,11 @@
-import { readFileSync } from 'fs';
-import { join } from 'path';
 import { foldSpanIntoDays } from '../presence/background-math';
+import { describeInMonorepo, sharedVectors } from './helpers/monorepo';
 
 // The canonical fold vectors live in the Flutter package because its NATIVE
 // sides (Kotlin + Swift) must fold too — three implementations, one contract.
 // This test pins the TypeScript one; PresenceFoldTest.kt and
 // PresenceFoldTests.swift pin the other two against the same file.
-const VECTORS = join(__dirname, '../../../kyc-sdk-flutter/test/presence_fold_vectors.json');
+const VECTORS = 'kyc-sdk-flutter/test/presence_fold_vectors.json';
 
 interface Vector {
   name: string;
@@ -16,14 +15,15 @@ interface Vector {
   expected: Array<{ day: string; dwellMinutes: number; nightPresent: boolean }>;
 }
 
-describe('presence fold vectors (cross-language contract)', () => {
-  const { vectors } = JSON.parse(readFileSync(VECTORS, 'utf8')) as { vectors: Vector[] };
+const { vectors } = sharedVectors<{ vectors: Vector[] }>(VECTORS, { vectors: [] });
+
+describeInMonorepo('presence fold vectors (cross-language contract)', () => {
 
   it('has a meaningful case set', () => {
     expect(vectors.length).toBeGreaterThanOrEqual(10);
   });
 
-  for (const v of JSON.parse(readFileSync(VECTORS, 'utf8')).vectors as Vector[]) {
+  for (const v of vectors) {
     it(v.name, () => {
       expect(foldSpanIntoDays(v.enterMs, v.exitMs, v.offsetMinutes)).toEqual(v.expected);
     });

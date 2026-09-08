@@ -11,6 +11,7 @@ import {
 import { addressPayload } from '../config/addressCollection';
 import type { AddressState } from '../store/state';
 import type { AddressCollectionConfig } from '../types/workflow';
+import { describeInMonorepo, sharedVectors } from './helpers/monorepo';
 
 // ─── Per-field address modes, replayed from the SHARED vector file ───────────
 //
@@ -27,17 +28,15 @@ interface Vector {
   expectPrefill: Record<string, string>;
 }
 
-const vectors = JSON.parse(
-  readFileSync(
-    join(__dirname, '../../../kyc-sdk-flutter/test/address_field_modes_vectors.json'),
-    'utf8',
-  ),
-) as { address: Record<string, unknown>; vectors: Vector[] };
+const vectors = sharedVectors<{ address: Record<string, unknown>; vectors: Vector[] }>(
+  'kyc-sdk-flutter/test/address_field_modes_vectors.json',
+  { address: {}, vectors: [] },
+);
 
 const address = (typed: Record<string, string>): AddressState =>
   ({ ...vectors.address, ...typed }) as unknown as AddressState;
 
-describe('address field modes (shared vectors)', () => {
+describeInMonorepo('address field modes (shared vectors)', () => {
   it.each(vectors.vectors.map((v) => [v.name, v] as const))('%s', (_name, v) => {
     const modes = addressFieldModes(v.config);
     for (const [key, mode] of Object.entries(v.expectModes)) {
@@ -46,7 +45,9 @@ describe('address field modes (shared vectors)', () => {
     expect(missingRequiredAddressFields(v.config, address(v.typed))).toEqual(v.expectMissing);
     expect(requiredPrefillSubmission(v.config, address(v.typed))).toEqual(v.expectPrefill);
   });
+});
 
+describe('address field modes', () => {
   it('holds every key the server knows', () => {
     expect([...ADDRESS_FIELD_KEYS]).toEqual([
       'propertyName',
@@ -67,7 +68,7 @@ describe('address field modes (shared vectors)', () => {
   });
 });
 
-describe('addressPayload with the flow config', () => {
+describeInMonorepo('addressPayload with the flow config', () => {
   const base = address({});
 
   it('submits the displayed prefill of a required field the applicant left untouched', () => {
