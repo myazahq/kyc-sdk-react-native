@@ -4,10 +4,12 @@ const plugin = require('../../app.plugin.js');
 const {
   applyNfcInfoPlist,
   applyNfcEntitlements,
+  androidPermissionsFor,
   EMRTD_AID,
 } = plugin as {
   applyNfcInfoPlist: (p: Record<string, unknown>, msg?: string) => Record<string, unknown>;
   applyNfcEntitlements: (p: Record<string, unknown>) => Record<string, unknown>;
+  androidPermissionsFor: (o: { nfc: boolean; location: boolean; backgroundLocation: boolean }) => string[];
   EMRTD_AID: string;
 };
 
@@ -68,5 +70,41 @@ describe('NFC config plugin', () => {
     // NDEF is a different capability; adding TAG must not evict it.
     const ent = applyNfcEntitlements({ [FORMATS_KEY]: ['NDEF'] });
     expect(ent[FORMATS_KEY]).toEqual(['NDEF', 'TAG']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Android permissions. What `location: 'always'` declares changes the app's
+// Play review posture, so the exact set is pinned: the background grant plus
+// the foreground-service pair the Android presence tier needs — and NONE of
+// them by default.
+// ---------------------------------------------------------------------------
+
+describe('Android permissions', () => {
+  it('declares only camera, internet and foreground location by default', () => {
+    const perms = androidPermissionsFor({ nfc: false, location: true, backgroundLocation: false });
+    expect(perms).toEqual([
+      'android.permission.CAMERA',
+      'android.permission.INTERNET',
+      'android.permission.ACCESS_COARSE_LOCATION',
+      'android.permission.ACCESS_FINE_LOCATION',
+    ]);
+  });
+
+  it("adds the background grant AND the foreground-service pair under location: 'always'", () => {
+    const perms = androidPermissionsFor({ nfc: false, location: true, backgroundLocation: true });
+    expect(perms).toEqual(
+      expect.arrayContaining([
+        'android.permission.ACCESS_BACKGROUND_LOCATION',
+        'android.permission.FOREGROUND_SERVICE',
+        'android.permission.FOREGROUND_SERVICE_LOCATION',
+      ]),
+    );
+  });
+
+  it('never declares a location permission when location is opted out', () => {
+    const perms = androidPermissionsFor({ nfc: true, location: false, backgroundLocation: false });
+    expect(perms.some((p) => p.includes('LOCATION'))).toBe(false);
+    expect(perms).toContain('android.permission.NFC');
   });
 });

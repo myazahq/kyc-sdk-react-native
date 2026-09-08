@@ -10,7 +10,6 @@ import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import com.google.android.gms.common.moduleinstall.ModuleInstall
-import com.google.android.gms.common.moduleinstall.ModuleInstallRequest
 import com.margelo.nitro.NitroModules
 import com.margelo.nitro.core.Promise
 import java.util.concurrent.CountDownLatch
@@ -82,9 +81,12 @@ class HybridMyazaFaceDetector : HybridMyazaFaceDetectorSpec() {
         .addOnSuccessListener { response ->
           ok = response.areModulesAvailable()
           if (!ok) {
-            client.deferredInstall(
-              ModuleInstallRequest.newBuilder().addApi(detector).build(),
-            )
+            // `deferredInstall` takes the OptionalModuleApi itself, varargs.
+            // A ModuleInstallRequest belongs to `installModules`, which is the
+            // FOREGROUND install with its own progress listener — a different
+            // call, and the one this used to hand its request to, which is why
+            // the Android build stopped compiling.
+            client.deferredInstall(detector)
           }
           latch.countDown()
         }

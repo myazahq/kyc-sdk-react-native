@@ -1,6 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
 
 import { spacing } from '../config/theme';
 import { useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
@@ -11,8 +10,7 @@ import { BusinessDocumentSlot } from './BusinessDocumentSlot';
 import { withRetry } from '../services/retry';
 import { compressDocumentImage } from '../services/mediaCompress';
 import { resolveBusinessDocumentTypes, type ResolvedBusinessDocumentType } from '../config/businessSteps';
-import { isAcceptedPoaMimeType, POA_ACCEPTED_MIME_TYPES } from '../config/proofOfAddress';
-import { loadDocumentPicker } from '../services/documentPicker';
+import { useBusinessDocumentAttach } from './useBusinessDocumentAttach';
 
 // ---------------------------------------------------------------------------
 // Supporting company documents (certificate of incorporation, MEMART, …).
@@ -26,7 +24,8 @@ import { loadDocumentPicker } from '../services/documentPicker';
 // Layout mirrors the web SDK 1:1: the header carries the description, each
 // document is a dashed upload slot (see BusinessDocumentSlot), and Continue is
 // disabled until every required slot is filled. Tapping a slot opens the
-// photo/file source sheet — the mobile stand-in for web's file input.
+// photo/file source sheet — the mobile stand-in for web's file input; the
+// pickers themselves live in useBusinessDocumentAttach.
 // ---------------------------------------------------------------------------
 
 export const businessDocumentsMeta = {
@@ -79,57 +78,7 @@ export function BusinessDocumentsStep(): React.ReactElement {
     [store],
   );
 
-  const takePhoto = useCallback(
-    async (slot: ResolvedBusinessDocumentType) => {
-      const permission = await ImagePicker.requestCameraPermissionsAsync();
-      if (!permission.granted) {
-        setError('Camera access is needed to photograph the document.');
-        return;
-      }
-      const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 1 });
-      const asset = result.canceled ? undefined : result.assets[0];
-      if (asset) {
-        // A FRIENDLY name, not the picker's temp junk — camera/library assets
-        // carry generated names; the slot key says what the file IS.
-        await attach(slot, asset.uri, asset.mimeType ?? 'image/jpeg', `${slot.key}.jpg`);
-      }
-    },
-    [attach],
-  );
-
-  const choosePhoto = useCallback(
-    async (slot: ResolvedBusinessDocumentType) => {
-      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 });
-      const asset = result.canceled ? undefined : result.assets[0];
-      if (asset) {
-        await attach(slot, asset.uri, asset.mimeType ?? 'image/jpeg', `${slot.key}.jpg`);
-      }
-    },
-    [attach],
-  );
-
-  const chooseFile = useCallback(
-    async (slot: ResolvedBusinessDocumentType) => {
-      const picker = loadDocumentPicker();
-      if (!picker) {
-        setError('Choosing a file is not available in this app. Please photograph the document.');
-        return;
-      }
-      const result = await picker.getDocumentAsync({
-        type: [...POA_ACCEPTED_MIME_TYPES],
-        copyToCacheDirectory: true,
-        multiple: false,
-      });
-      const asset = result.canceled ? undefined : result.assets?.[0];
-      if (!asset) return;
-      if (!isAcceptedPoaMimeType(asset.mimeType)) {
-        setError('Please choose a photo (JPEG, PNG or WebP) or a PDF.');
-        return;
-      }
-      await attach(slot, asset.uri, asset.mimeType, asset.name ?? slot.key);
-    },
-    [attach],
-  );
+  const { takePhoto, choosePhoto, chooseFile } = useBusinessDocumentAttach(attach, setError);
 
   const handleContinue = (): void => {
     if (missing.length > 0 || busySlot !== null) return;

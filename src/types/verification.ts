@@ -2,6 +2,18 @@
 // Submission callback payload (returned to onSubmit)
 // ---------------------------------------------------------------------------
 
+/**
+ * The verdict a flow that waited for it hands to `onResult`: the same state
+ * vocabulary `GET /api/kyc/status/:id` serves, plus the reason pair. No result
+ * data (scores, biodata) ever rides here; that stays behind the secret key.
+ */
+export interface KYCResult {
+  verificationId: string;
+  status: import('../services/api-types').SessionStatus;
+  reason: string | null;
+  reasonCode: string | null;
+}
+
 export interface KYCSubmission {
   verificationId: string;
   status: 'processing';

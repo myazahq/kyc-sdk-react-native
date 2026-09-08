@@ -2,6 +2,7 @@ import React from 'react';
 import { ActivityIndicator, Image, Pressable, View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
+import { UPLOAD_HINT } from '../config/uploadLimits';
 import { useTheme } from '../components/runtime';
 import { MyazaText } from '../components/Typography';
 import { Icon } from '../components/Icon';
@@ -11,7 +12,7 @@ import { DashedBorder } from '../components/DashedBorder';
 // One business-document upload slot — mirrors the web SDK's
 // BusinessDocumentSlot 1:1: empty, it is a dashed full-width tap target
 // (upload glyph — a spinner while uploading — label with a red * when
-// required, "Photo or PDF, up to 20MB"); filled, a solid card showing a 48px
+// required, the shared upload hint); filled, a solid card showing a 48px
 // THUMBNAIL of what was actually picked (a muted file tile for PDFs, a check
 // when the preview didn't survive a remount — web's exact fallback ladder),
 // the file's name over the slot label, Replace, and remove. Showing the file
@@ -158,7 +159,7 @@ export function BusinessDocumentSlot({
           ) : null}
         </MyazaText>
         <MyazaText variant="bodySmall" color={colors.textMuted}>
-          {uploading ? 'Uploading…' : 'Photo or PDF, up to 20MB'}
+          {uploading ? 'Uploading…' : UPLOAD_HINT}
         </MyazaText>
       </View>
     </Pressable>

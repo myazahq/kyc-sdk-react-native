@@ -44,12 +44,29 @@ export function useSelfieUpload(): SelfieUpload {
   const config = useKycConfig();
   const api = useKyc((s) => s.api);
   const setMediaId = useKyc((s) => s.setMediaId);
+  const setSelfiePreview = useKyc((s) => s.setSelfiePreview);
+  // The store-side progress report. The liveness step may hand over before
+  // the upload lands (the biometric scopes hide the review), so the submitted
+  // step waits on THIS rather than on this hook's local state.
+  const setSelfieUpload = useKyc((s) => s.setSelfieUpload);
+  const storedPreview = useKyc((s) => s.selfiePreviewUri);
+  const storedSelfieId = useKyc((s) => s.mediaIds.selfie);
 
-  const [selfieUri, setSelfieUri] = useState<string | null>(null);
+  // Hydrated from the STORE so leaving the step and returning lands on the
+  // review screen with the same selfie, exactly as document captures do. The
+  // setter writes through, keeping the store the source of truth.
+  const [selfieUri, setSelfieUriState] = useState<string | null>(storedPreview);
+  const setSelfieUri = useCallback(
+    (uri: string | null) => {
+      setSelfieUriState(uri);
+      setSelfiePreview(uri);
+    },
+    [setSelfiePreview],
+  );
   const [uploading, setUploading] = useState(false);
   const [retryInfo, setRetryInfo] = useState<{ attempt: number; total: number } | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const selfieIdRef = useRef<string | null>(null);
+  const selfieIdRef = useRef<string | null>(storedSelfieId ?? null);
   const videoPathRef = useRef<string | null>(null);
 
   const uploadSelfieAndVideo = useCallback(
@@ -57,6 +74,7 @@ export function useSelfieUpload(): SelfieUpload {
       setUploading(true);
       setUploadError(null);
       setRetryInfo(null);
+      setSelfieUpload({ status: 'uploading', message: null });
       const onRetry = (attempt: number, total: number) => setRetryInfo({ attempt, total });
       try {
         const selfieId = await withRetry(
@@ -81,16 +99,18 @@ export function useSelfieUpload(): SelfieUpload {
         }
         setRetryInfo(null);
         setUploading(false);
+        setSelfieUpload({ status: 'done', message: null });
       } catch (err) {
         setRetryInfo(null);
         setUploading(false);
         const kycError = mapToKycError(err, 'upload');
         setUploadError(kycError.message);
+        setSelfieUpload({ status: 'failed', message: kycError.message });
         toast.show({ variant: 'error', title: 'Upload failed', message: kycError.message });
         safeReportError(config.onError, kycError);
       }
     },
-    [api, setMediaId, config.onError, toast],
+    [api, setMediaId, setSelfieUpload, config.onError, toast],
   );
 
   return {

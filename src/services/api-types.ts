@@ -23,7 +23,9 @@ export type MediaUploadType =
   // The two kinds that accept a PDF — a proof of address is usually a
   // downloaded statement, and company paperwork is almost always a scan.
   | 'proof_of_address'
-  | 'business_document';
+  | 'business_document'
+  // Address Intelligence door / premises photo (image only).
+  | 'address_photo';
 
 /**
  * A file to upload, in React Native's multipart shape. `uri` points at a
@@ -142,6 +144,80 @@ export interface SdkConfigResponse {
    * carries the same lookup as a RISK signal, and the two must not be confused.
    */
   geoCountry?: string | null;
+  /** Whether the platform has a forward-search backend. Gates the whole
+   *  address-search step; absent means no search screen, never an error. */
+  addressSearch?: boolean;
+  /** Which backend: 'autocomplete' (Places, as-you-type) or 'basic'
+   *  (explicit submit). Absent when addressSearch is false. */
+  addressSearchMode?: 'autocomplete' | 'basic';
+  /**
+   * The framed Google-map picker page (OUR hosted /embed/map + a signed APP
+   * grant), for a WebView. Absent when the platform holds no Maps key — the
+   * built-in OSM picker is the fallback every map failure degrades to.
+   */
+  mapsFrameUrl?: string | null;
+}
+
+// ── Address search / reverse geocoding ──────────────────────────────────────
+//
+// Every one of these may fail, and every failure degrades to "place the pin by
+// hand" — never to a blocked flow. Shapes mirror the web SDK's services/api.ts.
+
+/** The pin's address broken down — what the details sheet displays as rows. */
+export interface AddressParts {
+  street?: string | null;
+  area?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postcode?: string | null;
+  /**
+   * ISO-2 of the pin's OWN country, from the geocoder. On the address scope
+   * the declared country follows it (lib/country-adoption.ts); it is never a
+   * row in the sheet, which shows the country the flow declared.
+   */
+  country?: string | null;
+}
+
+export interface AddressReverseResult {
+  line: string | null;
+  road: string | null;
+  parts?: AddressParts | null;
+}
+
+/** One candidate from the basic (explicit-submit) forward search. */
+export interface AddressSearchHit {
+  label: string;
+  lat: number;
+  lng: number;
+  houseNumber: string | null;
+  road: string | null;
+  /** ISO-2 of the hit's own country (the declaration derives from it). */
+  country?: string | null;
+}
+
+/** One Places autocomplete suggestion. */
+export interface PlaceSuggestion {
+  placeId: string;
+  mainText: string;
+  secondaryText: string;
+}
+
+/** A picked suggestion, resolved to coordinates + structured pieces. */
+export interface ResolvedPlace {
+  lat: number;
+  lng: number;
+  houseNumber: string | null;
+  road: string | null;
+  formatted: string | null;
+  area?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postcode?: string | null;
+  /**
+   * ISO-2 of the picked address's own country — the declaration derives from
+   * it on the address scope (a pick is the applicant's own statement).
+   */
+  country?: string | null;
 }
 
 /**
@@ -182,6 +258,20 @@ export interface WorkflowResolutionResponse {
    * carries the same lookup as a RISK signal, and the two must not be confused.
    */
   geoCountry?: string | null;
+  /**
+   * The address-search availability flags, when the resolution route carries
+   * them.
+   *
+   * A `workflowId` mount skips `/config` entirely, so these are the only route
+   * by which such a mount could learn a search backend exists. The server does
+   * not serve them here yet (only `/config` and the hosted bootstrap do), which
+   * is why they degrade to "no search screen" rather than an error.
+   */
+  addressSearch?: boolean;
+  addressSearchMode?: 'autocomplete' | 'basic';
+  /** The framed Google-map picker page, when the route carries one (see
+   *  SdkConfigResponse.mapsFrameUrl). */
+  mapsFrameUrl?: string | null;
   /** KYB only: the mapped applicant workflow, when configured and resolvable. */
   applicantWorkflow?: ApplicantWorkflowPayload | null;
 }
@@ -318,3 +408,5 @@ export interface BusinessSearchResponse {
 export interface BusinessRegionsResponse {
   regions: { code: string; name: string }[];
 }
+
+export * from './api-types-biometric';

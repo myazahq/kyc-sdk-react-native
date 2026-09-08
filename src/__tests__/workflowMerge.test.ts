@@ -64,6 +64,18 @@ describe('appearance', () => {
     const merged = mergeWorkflowConfig({ appearance: { primaryColor: '#000' } }, { appearance: null });
     expect(merged.appearance).toEqual({ primaryColor: '#000' });
   });
+
+  it('merges the biometric block per field, so a flow switching the review on keeps a prop-hidden Done', () => {
+    const merged = mergeWorkflowConfig(
+      { scope: 'biometric-authentication', biometric: { selfieReview: true } },
+      { biometric: { doneButton: false } },
+    );
+    expect(merged.biometric).toEqual({ selfieReview: true, doneButton: false });
+    // A flow key still wins over the prop's value of the same key.
+    expect(
+      mergeWorkflowConfig({ biometric: { doneButton: true } }, { biometric: { doneButton: false } }).biometric,
+    ).toEqual({ doneButton: true });
+  });
 });
 
 describe('business (KYB) flows', () => {

@@ -1,11 +1,8 @@
 import { useCallback, useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 
-import {
-  isAcceptedPoaMimeType,
-  POA_ACCEPTED_MIME_TYPES,
-  POA_MAX_BYTES,
-} from '../config/proofOfAddress';
+import { isAcceptedPoaMimeType, POA_ACCEPTED_MIME_TYPES } from '../config/proofOfAddress';
+import { uploadSizeError } from '../config/uploadLimits';
 import { loadDocumentPicker } from '../services/documentPicker';
 
 // ---------------------------------------------------------------------------
@@ -38,13 +35,13 @@ export function usePoaAttach(
   takePhoto: () => Promise<void>;
   chooseFile: () => Promise<void>;
 } {
+  // Judged against the shared caps BEFORE anything is compressed or sent, so
+  // the refusal names the file that was chosen (images 5 MB, PDFs 15 MB).
   const tooLarge = useCallback(
-    (size: number | undefined): boolean => {
-      if (typeof size === 'number' && size > POA_MAX_BYTES) {
-        setError('File is too large (max 20MB).');
-        return true;
-      }
-      return false;
+    (mime: string | undefined, size: number | undefined): boolean => {
+      const message = uploadSizeError(mime, size);
+      if (message) setError(message);
+      return message !== null;
     },
     [setError],
   );
@@ -58,7 +55,7 @@ export function usePoaAttach(
     const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 1 });
     const asset = result.canceled ? undefined : result.assets[0];
     if (!asset) return;
-    if (tooLarge(asset.fileSize)) return;
+    if (tooLarge(asset.mimeType, asset.fileSize)) return;
     await upload({
       uri: asset.uri,
       mimeType: asset.mimeType ?? 'image/jpeg',
@@ -73,7 +70,7 @@ export function usePoaAttach(
     });
     const asset = result.canceled ? undefined : result.assets[0];
     if (!asset) return;
-    if (tooLarge(asset.fileSize)) return;
+    if (tooLarge(asset.mimeType, asset.fileSize)) return;
     await upload({
       uri: asset.uri,
       mimeType: asset.mimeType ?? 'image/jpeg',
@@ -97,10 +94,10 @@ export function usePoaAttach(
     // The picker's `type` filter is advisory on some platforms, so what came
     // back is re-checked rather than trusted.
     if (!isAcceptedPoaMimeType(asset.mimeType)) {
-      setError('Please choose a photo (JPEG, PNG or WebP) or a PDF.');
+      setError('Please choose a PDF, JPG or PNG file.');
       return;
     }
-    if (tooLarge(asset.size)) return;
+    if (tooLarge(asset.mimeType, asset.size)) return;
     await upload({
       uri: asset.uri,
       mimeType: asset.mimeType,

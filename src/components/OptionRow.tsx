@@ -22,27 +22,40 @@ export function OptionRow({
   label,
   selected,
   multi,
+  role,
+  icon,
   leading,
   trailing,
+  disabled,
   onPress,
 }: {
   label: string;
   selected: boolean;
   /** Renders a square check instead of a radio dot. */
   multi?: boolean;
+  /**
+   * What the row IS to a screen reader. Defaults from `multi`; a single-pick
+   * list wearing the square check (the PoA document kind) passes 'radio'.
+   */
+  role?: 'checkbox' | 'radio';
+  /** A glyph between the mark and the label — the mark stays. */
+  icon?: React.ReactNode;
   /** Something before the label — a flag, an icon. Replaces the radio mark. */
   leading?: React.ReactNode;
   trailing?: React.ReactNode;
+  /** Greyed and inert — a choice that is locked, not one that is gone. */
+  disabled?: boolean;
   onPress: () => void;
 }): React.ReactElement {
   const { colors } = useTheme();
   return (
     <Pressable
-      onPress={onPress}
-      accessibilityRole={multi ? 'checkbox' : 'radio'}
-      accessibilityState={{ checked: selected }}
+      onPress={disabled ? undefined : onPress}
+      accessibilityRole={role ?? (multi ? 'checkbox' : 'radio')}
+      accessibilityState={{ checked: selected, disabled: disabled === true }}
       accessibilityLabel={label}
       style={{
+        opacity: disabled ? 0.5 : 1,
         flexDirection: 'row',
         alignItems: 'center',
         // The checkbox variant matches the web SDK's multi-select card exactly
@@ -59,6 +72,12 @@ export function OptionRow({
     >
       {leading ?? <SelectionMark selected={selected} multi={multi} />}
       <View style={{ width: multi ? 10 : spacing.sm }} />
+      {icon ? (
+        <>
+          {icon}
+          <View style={{ width: 10 }} />
+        </>
+      ) : null}
       <MyazaText variant="body" style={{ flex: 1 }}>
         {label}
       </MyazaText>

@@ -3,13 +3,10 @@ import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
 import { useEffectiveCountry, useKyc, useKycConfig, useKycStore } from '../components/runtime';
-import { MyazaButton } from '../components/MyazaButton';
-import { MyazaAlert } from '../components/MyazaAlert';
-import { ContactDestinationField } from './ContactDestinationField';
+import { ContactActions } from './ContactActions';
+import { ContactEntryPanel } from './ContactEntryPanel';
 import { ContactVerifiedPanel } from './ContactVerifiedPanel';
 import { ContactCodeStep } from './ContactCodeStep';
-import { ContactChannelChoice } from './ContactChannelChoice';
-import { ContactFooterNote } from './ContactFooterNote';
 import {
   contactCodeLength,
   contactIsRequired,
@@ -57,10 +54,9 @@ export function ContactVerificationStep({
   const [destination, setDestination] = useState(contact.emailAddress ?? '');
   // The phone field emits E.164 + validity from libphonenumber, so the step no
   // longer guesses either from raw text.
-  const [phone, setPhone] = useState<{ e164: string; isValid: boolean }>({
-    e164: contact.phoneNumber ?? '',
-    isValid: false,
-  });
+  const [phone, setPhone] = useState<{ e164: string; isValid: boolean }>(
+    { e164: contact.phoneNumber ?? '', isValid: false },
+  );
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [code, setCode] = useState('');
@@ -174,57 +170,31 @@ export function ContactVerificationStep({
           onResend={(switchTo) => void send(switchTo)}
         />
       ) : (
-        <>
-          {recovery && (
-            <>
-              <MyazaAlert
-                variant="warning"
-                title="Please verify again"
-                message={`Your earlier confirmation has expired, so please verify ${isEmail ? 'your email' : 'your number'} once more. Everything else is saved, and we will submit again straight after.`}
-              />
-              <View style={{ height: spacing.md }} />
-            </>
-          )}
-          <ContactDestinationField
-            isEmail={isEmail}
-            email={destination}
-            onEmailChange={setDestination}
-            onPhoneChange={setPhone}
-            defaultCountry={
-              config.phoneVerification?.defaultCountry ??
-              country ??
-              serverConfig.geoCountry ??
-              undefined
-            }
-            error={error}
-            disabled={busy}
-          />
-          <ContactChannelChoice
-            offered={offeredChannels}
-            picked={via}
-            disabled={busy}
-            onPick={setVia}
-          />
-        </>
+        <ContactEntryPanel
+          isEmail={isEmail}
+          recovery={recovery}
+          email={destination}
+          onEmailChange={setDestination}
+          onPhoneChange={setPhone}
+          defaultCountry={config.phoneVerification?.defaultCountry ?? country ?? serverConfig.geoCountry ?? undefined}
+          geoCountry={serverConfig.geoCountry}
+          error={error}
+          disabled={busy}
+          offeredChannels={offeredChannels}
+          via={via}
+          onPickChannel={setVia}
+        />
       )}
 
-      <View style={{ height: spacing.md }} />
-      <MyazaButton
-        label={challengeId ? 'Verify code' : 'Send code'}
-        loading={busy}
+      <ContactActions
+        hasChallenge={challengeId != null}
+        busy={busy}
         disabled={challengeId ? code.length !== codeLength : !canSend}
-        onPress={() => (challengeId ? void check(code) : void send())}
+        required={required}
+        isEmail={isEmail}
+        onPrimary={() => (challengeId ? void check(code) : void send())}
+        onSkip={advance}
       />
-
-      {!required ? (
-        <>
-          <View style={{ height: spacing.sm }} />
-          <MyazaButton label="Skip for now" variant="ghost" disabled={busy} onPress={advance} />
-        </>
-      ) : null}
-
-      <View style={{ height: spacing.md }} />
-      <ContactFooterNote isEmail={isEmail} />
     </View>
   );
 }

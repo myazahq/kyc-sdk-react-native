@@ -1,5 +1,7 @@
 import { SDK_VERSION } from './deviceMetadata';
 import type {
+  AddressReverseResult,
+  AddressSearchHit,
   BusinessRegionsResponse,
   BusinessSearchResponse,
   BusinessSelectResponse,
@@ -8,6 +10,8 @@ import type {
   ContactSendResponse,
   HealthResponse,
   MediaUploadType,
+  PlaceSuggestion,
+  ResolvedPlace,
   SdkConfigResponse,
   SessionStartResponse,
   SessionSummaryResponse,
@@ -18,6 +22,7 @@ import type {
   VerifyResponse,
   WorkflowResolutionResponse,
 } from './api-types';
+import { biometricCalls } from './api-biometric';
 
 // The HTTP contract lives in ./api-types and is re-exported here, so importers
 // keep a single entry point for both the client and the shapes it exchanges.
@@ -70,9 +75,14 @@ function uriToBlob(uri: string, mimeType: string): Promise<Blob> {
     xhr.onload = () => {
       const blob = xhr.response as Blob | null;
       if (blob) {
-        // Ensure the part carries the right content-type even if the platform
-        // didn't infer one from the URI.
-        resolve(blob.type ? blob : blob.slice(0, blob.size, mimeType));
+        // ALWAYS re-type the part, never only when the platform inferred
+        // nothing. Its guess comes from the URI's extension and describes the
+        // file we PICKED, not the one we are sending: an iPhone gallery photo
+        // arrives as HEIC, gets transcoded to JPEG on the way here, and the
+        // part still went out labelled image/heic — which the server refuses,
+        // so most camera-roll uploads failed with a message that blamed the
+        // document. `mimeType` is the normalised type the bytes actually are.
+        resolve(blob.type === mimeType ? blob : blob.slice(0, blob.size, mimeType));
       } else {
         reject(new Error(`Could not read file at ${uri}`));
       }
@@ -157,6 +167,8 @@ export function createKYCApi(baseUrl: string, apiKey: string) {
   }
 
   return {
+    ...biometricCalls(request),
+
     /**
      * Single multipart upload: the local file is POSTed to our server, which
      * stores it and returns the `mediaId` referenced later by /verify.
@@ -279,6 +291,10 @@ export function createKYCApi(baseUrl: string, apiKey: string) {
       workflowId?: string;
       /** Persistent device id — the anonymous-mount resume fallback. */
       deviceRef?: string;
+      /** The same device block the submission sends, so the dashboard's
+       *  in-progress row shows the device and SDK from the moment the SDK
+       *  loads rather than after the applicant finishes (2026-09-08). */
+      device?: Record<string, unknown>;
     }): Promise<SessionStartResponse> {
       return request<SessionStartResponse>('/session/start', {
         method: 'POST',
@@ -352,6 +368,120 @@ export function createKYCApi(baseUrl: string, apiKey: string) {
         method: 'POST',
         body: JSON.stringify(body),
       });
+    },
+
+    /**
+     * Forward address search for the address step's search box.
+     *
+     * EXPLICIT SUBMIT ONLY — never call this per keystroke. The server's map
+     * source forbids autocomplete, and the request budget has to be spent on
+     * the query the person actually meant rather than on every prefix of it.
+     */
+    async addressSearch(
+      query: string,
+      country?: string | null,
+    ): Promise<{ results: AddressSearchHit[] }> {
+      const qs = new URLSearchParams({ q: query });
+      if (country) qs.set('country', country);
+      return request<{ results: AddressSearchHit[] }>(`/address/search?${qs.toString()}`);
+    },
+
+    /**
+     * The framed Street View entrance, as an image SOURCE the review card can
+     * hand straight to <Image>.
+     *
+     * The browser key never reaches this SDK (the framed page holds it), so
+     * the picture comes through the server, which does. Returned as a URL plus
+     * the auth header rather than fetched bytes: React Native's Image carries
+     * headers itself, which keeps Blob, FileReader and base64 out of a path
+     * that only has to draw a thumbnail. Mirrors the web SDK's
+     * addressStreetViewPreview, which returns a Blob because a browser <img>
+     * cannot send an Authorization header.
+     */
+    /**
+     * The pinned location as a PICTURE, for the review card.
+     *
+     * A confirmation screen wants a photograph of the place, not a second
+     * instrument: a live map there invites a drag that goes nowhere and
+     * carries the vendor's own controls over the SDK's chrome. Same shape as
+     * the Street View source above, and the same reason for it: the key lives
+     * on the server. lib/authed-image fetches it with the header — an <Image>
+     * given `source.headers` drops them on Android.
+     */
+    staticMapSource(view: {
+      lat: number;
+      lng: number;
+      zoom?: number;
+      width?: number;
+      height?: number;
+    }): { uri: string; headers: Record<string, string> } {
+      const qs = new URLSearchParams({
+        lat: String(view.lat),
+        lng: String(view.lng),
+        zoom: String(view.zoom ?? 16),
+        width: String(Math.round(view.width ?? 640)),
+        height: String(Math.round(view.height ?? 360)),
+      });
+      return { uri: `${base}/address/static-map?${qs.toString()}`, headers };
+    },
+
+    streetViewPreviewSource(frame: {
+      panoId: string;
+      heading: number;
+      pitch: number;
+      fov: number;
+    }): { uri: string; headers: Record<string, string> } {
+      const qs = new URLSearchParams({
+        panoId: frame.panoId,
+        heading: String(frame.heading),
+        pitch: String(frame.pitch),
+        fov: String(frame.fov),
+      });
+      return {
+        uri: `${base}/address/street-view-preview?${qs.toString()}`,
+        headers,
+      };
+    },
+
+    /** The street line for a pin, for the summary card after a locate or a
+     *  drag. Display only — it never decides anything. */
+    async addressReverse(lat: number, lng: number): Promise<AddressReverseResult> {
+      const qs = new URLSearchParams({ lat: String(lat), lng: String(lng) });
+      return request<AddressReverseResult>(`/address/reverse?${qs.toString()}`);
+    },
+
+    /**
+     * Places-backed as-you-type suggestions.
+     *
+     * `session` is ONE token per typing session: it is the billing unit, so
+     * Google bills per session rather than per keystroke. Mint it when the
+     * search screen opens, reuse it for every keystroke, and mint a fresh one
+     * after a details call — that call closes the session.
+     */
+    async addressAutocomplete(
+      query: string,
+      session: string,
+      country?: string | null,
+      near?: { lat: number; lng: number } | null,
+    ): Promise<{ suggestions: PlaceSuggestion[] }> {
+      const qs = new URLSearchParams({ q: query, session });
+      if (country) qs.set('country', country);
+      // The device fix, a RANKING bias so nearby streets come first: without
+      // it "Awolowo Road" in Calabar ranks against every Awolowo Road in the
+      // country. Mirrors the web SDK's api.addressAutocomplete.
+      if (near) {
+        qs.set('lat', String(near.lat));
+        qs.set('lng', String(near.lng));
+      }
+      return request<{ suggestions: PlaceSuggestion[] }>(`/address/autocomplete?${qs.toString()}`);
+    },
+
+    /** Resolve a picked suggestion to coordinates + structured pieces. */
+    async addressPlace(placeId: string, session: string): Promise<{ place: ResolvedPlace }> {
+      const qs = new URLSearchParams({ session });
+      return request<{ place: ResolvedPlace }>(
+        `/address/place/${encodeURIComponent(placeId)}?${qs.toString()}`,
+      );
     },
 
     async health(): Promise<HealthResponse> {

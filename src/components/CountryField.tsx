@@ -21,6 +21,8 @@ export function CountryField({
   value,
   options,
   onChange,
+  geoCountry,
+  grouped,
   placeholder = 'Select a country',
   searchPlaceholder = 'Search country',
 }: {
@@ -29,6 +31,10 @@ export function CountryField({
   /** The pickable countries — all ISO, or a workflow's registry subset. */
   options: DialCodeOption[];
   onChange: (code: string) => void;
+  /** The visitor's inferred country, pinned on top of the sheet as "Your location". */
+  geoCountry?: string | null;
+  /** Region headers between the rows, the country-select step's way. */
+  grouped?: boolean;
   placeholder?: string;
   searchPlaceholder?: string;
 }): React.ReactElement {
@@ -75,6 +81,8 @@ export function CountryField({
         visible={open}
         options={options}
         selected={value ?? ''}
+        pinned={geoCountry}
+        grouped={grouped}
         searchPlaceholder={searchPlaceholder}
         onPick={(code) => {
           setOpen(false);

@@ -21,6 +21,24 @@ export interface ServerConfigState {
   branding?: SdkConfigBranding;
   /** The visitor's country from their IP — a default, never evidence. */
   geoCountry?: string | null;
+  /**
+   * Whether the platform has a forward-search backend, and which one. Absent
+   * means the address flow simply has no search screen: the applicant places
+   * the pin by hand, which is the fallback every address failure degrades to.
+   *
+   * The Google KEY itself never rides here (it is the hosted page's alone);
+   * the framed picker reaches this SDK as a URL instead — see mapsFrameUrl.
+   * Street View entrance framing still does not exist on mobile.
+   */
+  addressSearch?: boolean;
+  addressSearchMode?: 'autocomplete' | 'basic';
+  /**
+   * The framed Google-map picker page for a WebView (`react-native-webview`,
+   * an optional peer): our hosted /embed/map plus a signed APP grant. Null or
+   * absent ⇒ the built-in OSM picker, which is also the fallback when the
+   * page never reports ready.
+   */
+  mapsFrameUrl?: string | null;
   environment?: 'DEVELOPMENT' | 'SANDBOX' | 'PRODUCTION';
   /** HTTP status of a failed config fetch (if any). */
   statusCode?: number;

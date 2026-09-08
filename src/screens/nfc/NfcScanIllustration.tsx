@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, View } from 'react-native';
-import Svg, { Circle, Defs, G, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
 
 import { useTheme } from '../../components/runtime';
 
@@ -112,22 +112,6 @@ export function NfcScanIllustration(): React.ReactElement {
     // Same footprint as the web: full width up to 384 (`max-w-sm`), 320:240.
     <View style={{ width: '100%', maxWidth: 384, aspectRatio: 320 / 240, alignSelf: 'center' }}>
       <Svg width="100%" height="100%" viewBox="0 0 320 240">
-        <Defs>
-          {/* The field falls off with distance — the reason the document has
-              to be held CLOSE, said as a gradient instead of a caption. */}
-          <RadialGradient
-            id="kyc-nfc-field"
-            cx={COUPLING.x}
-            cy={COUPLING.y}
-            r={90}
-            gradientUnits="userSpaceOnUse"
-          >
-            <Stop offset="0" stopColor={colors.primary} stopOpacity={0.18} />
-            <Stop offset="0.55" stopColor={colors.primary} stopOpacity={0.06} />
-            <Stop offset="1" stopColor={colors.primary} stopOpacity={0} />
-          </RadialGradient>
-        </Defs>
-
         {/* ── The document, tucked BEHIND the phone: portrait, chip, MRZ. ── */}
         <G rotation={7} origin="212, 112">
           <Rect
@@ -224,7 +208,12 @@ export function NfcScanIllustration(): React.ReactElement {
         </G>
 
         {/* ── The field, over both objects. ── */}
-        <Circle cx={COUPLING.x} cy={COUPLING.y} r={90} fill="url(#kyc-nfc-field)" />
+        {/* The field falls off with distance — the reason the document has to
+            be held CLOSE. Flat concentric steps (no gradients in the flow,
+            house rule 2026-08-29). */}
+        <Circle cx={COUPLING.x} cy={COUPLING.y} r={90} fill={colors.primary} fillOpacity={0.04} />
+        <Circle cx={COUPLING.x} cy={COUPLING.y} r={56} fill={colors.primary} fillOpacity={0.07} />
+        <Circle cx={COUPLING.x} cy={COUPLING.y} r={28} fill={colors.primary} fillOpacity={0.12} />
         <Circle cx={COUPLING.x} cy={COUPLING.y} r={4.5} fill={colors.primary} />
         {WAVES.map((w, i) => (
           <AnimatedPath

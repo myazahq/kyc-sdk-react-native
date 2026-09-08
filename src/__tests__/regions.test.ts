@@ -80,3 +80,77 @@ describe('the full map', () => {
     expect(new Set(ALL_REGION_CODES).size).toBe(ALL_REGION_CODES.length);
   });
 });
+
+// ─── The geo row ──────────────────────────────────────────────────────────────
+//
+// The visitor's IP country is lifted to the top of a picker and tagged, so a
+// guess made on their behalf is one tap away rather than buried among two
+// hundred rows. ONE rule serves the country-select step (bare codes) and the
+// dial-code sheet (option objects); the web SDK and Flutter carry the same
+// semantics, and this pins them here.
+
+import { pinGeoRow } from '../config/regions';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+describe('pinGeoRow', () => {
+  const codes = ['NG', 'GH', 'FR', 'US'];
+
+  it('lifts the geo country out and drops it from the rest', () => {
+    expect(pinGeoRow(codes, 'GH', (c) => c)).toEqual({ pinned: 'GH', rest: ['NG', 'FR', 'US'] });
+  });
+
+  it('is case-insensitive about the guess', () => {
+    expect(pinGeoRow(codes, ' gh ', (c) => c).pinned).toBe('GH');
+  });
+
+  it('pins nothing when there is no guess', () => {
+    expect(pinGeoRow(codes, null, (c) => c)).toEqual({ pinned: null, rest: codes });
+    expect(pinGeoRow(codes, '', (c) => c)).toEqual({ pinned: null, rest: codes });
+  });
+
+  it('stays subject to the search: a guess the filter excluded is not resurrected', () => {
+    // `visible` is the already-filtered list; typing "fr" left GH out of it.
+    expect(pinGeoRow(['FR'], 'GH', (c) => c)).toEqual({ pinned: null, rest: ['FR'] });
+  });
+
+  it('works over option objects, returning the same instance', () => {
+    const options = [
+      { code: 'NG', name: 'Nigeria', dialCode: '+234' },
+      { code: 'GH', name: 'Ghana', dialCode: '+233' },
+    ];
+    const { pinned, rest } = pinGeoRow(options, 'GH', (o) => o.code);
+    expect(pinned).toBe(options[1]);
+    expect(rest).toEqual([options[0]]);
+  });
+});
+
+describe('every picker offers the geo row', () => {
+  const read = (rel: string) => readFileSync(join(__dirname, '..', rel), 'utf8');
+
+  it('the country-select step hands the picker the IP country', () => {
+    expect(read('screens/CountrySelectStep.tsx')).toMatch(/geoCountry=\{serverConfig\.geoCountry\}/);
+    expect(read('components/CountryRegionPicker.tsx')).toMatch(/badge="Your location"/);
+  });
+
+  it('the phone field pins it in the dial-code sheet, on both mounts', () => {
+    expect(read('components/PhoneNumberInput.tsx')).toMatch(/pinned=\{geoCountry\}/);
+    expect(read('components/DialCodePicker.tsx')).toMatch(/'Your location'/);
+    expect(read('screens/ContactVerificationStep.tsx')).toMatch(/geoCountry=\{serverConfig\.geoCountry\}/);
+    expect(read('screens/BusinessDetailsStep.tsx')).toMatch(/geoCountry=\{geoCountry\}/);
+    expect(read('screens/CompanyInfoFields.tsx')).toMatch(/geoCountry=\{geoCountry\}/);
+  });
+
+  it('the address-scope country control pins it on top of a region-grouped sheet', () => {
+    // The sheet, not a line under the field: "Your location looks like X. Use
+    // it" was removed (user decision 2026-09-06) in favour of the same pinned
+    // row the country-select step and the phone field carry.
+    const control = read('screens/AddressCountryControl.tsx');
+    expect(control).toMatch(/geoCountry=\{inferredCountry\(geo\)\}/);
+    expect(control).toMatch(/\n\s+grouped\n/);
+    expect(control).not.toMatch(/looks like/);
+    const field = read('components/CountryField.tsx');
+    expect(field).toMatch(/pinned=\{geoCountry\}/);
+    expect(field).toMatch(/grouped=\{grouped\}/);
+  });
+});

@@ -2,8 +2,10 @@ import {
   DEFAULT_POA_MAX_AGE_DAYS,
   hasProofOfAddressStep,
   isAcceptedPoaMimeType,
+  poaCountryAccepted,
   poaDocumentTypes,
   poaMaxAgeDays,
+  poaNamePolicy,
   poaTypeLabel,
 } from '../config/proofOfAddress';
 
@@ -28,6 +30,7 @@ describe('offered document kinds', () => {
       'utility_bill',
       'bank_statement',
       'tenancy_agreement',
+      'government_document',
       'other',
     ]);
   });
@@ -35,7 +38,7 @@ describe('offered document kinds', () => {
   it('treats an empty list as "all", not "none"', () => {
     // A workflow that enabled the step but left the list empty still wants the
     // step to work — offering nothing would be an un-completable screen.
-    expect(poaDocumentTypes({ enabled: true, documentTypes: [] })).toHaveLength(4);
+    expect(poaDocumentTypes({ enabled: true, documentTypes: [] })).toHaveLength(5);
   });
 
   it('honours a narrowed list', () => {
@@ -94,5 +97,57 @@ describe('accepted files', () => {
     expect(isAcceptedPoaMimeType('video/mp4')).toBe(false);
     expect(isAcceptedPoaMimeType('application/msword')).toBe(false);
     expect(isAcceptedPoaMimeType(undefined)).toBe(false);
+  });
+});
+
+describe('per-country document kinds', () => {
+  const poa = {
+    enabled: true,
+    documentTypes: ['utility_bill' as const],
+    countryDocuments: { GB: ['bank_statement' as const, 'other' as const] },
+    countries: ['NG', 'gb'],
+  };
+
+  it("a country's override replaces the global list for that country only", () => {
+    expect(poaDocumentTypes(poa, 'gb')).toEqual(['bank_statement', 'other']);
+    expect(poaDocumentTypes(poa, 'NG')).toEqual(['utility_bill']);
+    expect(poaDocumentTypes(poa, null)).toEqual(['utility_bill']);
+  });
+
+  it('an empty override falls through to the global list', () => {
+    expect(poaDocumentTypes({ enabled: true, countryDocuments: { NG: [] } }, 'NG')).toHaveLength(5);
+  });
+
+  it('the accepted-country list is case-insensitive and empty means everyone', () => {
+    expect(poaCountryAccepted(poa, 'GB')).toBe(true);
+    expect(poaCountryAccepted(poa, 'ng')).toBe(true);
+    expect(poaCountryAccepted(poa, 'KE')).toBe(false);
+    expect(poaCountryAccepted({ enabled: true }, 'KE')).toBe(true);
+    expect(poaCountryAccepted(poa, null)).toBe(true);
+  });
+});
+
+describe('kinds this build does not know', () => {
+  it('are hidden from the picker rather than drawn as a blank row', () => {
+    expect(poaDocumentTypes({ enabled: true, documentTypes: ['utility_bill', 'holographic_deed'] as never })).toEqual([
+      'utility_bill',
+    ]);
+    // An override made only of unknown kinds falls through, never to nothing.
+    expect(
+      poaDocumentTypes({ enabled: true, countryDocuments: { NG: ['holographic_deed'] as never } }, 'NG'),
+    ).toHaveLength(5);
+  });
+});
+
+describe('the name rule', () => {
+  it('is required when the workflow says nothing', () => {
+    expect(poaNamePolicy(undefined, 'NG', 'utility_bill')).toBe('required');
+  });
+
+  it("a country's per-kind exception beats the default for that kind alone", () => {
+    const poa = { enabled: true, nameMatch: 'optional' as const, countryNameMatch: { NG: { utility_bill: 'off' as const } } };
+    expect(poaNamePolicy(poa, 'ng', 'utility_bill')).toBe('off');
+    expect(poaNamePolicy(poa, 'NG', 'bank_statement')).toBe('optional');
+    expect(poaNamePolicy(poa, 'GH', 'utility_bill')).toBe('optional');
   });
 });

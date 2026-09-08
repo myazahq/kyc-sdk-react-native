@@ -37,6 +37,20 @@ export const BUSINESS_PRODUCTS: readonly BusinessProductDef[] = [
     placeholder: 'e.g. RC0000000',
   },
   {
+    key: 'business-address',
+    label: 'Business Address',
+    inputLabel: 'Registration number',
+    placeholder: 'e.g. 201133333323',
+    countries: ['ZA'],
+  },
+  {
+    key: 'business-filings',
+    label: 'Company Filings',
+    inputLabel: 'Registration number',
+    placeholder: 'e.g. CI-ABJ-03-2023-B17-00120',
+    countries: ['CI'],
+  },
+  {
     key: 'business-tax',
     label: 'Business + Tax ID',
     inputLabel: 'Registration number',
@@ -91,7 +105,12 @@ export function businessProductsForCountry(
 ): string[] {
   const offered = businessProductsFor(business).filter((key) => {
     const def = BUSINESS_PRODUCTS.find((p) => p.key === key);
-    return !def?.countries || def.countries.includes(country);
+    // A key this build does not know is HIDDEN, never offered everywhere: the
+    // server rejects a wrong-country pick at verify (product_unsupported), so
+    // over-offering dead-ends the applicant, while hiding degrades to the
+    // standard lookup until the SDK updates.
+    if (!def) return false;
+    return !def.countries || def.countries.includes(country);
   });
   return offered.length > 0 ? offered : [DEFAULT_BUSINESS_PRODUCT];
 }

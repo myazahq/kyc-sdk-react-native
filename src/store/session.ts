@@ -1,8 +1,11 @@
 import type { KycState, KycStore } from './state';
+import { collectDeviceMetadata } from '../services/deviceMetadata';
+import { restoreAddress } from './address';
 import { getStepLog } from '../lib/step-log';
 import { emptyKeyPerson, type KeyPersonEntry } from '../config/keyPeople';
 import type { SessionStartResponse } from '../services/api-types';
 import { persistentDeviceId } from '../services/fingerprint-sources';
+import { openingStep } from './derive';
 
 // ---------------------------------------------------------------------------
 // The attempt SESSION: minting at launch, and progress writes as the user moves.
@@ -52,6 +55,9 @@ export function startAttemptSession(store: KycStore): void {
         externalUserId,
         ...(deviceRef ? { deviceRef } : {}),
         ...(s.config.workflowId ? { workflowId: s.config.workflowId } : {}),
+        // What this phone is, sent up front: the dashboard's in-progress row
+        // shows Device and Source from the moment the SDK loads.
+        device: collectDeviceMetadata() as unknown as Record<string, unknown>,
       }),
     );
     inflightStarts.set(key, start);
@@ -140,6 +146,13 @@ export function restoreAttemptProgress(
     ...(d['contact'] && typeof d['contact'] === 'object'
       ? { contact: { ...s.contact, ...(d['contact'] as object) } }
       : {}),
+    // The pin restores only when it is a real pin — a partial snapshot must
+    // degrade to restoring less, never to a shape the step cannot read.
+    ...((() => {
+      const a = d['address'] as Record<string, unknown> | undefined;
+      if (!a || typeof a['lat'] !== 'number' || typeof a['lng'] !== 'number') return {};
+      return { address: restoreAddress(a) };
+    })()),
     ...(d['questionnaireAnswers'] && typeof d['questionnaireAnswers'] === 'object'
       ? {
           questionnaireAnswers: {
@@ -169,13 +182,19 @@ export function progressFromState(s: ReturnType<KycStore['getState']>): Record<s
       businessApplication: s.businessApplication,
       contact: s.contact,
       questionnaireAnswers: s.questionnaireAnswers,
+      address: s.address ?? undefined,
     },
   };
 }
 
-/** Nothing here needs saving until they move off the opening screen. */
-export function isUntouchedProgress(payload: Record<string, unknown>): boolean {
-  if (payload['step'] !== 'consent') return false;
+/**
+ * Nothing here needs saving until they move off the opening screen. Judged
+ * against the flow's OPENING step ('consent' unless the workflow switched it
+ * off, then the first real step), or a consent-less flow would save on mount
+ * and every opened link would read "In progress" on the dashboard.
+ */
+export function isUntouchedProgress(payload: Record<string, unknown>, opening: string = 'consent'): boolean {
+  if (payload['step'] !== opening) return false;
   return Object.keys((payload['mediaIds'] as object) ?? {}).length === 0;
 }
 
@@ -193,7 +212,7 @@ export function watchSessionProgress(store: KycStore): () => void {
       const s = store.getState();
       if (!s.sessionId) return;
       const payload = progressFromState(s);
-      if (isUntouchedProgress(payload)) return;
+      if (isUntouchedProgress(payload, openingStep(s))) return;
       const fingerprint = JSON.stringify(payload);
       if (fingerprint === lastSaved) return;
       lastSaved = fingerprint;

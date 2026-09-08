@@ -61,6 +61,7 @@ describe('nfcDecision', () => {
       hasEmailVerification: false,
       hasPhoneVerification: false,
       hasPoa: false,
+      hasAddressCollection: false,
       hasQuestionnaire: false,
     } as never);
     expect(order.indexOf('nfc')).toBeGreaterThan(order.indexOf('document-capture'));

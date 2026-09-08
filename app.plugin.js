@@ -37,6 +37,9 @@ const CAMERA_USAGE =
 const NFC_USAGE =
   'We read the secure chip in your passport or ID card to confirm the document is genuine.';
 
+const LOCATION_USAGE =
+  'We use your location to confirm you are at the address you pin during verification.';
+
 /**
  * The eMRTD application identifier.
  *
@@ -57,6 +60,23 @@ function withIosCameraUsage(config, customMessage) {
   return withInfoPlist(config, (cfg) => {
     if (!cfg.modResults.NSCameraUsageDescription) {
       cfg.modResults.NSCameraUsageDescription = customMessage || CAMERA_USAGE;
+    }
+    return cfg;
+  });
+}
+
+/**
+ * iOS location usage string, for the address-collection step's one-shot fix
+ * ("Use my current location" + the attest-presence claim). Written by DEFAULT
+ * because its ABSENCE is a crash: iOS kills an app that requests location
+ * without a usage string, and whether the step runs is decided by the org's
+ * WORKFLOW, not by anything the host app author can see at build time. An
+ * unused usage string costs nothing. `location: false` opts out.
+ */
+function withIosLocationUsage(config, customMessage) {
+  return withInfoPlist(config, (cfg) => {
+    if (!cfg.modResults.NSLocationWhenInUseUsageDescription) {
+      cfg.modResults.NSLocationWhenInUseUsageDescription = customMessage || LOCATION_USAGE;
     }
     return cfg;
   });
@@ -112,24 +132,84 @@ function withIosNfc(config, customMessage) {
   });
 }
 
-function withAndroidPermissions(config, { nfc }) {
+/**
+ * The Android permission list for a given set of opt-ins. Pure and exported
+ * so the tests can pin what `location: 'always'` declares — a permission
+ * that changes review posture must never arrive by accident.
+ */
+function androidPermissionsFor({ nfc, location, backgroundLocation }) {
+  return [
+    'android.permission.CAMERA',
+    'android.permission.INTERNET',
+    ...(nfc ? ['android.permission.NFC'] : []),
+    // Foreground location, for the address-collection step's one-shot fix.
+    ...(location
+      ? ['android.permission.ACCESS_COARSE_LOCATION', 'android.permission.ACCESS_FINE_LOCATION']
+      : []),
+    // The always-on presence tier (OkHi model, opt-in): OS geofencing needs
+    // the background grant, and Google Play reviews any app that declares
+    // it — which is why this is `location: 'always'` only, never a default.
+    // The foreground-service pair rides the same opt-in: FOREGROUND_SERVICE
+    // is a normal permission, and FOREGROUND_SERVICE_LOCATION (API 34+) is
+    // what lets expo-location's service declare the `location` type; Play
+    // reviews it under the same location declaration.
+    ...(backgroundLocation
+      ? [
+          'android.permission.ACCESS_BACKGROUND_LOCATION',
+          'android.permission.FOREGROUND_SERVICE',
+          'android.permission.FOREGROUND_SERVICE_LOCATION',
+        ]
+      : []),
+  ];
+}
+
+function withAndroidPermissions(config, opts) {
   return withAndroidManifest(config, (cfg) => {
-    AndroidConfig.Permissions.ensurePermissions(cfg.modResults, [
-      'android.permission.CAMERA',
-      'android.permission.INTERNET',
-      ...(nfc ? ['android.permission.NFC'] : []),
-    ]);
+    AndroidConfig.Permissions.ensurePermissions(cfg.modResults, androidPermissionsFor(opts));
+    return cfg;
+  });
+}
+
+/** iOS side of the always-on tier: the Always usage string plus the location
+ *  background mode, without which a geofence wake is refused. */
+function withIosBackgroundLocation(config, customMessage) {
+  return withInfoPlist(config, (cfg) => {
+    if (!cfg.modResults.NSLocationAlwaysAndWhenInUseUsageDescription) {
+      cfg.modResults.NSLocationAlwaysAndWhenInUseUsageDescription =
+        customMessage || LOCATION_USAGE;
+    }
+    const modes = Array.isArray(cfg.modResults.UIBackgroundModes)
+      ? cfg.modResults.UIBackgroundModes
+      : [];
+    if (!modes.includes('location')) modes.push('location');
+    cfg.modResults.UIBackgroundModes = modes;
     return cfg;
   });
 }
 
 /**
  * @param {object} config
- * @param {{ cameraPermission?: string, nfc?: boolean, nfcPermission?: string }} [props]
+ * @param {{ cameraPermission?: string, nfc?: boolean, nfcPermission?: string,
+ *           location?: boolean | 'always', locationPermission?: string }} [props]
  */
 function withMyazaKyc(config, props = {}) {
+  const location = props.location !== false;
+  // `location: 'always'` opts into the background presence tier. Explicit on
+  // purpose: it changes the app's Play/App Store review posture, so it must
+  // never arrive as a side effect of a default.
+  const backgroundLocation = props.location === 'always';
   config = withIosCameraUsage(config, props.cameraPermission);
-  config = withAndroidPermissions(config, { nfc: props.nfc === true });
+  config = withAndroidPermissions(config, {
+    nfc: props.nfc === true,
+    location,
+    backgroundLocation,
+  });
+  if (location) {
+    config = withIosLocationUsage(config, props.locationPermission);
+  }
+  if (backgroundLocation) {
+    config = withIosBackgroundLocation(config, props.locationPermission);
+  }
   if (props.nfc === true) {
     config = withIosNfc(config, props.nfcPermission);
   }
@@ -141,4 +221,5 @@ module.exports = createRunOncePlugin(withMyazaKyc, pkg.name, pkg.version);
 // consumers' app.json entries are unaffected.
 module.exports.applyNfcInfoPlist = applyNfcInfoPlist;
 module.exports.applyNfcEntitlements = applyNfcEntitlements;
+module.exports.androidPermissionsFor = androidPermissionsFor;
 module.exports.EMRTD_AID = EMRTD_AID;

@@ -11,6 +11,16 @@
 export { MyazaKYC, useMyazaKYC } from './MyazaKYC';
 export type { MyazaKYCProps, UseMyazaKYCReturn } from './MyazaKYC';
 
+// Returning-user face re-authentication (the web SDK's MyazaBiometricAuth).
+export { MyazaBiometricAuth } from './MyazaBiometricAuth';
+export type { MyazaBiometricAuthProps } from './MyazaBiometricAuth';
+export type {
+  BiometricAuthRequest,
+  BiometricAuthResponse,
+  BiometricStatusResponse,
+  BiometricLivenessClaim,
+} from './services/api-types-biometric';
+
 // Public config + callback types
 export type {
   MyazaKYCConfig,
@@ -32,6 +42,7 @@ export type {
   PhoneVerificationConfig,
   ProofOfAddressConfig,
   PoaDocumentType,
+  AddressCollectionConfig,
   QuestionnaireConfig,
   QuestionnaireField,
   QuestionnaireFieldOption,
@@ -56,7 +67,8 @@ export type {
   WorkflowBusinessDocumentTypeConfig,
   WorkflowBusinessApplicantConfig,
 } from './types/business';
-export type { KYCSubmission, KYCErrorCode, KYCErrorDetails } from './types/verification';
+export type { KYCSubmission, KYCResult, KYCErrorCode, KYCErrorDetails } from './types/verification';
+export type { BiometricFlowConfig, BiometricCopy, BiometricCopyText } from './config/biometricOptions';
 export { KYCError } from './types/verification';
 
 // ID-type matrix + helpers
@@ -107,6 +119,47 @@ export {
 export { hasActiveQuestionnaire, questionnaireAnswerKeys } from './config/questionnaire';
 export { hasEmailVerificationStep, hasPhoneVerificationStep } from './config/contact';
 export { hasProofOfAddressStep, poaDocumentTypes, poaTypeLabel } from './config/proofOfAddress';
+export { hasAddressCollectionStep } from './config/addressCollection';
+// Presence verification (Address Intelligence Phase 2): the foreground
+// reporter the HOST APP calls on app open, plus the on-device pin store.
+export {
+  reportAddressPresence,
+  type ReportPresenceOptions,
+  type ReportPresenceResult,
+} from './presence/report';
+// The background (OS geofence) tier — the always-on model. register* must run
+// at app-root module scope; enable* asks for the background permission.
+export {
+  PRESENCE_GEOFENCE_TASK,
+  disableBackgroundPresence,
+  enableBackgroundPresence,
+  registerBackgroundPresence,
+  type EnableBackgroundResult,
+} from './presence/background';
+// The Android foreground-service tier (the OkHi reliability move): a
+// persistent notification keeps the process alive on phones whose battery
+// managers drop geofence transitions. Opt-in; the host words the notification.
+export {
+  PRESENCE_LOCATION_TASK,
+  disableForegroundService,
+  enableForegroundService,
+  foregroundServiceRunning,
+  type EnableForegroundServiceResult,
+  type PresenceNotification,
+} from './presence/foreground-service';
+export {
+  openLocationSettings,
+  presenceStatus,
+  type PresenceStatus,
+  type PresenceTier,
+} from './presence/status';
+export { resolvePresenceTier, type PermissionState, type TierInputs } from './presence/tier';
+// savePresencePin is the org-side handoff for STANDALONE address verification:
+// when capture happened on a hosted web link (or the org's own backend already
+// holds the address), the host app hands the SDK the pin so the foreground and
+// background presence tiers can run — the pin otherwise only ever exists where
+// OUR capture step stored it.
+export { clearPresencePin, savePresencePin } from './presence/store';
 
 // Country grouping for multi-region flows
 export { groupCountriesByRegion, regionCountryName, type Region } from './config/regions';

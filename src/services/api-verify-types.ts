@@ -45,9 +45,46 @@ export interface VerifyRequest {
     documentBackVideo?: string;
     livenessVideo?: string;
     proofOfAddress?: string;
+    /** Address Intelligence door photo (individual flows only). */
+    addressPhoto?: string;
   };
   /** Which kind of document the user said they uploaded as proof of address. */
   proofOfAddressType?: string;
+  /**
+   * Address Intelligence: the map pin the applicant dropped (+ the optional
+   * one-shot device fix taken at Continue). The server corroborates it; the
+   * SDK only collects. Sent only when the step ran and a pin was confirmed.
+   */
+  address?: {
+    lat: number;
+    lng: number;
+    accuracy?: number;
+    /**
+     * The line the applicant CONFIRMED (a search pick, or a reverse geocode
+     * they accepted). The server prefers it for the composed address over its
+     * own derivation, whose OSM coverage drops whole streets in our markets.
+     */
+    label?: string;
+    directions?: string;
+    propertyName?: string;
+    propertyNumber?: string;
+    /** A street the applicant typed because no map source knew it. */
+    street?: string;
+    /** The edit-details claims: unit + area/region corrections. */
+    unit?: string;
+    neighbourhood?: string;
+    city?: string;
+    state?: string;
+    postcode?: string;
+    /** Street View entrance frame — coordinates only; the server fetches the
+     *  image with its own key. Never written by this SDK (no panorama on
+     *  mobile), but a session begun on a hosted page can carry one. */
+    streetView?: { panoId: string; heading: number; pitch: number; fov: number };
+    deviceLat?: number;
+    deviceLng?: number;
+    deviceAccuracy?: number;
+    capturedAt?: string;
+  };
   /**
    * Business (KYB) registry details. Its presence is what makes this a business
    * submission — and the server REQUIRES a published KYB workflow for one, so

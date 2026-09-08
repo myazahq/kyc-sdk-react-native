@@ -303,8 +303,13 @@ final class HybridMyazaFaceDetector: HybridMyazaFaceDetectorSpec {
     return min(max(v, 0.0), 1.0)
   }
 
-  /// Smile from outer-lip width relative to the face. Input band (0.40→0.50):
-  /// a neutral mouth sits near 0, a clear smile lands well above the threshold.
+  /// Smile from outer-lip width relative to the face box. Input band
+  /// (0.36→0.46): the shared detector passes above 0.5, so the pass line sits
+  /// at a lip width of 0.41 of the box. It was 0.40→0.50 (pass at 0.45), which
+  /// on device needed a full grin — a modest, natural smile never crossed it.
+  /// ML Kit on Android returns a classifier probability instead, so this band
+  /// is the iOS half of one shared threshold: tune it here, not in
+  /// detectSmile, or Android loosens with it.
   private static func smileProbability(_ landmarks: VNFaceLandmarks2D?) -> Double {
     guard let pts = landmarks?.outerLips?.normalizedPoints, pts.count >= 4 else {
       return 0.0
@@ -315,7 +320,7 @@ final class HybridMyazaFaceDetector: HybridMyazaFaceDetectorSpec {
       minX = min(minX, Double(p.x)); maxX = max(maxX, Double(p.x))
     }
     let width = maxX - minX
-    let score = (width - 0.40) / (0.50 - 0.40)
+    let score = (width - 0.36) / (0.46 - 0.36)
     return min(max(score, 0.0), 1.0)
   }
 

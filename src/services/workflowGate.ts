@@ -103,6 +103,13 @@ export async function resolveWorkflow(
         idTypes: res.idTypes,
         branding: res.branding,
         geoCountry: res.geoCountry,
+        // The resolution route does not serve these yet, so a workflow mount
+        // reads undefined and the address flow offers no search screen. That
+        // degrades correctly, and the passthrough means it starts working the
+        // day the server carries them.
+        addressSearch: res.addressSearch,
+        addressSearchMode: res.addressSearchMode,
+        mapsFrameUrl: res.mapsFrameUrl ?? null,
         environment: res.environment,
         fatal: false,
       },

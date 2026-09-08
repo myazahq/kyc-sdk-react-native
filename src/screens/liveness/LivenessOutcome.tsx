@@ -27,7 +27,8 @@ export function LivenessComplete({
   onRetake,
   onContinue,
 }: {
-  selfieUri: string;
+  /** Null on a restored session: the mediaId survived, the local file did not. */
+  selfieUri: string | null;
   upload: SelfieUpload;
   onRetake: () => void;
   onContinue: () => void;
@@ -40,7 +41,7 @@ export function LivenessComplete({
         <SelfiePreview uri={selfieUri} uploading={uploading && !uploadError} />
         {retryInfo && uploading ? (
           <MyazaText variant="bodySmall" color={colors.warning} style={{ textAlign: 'center', marginTop: spacing.sm }}>
-            {`Upload failed — retrying (${retryInfo.attempt}/${retryInfo.total})…`}
+            {`Upload failed, retrying (${retryInfo.attempt}/${retryInfo.total})`}
           </MyazaText>
         ) : null}
         <View style={{ height: spacing.md }} />
@@ -51,7 +52,7 @@ export function LivenessComplete({
             // Disabled while the retry is in flight, not spinning — the progress
             // indicator belongs in the selfie frame, where the work is.
             disabled={uploading}
-            onPress={() => void uploadSelfieAndVideo(selfieUri, videoPathRef.current)}
+            onPress={() => selfieUri && void uploadSelfieAndVideo(selfieUri, videoPathRef.current)}
           />
         ) : (
           <View style={{ flexDirection: 'row', gap: spacing.md }}>

@@ -7,14 +7,19 @@
 // keeps a single answer to each of those questions.
 // ---------------------------------------------------------------------------
 
+import { configScope } from '../lib/scope';
 import { requiresDocumentCapture, supportsNfcChip } from '../config/idTypes';
 import {
+  buildStepOrder,
   getStepProgress,
   nextStepInOrder,
   previousStepInOrder,
   type StepOrderOptions,
 } from '../config/stepOrder';
 import { hasProofOfAddressStep } from '../config/proofOfAddress';
+import { addressFlowFor, hasAddressCollectionStep } from '../config/addressCollection';
+import { webViewAvailable } from '../lib/webview-available';
+import { addressVendorsStubbed } from '../lib/address-flow';
 import { businessProductsForCountry, isBusinessFlow } from '../config/business';
 import {
   hasApplicantVerification,
@@ -22,6 +27,7 @@ import {
   hasKeyPeopleCollection,
 } from '../config/businessSteps';
 import { hasActiveQuestionnaire } from '../config/questionnaire';
+import { hasConsentStep, openingStepOf } from '../config/consentStep';
 import { applicantSelfCountry, keyPeoplePayload } from '../config/keyPeople';
 import { featuresFor } from './serverConfig';
 import type { VerifyRequest } from '../services/api';
@@ -58,6 +64,7 @@ export function stepOrderOptions(state: KycState): StepOrderOptions {
   const idType = state.selectedIdType;
   return {
     isBusiness: isBusinessFlow(config),
+    scope: configScope(config),
     business: config.business,
     hasDocCapture: idType ? requiresDocumentCapture(idType) : true,
     hasNfc: nfcEnabled(state),
@@ -72,9 +79,20 @@ export function stepOrderOptions(state: KycState): StepOrderOptions {
     hasCountrySelect:
       countrySelectOptions(state).length > 1 &&
       applicantSelfCountry(state.businessApplication) === null,
+    hasConsent: hasConsentStep(config),
     hasEmailVerification: config.emailVerification?.enabled === true,
     hasPhoneVerification: config.phoneVerification?.enabled === true,
     hasPoa: hasProofOfAddressStep(config.proofOfAddress),
+    hasAddressCollection: hasAddressCollectionStep(config.addressCollection),
+    // An absent search flag means no search SCREEN, never an error: the
+    // applicant places the pin by hand, the fallback every address failure
+    // degrades to.
+    addressFlow: addressFlowFor(
+      config,
+      state.serverConfig.addressSearch === true,
+      addressVendorsStubbed({ environment: state.serverConfig.environment }),
+      Boolean(state.serverConfig.mapsFrameUrl) && webViewAvailable(),
+    ),
     hasQuestionnaire: hasActiveQuestionnaire(config.questionnaire),
     // Present only on a session a reviewer sent back. Narrows the order to the
     // steps they ticked, so somebody fixing one blurry photo is not walked
@@ -237,11 +255,18 @@ export function previousStepBefore(step: KYCStep, state: KycState): KYCStep {
   return previousStepInOrder(step, stepOrderOptions(state));
 }
 
+/**
+ * The step this flow OPENS on: 'consent', or the first real step when the
+ * workflow switched the consent screen off (`consentStep: false`). The store
+ * starts and resets here, the progress watcher judges "untouched" against it,
+ * and the flow hides Back on it. Never depends on anything the applicant has
+ * yet to choose: only later steps do.
+ */
+export function openingStep(state: KycState): KYCStep {
+  return openingStepOf(buildStepOrder(stepOrderOptions(state)));
+}
+
 /** Percentage complete, for the sheet's progress indicator. */
 export function stepProgress(step: KYCStep, state: KycState): number {
   return getStepProgress(step, stepOrderOptions(state));
 }
-
-// ---------------------------------------------------------------------------
-// Store factory
-// ---------------------------------------------------------------------------

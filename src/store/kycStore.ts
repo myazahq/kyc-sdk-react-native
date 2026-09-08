@@ -27,7 +27,7 @@ import {
   type KycState,
   type KycStore,
 } from './state';
-import { nextStepAfter, nfcDecision, previousStepBefore } from './derive';
+import { nextStepAfter, nfcDecision, openingStep, previousStepBefore } from './derive';
 
 /** The steps that make up ONE ID's evidence. Leaving this set is what ends a
  *  multi-ID check — the leg has several exits depending on the ID. */
@@ -54,9 +54,11 @@ function multiIdPlanFor(s: KycState): ReturnType<typeof multiIdPlan> {
   );
 }
 import { recordStep, resetStepLog } from '../lib/step-log';
+import { resetAutoLocate, resetCurrentFix } from '../lib/address-current-location';
 import { multiIdPlan } from '../lib/multi-id';
 import { resolveIdTypeDefinition } from '../config/idTypes';
 import { buildVerifyRequest } from './submit';
+import { IDLE_SELFIE_UPLOAD } from '../lib/selfie-upload-wait';
 import { resetBusinessCheck, runBusinessCheck } from './businessCheck';
 import { startAttemptSession, watchSessionProgress } from './session';
 import { applicantMediaCaptured, buildApplicantVerifyRequest } from './submitApplicant';
@@ -99,11 +101,14 @@ export function createKycStore(
       sessionUrl: null,
       businessCheck: { ...EMPTY_BUSINESS_CHECK },
       selectedCountry: null,
+      countryAutoPicked: false,
       selectedIdType: null,
       idNumber: null,
       multiIdSlotIndex: 0,
       multiIdSlots: [],
       multiIdRestored: null,
+      selfiePreviewUri: null,
+      selfieUpload: IDLE_SELFIE_UPLOAD,
       mediaIds: {},
       submissionResult: null,
       serverConfig: serverConfig ?? INITIAL_SERVER_CONFIG,
@@ -124,6 +129,11 @@ export function createKycStore(
       chipData: null,
       poaDocumentType: null,
       poaFileName: null,
+      address: null,
+      addressPhotoPreview: null,
+      addressIntroSeen: false,
+      addressEntranceFraming: false,
+      addressSandboxOutcome: null,
       isLoading: false,
       error: null,
 
@@ -137,16 +147,27 @@ export function createKycStore(
           const branding = res.branding
             ? { ...res.branding, logo: normalizeDevAssetUrl(res.branding.logo, baseUrl) }
             : res.branding;
+          // The facts that just landed can add a step AHEAD of the one the flow
+          // opened on (the address search step, on a consent-less address
+          // flow). Someone still standing on the placeholder's opening step,
+          // having done nothing, is moved to the real one; anyone who has
+          // moved is left alone. Mirrors Flutter's _loadServerConfig.
+          const before = openingStep(get());
           set({
             serverConfig: {
               status: 'ready',
               idTypes: res.idTypes,
               branding,
               geoCountry: res.geoCountry,
+              addressSearch: res.addressSearch,
+              addressSearchMode: res.addressSearchMode,
+              mapsFrameUrl: res.mapsFrameUrl ?? null,
               environment: res.environment,
               fatal: false,
             },
           });
+          const after = openingStep(get());
+          if (get().currentStep === before && after !== before) set({ currentStep: after });
         } catch (err) {
           const described = describeConfigError(err);
           set((s) => ({
@@ -163,6 +184,7 @@ export function createKycStore(
           const same = s.selectedCountry === country;
           return {
             selectedCountry: country,
+            countryAutoPicked: false,
             selectedIdType: same ? s.selectedIdType : null,
             idNumber: same ? s.idNumber : null,
             // A multi-ID run's committed slots belong to the country they were
@@ -173,6 +195,11 @@ export function createKycStore(
             multiIdRestored: same ? s.multiIdRestored : null,
           };
         });
+      },
+
+      setCountryAuto(country) {
+        get().setCountry(country);
+        if (!get().countryAutoPicked) set({ countryAutoPicked: true });
       },
 
       commitMultiIdSlot(nextStep, previews) {
@@ -255,6 +282,22 @@ export function createKycStore(
 
       setMediaId(key, mediaId) {
         set((s) => ({ mediaIds: { ...s.mediaIds, [key]: mediaId } }));
+      },
+
+      setSelfiePreview(uri) {
+        set({ selfiePreviewUri: uri });
+      },
+
+      clearSelfie() {
+        set((s) => ({
+          selfiePreviewUri: null,
+          selfieUpload: IDLE_SELFIE_UPLOAD,
+          mediaIds: { ...s.mediaIds, selfie: undefined, livenessVideo: undefined },
+        }));
+      },
+
+      setSelfieUpload(upload) {
+        set({ selfieUpload: upload });
       },
 
       setDocumentMediaId(mediaId, side) {
@@ -423,6 +466,41 @@ export function createKycStore(
         });
       },
 
+      setAddress(address) {
+        set({ address });
+      },
+
+      setAddressSandboxOutcome(addressSandboxOutcome) {
+        set({ addressSandboxOutcome });
+      },
+
+      setAddressPhoto(mediaId) {
+        set((s) => {
+          if (mediaId) return { mediaIds: { ...s.mediaIds, addressPhoto: mediaId } };
+          const { addressPhoto: _dropped, ...rest } = s.mediaIds;
+          return { mediaIds: rest };
+        });
+      },
+
+      setAddressPhotoPreview(uri) {
+        set({ addressPhotoPreview: uri });
+      },
+
+      markAddressIntroSeen() {
+        set({ addressIntroSeen: true });
+      },
+
+      setAddressEntranceFraming(framing) {
+        if (get().addressEntranceFraming !== framing) set({ addressEntranceFraming: framing });
+      },
+
+      clearAddress() {
+        set((s) => {
+          const { addressPhoto: _dropped, ...rest } = s.mediaIds;
+          return { address: null, mediaIds: rest, addressPhotoPreview: null };
+        });
+      },
+
       setDocumentCapturePhase(phase) {
         if (get().documentCapturePhase !== phase) set({ documentCapturePhase: phase });
       },
@@ -569,15 +647,27 @@ export function createKycStore(
         // already sitting on 'consent' (the subscribe below only fires on
         // change, and recordStep dedupes if it fires too).
         resetStepLog();
-        recordStep('consent', multiIdSlotOf(get()), selectedIdTypeOf(get()));
+        // The cached GPS fix and the once-per-verification auto-locate are
+        // scoped to ONE verification: an app session spans many opens of the
+        // SDK, and a fix taken an hour ago would drop the pin at wherever the
+        // phone was then.
+        resetCurrentFix();
+        resetAutoLocate();
+        // The opening step never depends on the fields reset below (only later
+        // steps do), so it is safe to read before the write.
+        const opening = openingStep(get());
+        recordStep(opening, multiIdSlotOf(get()), selectedIdTypeOf(get()));
         set({
-          currentStep: 'consent',
+          currentStep: opening,
           selectedCountry: null,
+          countryAutoPicked: false,
           selectedIdType: null,
           idNumber: null,
           multiIdSlotIndex: 0,
           multiIdSlots: [],
           multiIdRestored: null,
+          selfiePreviewUri: null,
+          selfieUpload: IDLE_SELFIE_UPLOAD,
           mediaIds: {},
           submissionResult: null,
           documentScanPhase: 'front',
@@ -599,6 +689,11 @@ export function createKycStore(
           chipData: null,
           poaDocumentType: null,
           poaFileName: null,
+          address: null,
+          addressPhotoPreview: null,
+          addressIntroSeen: false,
+      addressEntranceFraming: false,
+      addressSandboxOutcome: null,
           isLoading: false,
           error: null,
         });
@@ -622,6 +717,20 @@ export function createKycStore(
   // subscription above only fires on CHANGE, and a new store already sits on
   // 'consent').
   resetStepLog();
+  // The module-level GPS cache and the auto-locate latch are scoped to ONE
+  // verification, and this — not reset() — is where a verification begins.
+  // Clearing them only in reset() left both alive across modal launches, so a
+  // second verification in the same app session dropped its pin wherever the
+  // phone had been on the first (possibly hours and a city away) and skipped
+  // the automatic locate entirely, since the latch was already spent.
+  resetCurrentFix();
+  resetAutoLocate();
+  // A workflow that switched the consent screen off opens on its first real
+  // step; the literal 'consent' above is only the shape before the config is
+  // consulted. Set BEFORE the journey is recorded, so the log opens where the
+  // person does.
+  const opening = openingStep(store.getState());
+  if (opening !== store.getState().currentStep) store.setState({ currentStep: opening });
   recordStep(
     store.getState().currentStep,
     multiIdSlotOf(store.getState()),

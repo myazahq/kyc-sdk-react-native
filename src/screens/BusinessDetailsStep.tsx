@@ -45,6 +45,7 @@ export function BusinessDetailsStep(): React.ReactElement {
   const [phase, setPhase] = useState<'pick' | 'details'>('pick');
   // Production never shows the test-result toggle, and never honours a pin.
   const isSandbox = useKyc((s) => s.serverConfig.environment) !== 'PRODUCTION';
+  const geoCountry = useKyc((s) => s.serverConfig.geoCountry);
 
   const workflowBusiness = config.business;
   const countries = useMemo(() => businessCountriesFor(workflowBusiness), [workflowBusiness]);
@@ -171,6 +172,7 @@ export function BusinessDetailsStep(): React.ReactElement {
           formatOk={formatOk}
           requireName={nameRequired}
           country={country}
+          geoCountry={geoCountry}
           modes={modes}
           showCompanyInfo={showCompanyInfo}
           showContactEmail={showContactEmail}

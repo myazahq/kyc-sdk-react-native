@@ -8,12 +8,13 @@
 // server is going to make anyway.
 // ---------------------------------------------------------------------------
 
-import type { PoaDocumentType, ProofOfAddressConfig } from '../types/workflow';
+import type { PoaDocumentType, PoaNameRule, ProofOfAddressConfig } from '../types/workflow';
 
 export const POA_TYPE_LABELS: Record<PoaDocumentType, string> = {
   utility_bill: 'Utility bill',
   bank_statement: 'Bank statement',
   tenancy_agreement: 'Tenancy agreement',
+  government_document: 'Government-issued document',
   other: 'Other document',
 };
 
@@ -21,8 +22,14 @@ const ALL_POA_TYPES: PoaDocumentType[] = [
   'utility_bill',
   'bank_statement',
   'tenancy_agreement',
+  'government_document',
   'other',
 ];
+
+/** A kind THIS build can label and draw. A newer kind the dashboard offers
+ *  before the SDK ships is hidden rather than rendered as a blank row. */
+const knownKinds = (kinds: readonly string[] | undefined): PoaDocumentType[] =>
+  (kinds ?? []).filter((k): k is PoaDocumentType => (ALL_POA_TYPES as string[]).includes(k));
 
 /** Default recency window the server checks the document date against. */
 export const DEFAULT_POA_MAX_AGE_DAYS = 90;
@@ -32,10 +39,52 @@ export function hasProofOfAddressStep(poa: ProofOfAddressConfig | undefined | nu
   return poa?.enabled === true;
 }
 
-/** The document kinds on offer. An absent or empty list means all of them. */
-export function poaDocumentTypes(poa: ProofOfAddressConfig | undefined): PoaDocumentType[] {
-  const configured = poa?.documentTypes;
-  return configured && configured.length > 0 ? configured : ALL_POA_TYPES;
+/**
+ * The document kinds on offer for `country` (mirror of the web SDK's
+ * `poaOfferedKinds` — keep the three in lockstep): that country's override
+ * when the workflow declares one, else the global list, else all four.
+ */
+export function poaDocumentTypes(
+  poa: ProofOfAddressConfig | undefined,
+  country?: string | null,
+): PoaDocumentType[] {
+  const override = knownKinds(country ? poa?.countryDocuments?.[country.toUpperCase()] : undefined);
+  if (override.length > 0) return override;
+  const configured = knownKinds(poa?.documentTypes);
+  return configured.length > 0 ? configured : ALL_POA_TYPES;
+}
+
+/**
+ * The name rule the server judges THIS document under — the country's per-kind
+ * exception, else the workflow default, else `required`. Mirror of the web
+ * SDK's `poaNamePolicy` and the server's `resolvePoaNamePolicy` — keep in
+ * lockstep. Read only to word the step: under `off` the header stops asking
+ * for the applicant's name.
+ */
+export function poaNamePolicy(
+  poa: ProofOfAddressConfig | undefined | null,
+  country: string | undefined | null,
+  kind: PoaDocumentType | undefined | null,
+): PoaNameRule {
+  const exception = country && kind ? poa?.countryNameMatch?.[country.toUpperCase()]?.[kind] : undefined;
+  if (exception === 'required' || exception === 'optional' || exception === 'off') return exception;
+  const def = poa?.nameMatch;
+  return def === 'optional' || def === 'off' ? def : 'required';
+}
+
+/**
+ * Whether the org's accepted-country list admits `country`. An empty list
+ * accepts everyone; an unknown country is not refused here (the server is the
+ * gate, and it is soft on full flows).
+ */
+export function poaCountryAccepted(
+  poa: ProofOfAddressConfig | undefined | null,
+  country: string | undefined | null,
+): boolean {
+  const accepted = poa?.countries;
+  if (!accepted?.length || !country) return true;
+  const code = country.toUpperCase();
+  return accepted.some((c) => c.toUpperCase() === code);
 }
 
 /**
@@ -62,12 +111,6 @@ export const POA_ACCEPTED_MIME_TYPES = [
   'image/webp',
   'application/pdf',
 ] as const;
-
-/**
- * Local size cap, matching the web SDK. The server allows more, but rejecting
- * here gives an immediate, specific message instead of a slow 413.
- */
-export const POA_MAX_BYTES = 20 * 1024 * 1024;
 
 export function isAcceptedPoaMimeType(mimeType: string | undefined): boolean {
   const base = (mimeType?.split(';')[0] ?? '').trim().toLowerCase();

@@ -562,7 +562,12 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
     setState((s) => ({
       ...s,
       phase: 'complete',
-      instruction: 'Capture complete',
+      // No line at all. The ring closing green on the same frame as the
+      // shutter IS the completion signal, and the review screen follows within
+      // the beat — narrating the upload over it said nothing the user needed
+      // and read as a delay. The instruction also drives the voice guidance,
+      // so an empty one is silent as well as blank.
+      instruction: '',
       activeChallenge: null,
       positionGuidance: null,
     }));

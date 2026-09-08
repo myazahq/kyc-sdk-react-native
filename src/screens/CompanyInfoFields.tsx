@@ -45,12 +45,16 @@ export function CompanyInfoFields({
   values,
   modes,
   country,
+  geoCountry,
   onChange,
 }: {
   values: BusinessState;
   modes: Record<CompanyInfoField, CompanyInfoMode>;
   /** Seeds the phone dial code: the company's country of registration. */
   country?: string;
+  /** The visitor's IP country: the dial-code seed of last resort, and the
+   *  row pinned to the top of the picker. */
+  geoCountry?: string | null;
   onChange: (field: CompanyInfoField, value: string) => void;
 }): React.ReactElement | null {
   const { colors } = useTheme();
@@ -88,7 +92,8 @@ export function CompanyInfoFields({
               // register's number when the lookup returned one.
               <PhoneNumberInput
                 value={value}
-                defaultCountry={country}
+                defaultCountry={country || geoCountry || undefined}
+                geoCountry={geoCountry}
                 onChange={({ e164 }) => onChange('phone', e164)}
               />
             ) : f.kind === 'date' ? (

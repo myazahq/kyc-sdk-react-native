@@ -51,9 +51,16 @@ describe('individual flow', () => {
     expect(labels(base)).not.toContain('Scan your document’s security chip (NFC)');
   });
 
-  it('lists the contact-code row when email or phone verification is on', () => {
+  it('lists the contact-code row, naming the channel it will actually use', () => {
     const config = { ...base, emailVerification: { enabled: true } } as MyazaKYCConfig;
-    expect(labels(config)).toContain('Confirm your contact details with a one-time code');
+    // Channel-specific: "contact details" promised both when only one runs.
+    expect(labels(config)).toContain('Confirm your email with a one-time code');
+    const both = {
+      ...base,
+      emailVerification: { enabled: true },
+      phoneVerification: { enabled: true },
+    } as MyazaKYCConfig;
+    expect(labels(both)).toContain('Confirm your email and phone number with a one-time code');
     expect(labels(base)).not.toContain('Confirm your contact details with a one-time code');
   });
 });

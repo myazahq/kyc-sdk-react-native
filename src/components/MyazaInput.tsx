@@ -21,6 +21,9 @@ export interface MyazaInputProps {
   value: string;
   onChangeText: (text: string) => void;
   label?: string;
+  /** Marks the label with an asterisk in the error colour: a field the flow
+   *  will not continue without. */
+  required?: boolean;
   placeholder?: string;
   error?: string | null;
   helper?: string;
@@ -51,6 +54,9 @@ export interface MyazaInputProps {
    * keyboard preferred. Defaults on, like the platform.
    */
   autoCorrect?: boolean;
+  /** Multi-line entry (directions, notes): three visible lines, text anchored
+   *  to the top on Android (which centres multiline text by default). */
+  multiline?: boolean;
   onFocus?: FocusHandler;
   onBlur?: BlurHandler;
 }
@@ -59,6 +65,7 @@ export function MyazaInput({
   value,
   onChangeText,
   label,
+  required = false,
   placeholder,
   error,
   helper,
@@ -66,6 +73,7 @@ export function MyazaInput({
   autoCapitalize = 'none',
   maxLength,
   editable = true,
+  multiline = false,
   autoFocus = false,
   prefix,
   suffix,
@@ -101,6 +109,11 @@ export function MyazaInput({
       {label ? (
         <MyazaText variant="label" style={{ marginBottom: spacing.sm }}>
           {label}
+          {required ? (
+            <MyazaText variant="label" color={colors.error}>
+              {' *'}
+            </MyazaText>
+          ) : null}
         </MyazaText>
       ) : null}
       {prefix || suffix ? (
@@ -152,10 +165,13 @@ export function MyazaInput({
           maxLength={maxLength}
           editable={editable}
           autoFocus={autoFocus}
+          multiline={multiline}
+          numberOfLines={multiline ? 3 : 1}
+          textAlignVertical={multiline ? 'top' : 'center'}
           onFocus={handleFocus}
           onBlur={handleBlur}
           style={{
-            height: height ?? sizing.inputHeight,
+            height: height ?? (multiline ? sizing.inputHeight * 2 : sizing.inputHeight),
             borderWidth,
             borderColor,
             borderRadius: radius.sm,

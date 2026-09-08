@@ -3,6 +3,10 @@ export { StyleAbsFill, FRESH_FACE_TIMEOUT_MS, INSTRUCTION_HEIGHT } from './const
 export { LightingBanner } from './LightingBanner';
 export { resolveGuidance } from './resolveGuidance';
 export { ProgressDots } from './ProgressDots';
+export { CaptureRing } from './CaptureRing';
+export { ShutterFlash } from './ShutterFlash';
 export { SelfiePreview } from './SelfiePreview';
 export { useSelfieUpload } from './useSelfieUpload';
 export { LivenessComplete, LivenessFailed } from './LivenessOutcome';
+export { LivenessCamera } from './LivenessCamera';
+export { LivenessHandover, useSelfieAutoAdvance } from './LivenessHandover';

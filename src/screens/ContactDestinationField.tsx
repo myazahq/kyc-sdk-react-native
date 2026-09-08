@@ -18,6 +18,7 @@ export function ContactDestinationField({
   onEmailChange,
   onPhoneChange,
   defaultCountry,
+  geoCountry,
   error,
   disabled,
 }: {
@@ -26,6 +27,8 @@ export function ContactDestinationField({
   onEmailChange: (value: string) => void;
   onPhoneChange: (value: { e164: string; isValid: boolean }) => void;
   defaultCountry?: string;
+  /** The visitor's IP country, pinned to the top of the dial-code picker. */
+  geoCountry?: string | null;
   error: string | null;
   disabled?: boolean;
 }): React.ReactElement {
@@ -52,6 +55,7 @@ export function ContactDestinationField({
       </MyazaText>
       <PhoneNumberInput
         defaultCountry={defaultCountry}
+        geoCountry={geoCountry}
         disabled={disabled}
         autoFocus
         onChange={onPhoneChange}

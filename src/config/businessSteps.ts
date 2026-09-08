@@ -87,8 +87,14 @@ export type BusinessSectionStep =
 export function businessSectionSteps(
   business: WorkflowBusinessConfig | undefined,
   withQuestionnaire = false,
-): (BusinessSectionStep | 'questionnaire')[] {
-  const steps: (BusinessSectionStep | 'questionnaire')[] = ['business-details'];
+  withAddressCollection = false,
+): (BusinessSectionStep | 'questionnaire' | 'address-collection')[] {
+  const steps: (BusinessSectionStep | 'questionnaire' | 'address-collection')[] = [
+    'business-details',
+  ];
+  // The premises pin follows the company details it is about — before the
+  // paperwork, and long before the application hands over to other people.
+  if (withAddressCollection) steps.push('address-collection');
   // Documents BEFORE key people: they are about the company the applicant has
   // just identified, so they follow that thread, and the register's officer
   // list - which the key-people step is a confirmation of - is what should

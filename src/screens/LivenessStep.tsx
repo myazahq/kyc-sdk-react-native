@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Dimensions, Easing, Image, View } from 'react-native';
+import { Animated, Easing, Image, useWindowDimensions, View } from 'react-native';
 import Svg, { Ellipse, Path } from 'react-native-svg';
 import {
-  Camera,
   useCameraDevice,
   useCameraPermission,
   useFrameOutput,
@@ -35,9 +34,11 @@ import { useFaceModelReady } from '../liveness/useModelReady';
 import { ReadyPrimer } from '../components/ReadyPrimer';
 import { READY_LIVENESS } from '../components/readyPrimerContent';
 import { LivenessAvatar } from './LivenessAvatar';
+import { livenessLayout } from '../lib/livenessLayout';
 import { detectFaceOnFrame } from '../liveness/visionCameraFaceDetector';
 import { buildLivenessIntegrity } from '../liveness/integritySignals';
 import { DEFAULT_LIVENESS_CONFIG } from '../liveness/types';
+import { livenessProgress } from '../lib/captureRing';
 import { useFlashSequence } from './useFlashSequence';
 import { useFlashHole } from './useFlashHole';
 import {
@@ -45,13 +46,19 @@ import {
   INSTRUCTION_HEIGHT,
   LightingBanner,
   ProgressDots,
+  CaptureRing,
+  ShutterFlash,
   SelfiePreview,
   StyleAbsFill,
   resolveGuidance,
   useSelfieUpload,
+  LivenessCamera,
   LivenessComplete,
   LivenessFailed,
+  LivenessHandover,
+  useSelfieAutoAdvance,
 } from './liveness';
+import { showsSelfieReview } from '../config/biometricOptions';
 import {
   lightingGuidanceText,
   positionGuidanceText,
@@ -85,6 +92,7 @@ export function LivenessStep(): React.ReactElement {
   const setMediaId = useKyc((s) => s.setMediaId);
   const setCaptureIntegrity = useKyc((s) => s.setCaptureIntegrity);
   const nextStep = useKyc((s) => s.nextStep);
+  const clearSelfie = useKyc((s) => s.clearSelfie);
 
   const device = useCameraDevice('front');
   const { hasPermission, requestPermission } = useCameraPermission();
@@ -175,6 +183,16 @@ export function LivenessStep(): React.ReactElement {
     videoPathRef,
     uploadSelfieAndVideo,
   } = upload;
+
+  // A stored selfie with no uploaded mediaId is an interrupted upload (failed,
+  // or the user left mid-flight): resume it once on mount. Idempotent — with a
+  // mediaId there is nothing to do.
+  useEffect(() => {
+    if (selfieUri && !selfieIdRef.current && !uploading && !uploadError) {
+      void uploadSelfieAndVideo(selfieUri, videoPathRef.current);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Liveness state machine ─────────────────────────────────────────────────
   // `handleCapture` is created after `liveness` (it calls liveness.markComplete),
@@ -274,6 +292,66 @@ export function LivenessStep(): React.ReactElement {
   // always reads the latest state-machine callbacks.
   const livenessRef = useRef(liveness);
   livenessRef.current = liveness;
+
+  // The circle and the gesture avatar are sized from the WINDOW, not the width
+  // alone, so a short phone keeps the avatar on screen (lib/livenessLayout).
+  // A hook, so it lives up here with the ring refs, above the gates below.
+  const windowSize = useWindowDimensions();
+  const layout = livenessLayout(windowSize);
+
+  // Progress for the ring, read every frame from a ref — never from render.
+  // Declared HERE, above the early returns below: a hook after a conditional
+  // return renders "more hooks than during the previous render" the moment the
+  // gate dismisses, which is exactly what the ready primer does on its way out.
+  const phaseStartedRef = useRef(Date.now());
+  const phaseKeyRef = useRef(`${liveness.phase}:${liveness.completedCount}`);
+  const phaseKey = `${liveness.phase}:${liveness.completedCount}`;
+  if (phaseKeyRef.current !== phaseKey) {
+    phaseKeyRef.current = phaseKey;
+    phaseStartedRef.current = Date.now();
+  }
+  const timeoutRef = useRef(
+    liveness.timeoutRemaining || DEFAULT_LIVENESS_CONFIG.timeoutPerChallenge,
+  );
+  if (liveness.phase === 'challenge' && liveness.timeoutRemaining > timeoutRef.current) {
+    timeoutRef.current = liveness.timeoutRemaining;
+  }
+  const getRingTarget = useCallback(() => {
+    const l = livenessRef.current;
+    return livenessProgress({
+      phase: l.phase,
+      completedCount: l.completedCount,
+      totalCount: l.totalCount,
+      elapsedInPhase: (Date.now() - phaseStartedRef.current) / 1000,
+      challengeTimeout: timeoutRef.current,
+    });
+  }, []);
+
+  // The selfie URI lands BEFORE the machine reaches `complete` (capture →
+  // compress → setSelfieUri → markComplete), and the review is gated on that
+  // URI — so the camera circle used to unmount on the very frame the ring's
+  // target reached the end: the close, the green, the shutter, none of it
+  // was ever seen. Hold the frame for the closing beat, then hand over.
+  const [closeSeen, setCloseSeen] = useState(false);
+  useEffect(() => {
+    if (liveness.phase !== 'complete') return;
+    const t = setTimeout(() => setCloseSeen(true), 700);
+    return () => clearTimeout(t);
+  }, [liveness.phase]);
+  const holdingForClose =
+    (liveness.phase === 'capturing' || liveness.phase === 'complete') && !closeSeen;
+  // The biometric scopes skip the review by default: hand over the moment the
+  // ring has closed, WITHOUT waiting for the upload (see LivenessHandover).
+  // The upload reports to the store and the submitted step waits on it, so
+  // the person sees one loading screen rather than one per step. A restored
+  // selfie (media id, no local file) is ready at once; an upload that already
+  // failed keeps the review, whose Try Again is the recovery.
+  const selfieReview = showsSelfieReview(config);
+  useSelfieAutoAdvance({
+    enabled: !selfieReview,
+    ready: (!!selfieUri || !!selfieIdRef.current) && !holdingForClose && !uploadError,
+    onAdvance: nextStep,
+  });
   // A plain JS function the worklet hands the per-frame result to. It is wrapped
   // with `runOnJS(...)` INSIDE the worklet (the canonical react-native-worklets
   // pattern) rather than pre-wrapped — pre-wrapping produced a "non-worklet
@@ -353,6 +431,38 @@ export function LivenessStep(): React.ReactElement {
     },
   });
 
+  // ── Review (selfie already exists) ──────────────────────────────────────────
+  // Checked BEFORE every capture-flow gate (ready primer, permission, model):
+  // a selfie captured on an earlier visit — or a restored session where only
+  // the uploaded mediaId survived — means there is nothing to capture, so the
+  // step opens on review exactly as the document steps reopen on theirs.
+  // A restored selfie (earlier visit) opens straight on review; the one being
+  // captured RIGHT NOW waits for the ring to close first.
+  if (selfieIdRef.current || (selfieUri && !holdingForClose)) {
+    // Review hidden: the hook above advances on this render; the view is the
+    // submitted step's own loading screen, so the hand-over is invisible. A
+    // FAILED upload still gets the review, for its retry.
+    if (!selfieReview && !uploadError) {
+      return <LivenessHandover />;
+    }
+    return (
+      <LivenessComplete
+        selfieUri={selfieUri}
+        upload={upload}
+        onRetake={() => {
+          setSelfieUri(null);
+          setCloseSeen(false);
+          setUploadError(null);
+          selfieIdRef.current = null;
+          videoPathRef.current = null;
+          clearSelfie();
+          liveness.reset();
+        }}
+        onContinue={nextStep}
+      />
+    );
+  }
+
   // ── Error states ────────────────────────────────────────────────────────────
   if (cameraUnavailable) {
     return <CameraUnavailableView />;
@@ -383,24 +493,6 @@ export function LivenessStep(): React.ReactElement {
     return <CameraPermissionView onRetry={() => setPerm('requesting')} />;
   }
 
-  // ── Review (selfie captured) ─────────────────────────────────────────────────
-  if (liveness.phase === 'complete' && selfieUri) {
-    return (
-      <LivenessComplete
-        selfieUri={selfieUri}
-        upload={upload}
-        onRetake={() => {
-          setSelfieUri(null);
-          setUploadError(null);
-          selfieIdRef.current = null;
-          videoPathRef.current = null;
-          liveness.reset();
-        }}
-        onContinue={nextStep}
-      />
-    );
-  }
-
   if (liveness.phase === 'failed') {
     return <LivenessFailed reason={liveness.failureReason} onRetry={liveness.reset} />;
   }
@@ -416,31 +508,32 @@ export function LivenessStep(): React.ReactElement {
     liveness.lightingGuidance != null;
   const isCamLoading = phase === 'loading';
 
+  // The ring is on the frame from positioning to the shutter, so for that whole
+  // stretch the border is its TRACK. Phase colour stays on the instruction text
+  // and the passed flash; a warning still turns the track red under the arc.
+  // `failed` has already returned above, so loading is the only phase without it.
+  const ringOnFrame = !isCamLoading;
   const ringColor = isCamLoading
     ? colors.gray300
     : hasWarning
       ? colors.error
-      : phase === 'challenge_passed' || phase === 'capturing'
-        ? colors.success
-        : phase === 'challenge'
-          ? colors.warning
-          : liveness.faceDetected
-            ? colors.primary
-            : colors.gray300;
+      : ringOnFrame
+        ? `${colors.primary}33`
+        : colors.gray300;
 
   const guidance = resolveGuidance(liveness);
   const instrColor = isCamLoading
     ? colors.textMuted
     : guidance.tone === 'error'
       ? colors.error
-      : phase === 'challenge_passed'
+      : phase === 'challenge_passed' || phase === 'complete'
         ? colors.success
         : phase === 'challenge'
           ? colors.warning
           : colors.textDark;
 
   // Fixed circle, sized to fit the sheet width (caps at 300).
-  const CIRCLE = Math.min(Dimensions.get('window').width - spacing.md * 4, 300);
+  const CIRCLE = layout.circle;
   const lighting = liveness.lightingGuidance;
 
   // Rendered INSIDE the sheet, so the SDK header and the "powered by" footer
@@ -456,7 +549,10 @@ export function LivenessStep(): React.ReactElement {
         {phase === 'flash' ? '' : guidance.text}
       </MyazaText>
 
-      {/* Circular camera with a thick colour-state ring */}
+      {/* Circular camera. Two boxes: the inner one CLIPS the preview to a circle,
+          the outer one lets the progress ring sit on that border rather than be
+          clipped by it. */}
+      <View style={{ width: CIRCLE, height: CIRCLE }}>
       <View
         ref={flashHoleRef}
         collapsable={false}
@@ -470,21 +566,14 @@ export function LivenessStep(): React.ReactElement {
           backgroundColor: '#111111',
         }}
       >
-        {device ? (
-          <Camera
-            style={{ flex: 1 }}
-            device={device}
-            isActive={perm === 'granted'}
-            outputs={[photoOutput, videoOutput, frameOutput]}
-            // Mirror the front-camera preview + capture so it reads like a
-            // mirror (matches the web SDK's scaleX(-1) video).
-            mirrorMode="on"
-          />
-        ) : (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator color="#FFFFFF" />
-          </View>
-        )}
+        {/* The Camera lives in its own borderless wrapper — see LivenessCamera
+            for why a bordered parent shifts the Android preview by one border. */}
+        <LivenessCamera
+          device={device}
+          active={perm === 'granted'}
+          outputs={[photoOutput, videoOutput, frameOutput]}
+          circle={CIRCLE}
+        />
 
         {/* Dashed face-guide ellipse (taller than wide) */}
         <Svg style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} width={CIRCLE} height={CIRCLE}>
@@ -519,12 +608,9 @@ export function LivenessStep(): React.ReactElement {
           </View>
         ) : null}
 
-        {/* Capturing flash — white wash + "Got it!" */}
-        {phase === 'capturing' ? (
-          <View style={[StyleAbsFill, { backgroundColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center' }]}>
-            <MyazaText variant="heading3" color="#FFFFFF">Got it!</MyazaText>
-          </View>
-        ) : null}
+        {/* The shutter: a white flash as the still is taken. It used to sit on
+            `capturing` reading "Got it!", announcing a photo not yet taken. */}
+        {phase === 'complete' ? <ShutterFlash /> : null}
 
         {/* Timeout countdown */}
         {phase === 'challenge' && liveness.timeoutRemaining > 0 ? (
@@ -534,6 +620,20 @@ export function LivenessStep(): React.ReactElement {
         ) : null}
       </View>
 
+      {/* The ring — outside the clipping box, on the frame's own edge. One line,
+          building one way for the whole test; primary while it builds, green
+          only as it closes, on the same frame as the shutter. */}
+      {ringOnFrame ? (
+        <CaptureRing
+          size={CIRCLE}
+          getTarget={getRingTarget}
+          color={colors.primary}
+          successColor={colors.success}
+          complete={phase === 'complete'}
+        />
+      ) : null}
+      </View>
+
       {/* Lighting warning banner — mirrors Flutter (amber-50/200/800 + lightbulb) */}
       {lighting ? <LightingBanner text={lightingGuidanceText(lighting)} /> : null}
 
@@ -541,7 +641,9 @@ export function LivenessStep(): React.ReactElement {
       <ProgressDots total={liveness.totalCount} completed={liveness.completedCount} active={phase === 'challenge' || phase === 'positioning' || phase === 'flash'} />
 
       {/* Gesture demo avatar */}
-      {liveness.activeChallenge ? <LivenessAvatar challenge={liveness.activeChallenge} /> : null}
+      {liveness.activeChallenge ? (
+        <LivenessAvatar challenge={liveness.activeChallenge} size={layout.avatar} iconSize={layout.avatarIcon} />
+      ) : null}
     </View>
   );
 }

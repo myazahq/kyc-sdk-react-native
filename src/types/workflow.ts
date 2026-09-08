@@ -13,7 +13,16 @@
 
 // ── Proof of Address ────────────────────────────────────────────────────────
 
-export type PoaDocumentType = 'utility_bill' | 'bank_statement' | 'tenancy_agreement' | 'other';
+export type PoaDocumentType =
+  | 'utility_bill'
+  | 'bank_statement'
+  | 'tenancy_agreement'
+  | 'government_document'
+  | 'other';
+
+/** Whether the applicant's name must appear on the document — judged by the
+ *  server; read here only to word the step. */
+export type PoaNameRule = 'required' | 'optional' | 'off';
 
 export interface ProofOfAddressConfig {
   /** Adds the Proof of Address step (after capture, before the questionnaire). */
@@ -24,6 +33,93 @@ export interface ProofOfAddressConfig {
   otherLabel?: string;
   /** Recency window the server checks the document date against (default 90). */
   maxAgeDays?: number;
+  /**
+   * The org's accepted countries (absent/empty = all). On the ADDRESS SCOPE
+   * this is exactly what the declared-country picker offers; on a full flow it
+   * gates the step client-side (the server stays soft).
+   */
+  countries?: string[];
+  /**
+   * Per-country document-kind overrides (ISO-2 → kinds). A present entry
+   * REPLACES `documentTypes` for that country.
+   */
+  countryDocuments?: Record<string, PoaDocumentType[]>;
+  /** The default name rule for every country and kind (absent = required). */
+  nameMatch?: PoaNameRule;
+  /** Per-country, per-kind exceptions to `nameMatch` (ISO-2 → kind → rule). */
+  countryNameMatch?: Record<string, Partial<Record<PoaDocumentType, PoaNameRule>>>;
+}
+
+// ── Address Intelligence (smart-address capture) ────────────────────────────
+
+export interface AddressCollectionConfig {
+  /** Adds the address-collection step (after Proof of Address; on KYB flows it
+   *  collects the business premises pin). */
+  enabled?: boolean;
+  /** Block Continue without a confirmed pin (the server 422s without one too). */
+  requirePin?: boolean;
+  /** Whether the door-photo input is offered/required (default optional). */
+  photo?: 'off' | 'optional' | 'required';
+  /** Whether the directions field is offered/required (default optional). */
+  directions?: 'off' | 'optional' | 'required';
+  /**
+   * The GROUP default for the typed details-sheet fields: `'off'` hides them
+   * all, `'optional'` (the default) offers them, `'required'` requires the
+   * house or flat NUMBER (the building name stays optional). Resolved per
+   * field by lib/address-field-modes.ts, the mirror of the server's rule; the
+   * pin step holds Continue and the review holds Confirm until every required
+   * field shows a value, because the server 422s a submission that arrives
+   * without one.
+   */
+  propertyFields?: 'off' | 'optional' | 'required';
+  /**
+   * Per-field overrides on the group default, keyed by the typed field
+   * (`propertyName`, `propertyNumber`, `street`, `unit`, `neighbourhood`,
+   * `city`, `state`, `postcode`). A `'required'` field the applicant leaves on
+   * its map prefill is submitted as displayed: they saw it and confirmed by
+   * continuing.
+   */
+  fields?: Partial<
+    Record<
+      'propertyName' | 'propertyNumber' | 'street' | 'unit' | 'neighbourhood' | 'city' | 'state' | 'postcode',
+      'off' | 'optional' | 'required'
+    >
+  >;
+  /**
+   * Street View entrance framing. Default 'optional' (on wherever coverage
+   * exists, with the photo as the fallback); 'required' is a client-UX gate
+   * that removes the Skip affordance while coverage exists — no-coverage
+   * still falls back to the photo, and the server never refuses over it.
+   *
+   * Offered on mobile through the hosted /embed/street-view page in a
+   * WebView on the app grant, the way the framed map is (needs the server's
+   * maps frame URL and the optional `react-native-webview` peer); without
+   * either the entrance step is photo-only. See addressFlowOptions.
+   */
+  streetView?: 'off' | 'optional' | 'required';
+  /**
+   * Take a one-shot device GPS fix when the pin is confirmed, so the server
+   * can judge "captured at the claimed address" (the `attested` tier). The fix
+   * is a CLAIM the server evaluates, never a verdict.
+   */
+  attestPresence?: boolean;
+  /**
+   * Phase 2: multi-day presence verification. When enabled, the SDK stores the
+   * confirmed pin ON-DEVICE so later `reportAddressPresence()` calls can
+   * evaluate the fence locally — coordinates never leave the phone after
+   * capture. `background` is reserved for the org-opt-in OS-geofence tier.
+   */
+  presence?: {
+    enabled?: boolean;
+    windowDays?: number;
+    minNights?: number;
+    minDays?: number;
+    dwellFloorMinutes?: number;
+    background?: boolean;
+    /** OkHi-style always-on monitoring: the server renews each
+     *  resolved cycle, and the on-device pin never self-expires. */
+    alwaysOn?: boolean;
+  };
 }
 
 // ── NFC chip read (eMRTD) ───────────────────────────────────────────────────

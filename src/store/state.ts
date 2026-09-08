@@ -21,10 +21,13 @@ import type { ServerConfigState } from './serverConfig';
 import type { CaptureIntegrity } from '../liveness/integritySignals';
 import type { MrzScan } from '../mrz/parse';
 import type { EmrtdReadResult } from '../emrtd';
+import type { SelfieUploadState } from '../lib/selfie-upload-wait';
 
 export interface KYCMediaIds {
   /** Proof-of-address document (image or PDF). */
   proofOfAddress?: string;
+  /** Address Intelligence door photo (image only). */
+  addressPhoto?: string;
   documentFront?: string;
   documentBack?: string;
   selfie?: string;
@@ -196,6 +199,70 @@ export interface ContactState {
   expired?: Array<'email' | 'phone'>;
 }
 
+/**
+ * The smart address the address-collection step gathers. The pin is the map
+ * centre the user settled on; the device* fields are the one-shot attest fix
+ * taken at Continue (a CLAIM the server evaluates, never a verdict).
+ */
+export interface AddressState {
+  lat: number;
+  lng: number;
+  accuracy: number | null;
+  directions: string;
+  /** Building or estate name — back on the edit-details form (user decision
+   *  2026-08-31: everything editable, OkHi-style). */
+  propertyName: string;
+  propertyNumber: string;
+  /** A street the applicant TYPED. Prefilled from the map's answer in the
+   *  edit-details sheet; stored only once the applicant edits it, so an
+   *  untouched prefill is never submitted as their claim. */
+  street?: string;
+  /** The rest of the OkHi-style edit-details form: unit + area/region
+   *  corrections. All applicant claims, stored only when typed; the server
+   *  never feeds them into corroboration. undefined = never touched (the
+   *  map's prefill shows), '' = cleared. */
+  unit?: string;
+  neighbourhood?: string;
+  city?: string;
+  state?: string;
+  postcode?: string;
+  /**
+   * The pin's human-readable line, from a search pick or a reverse geocode.
+   * Shown in the flow AND sent with the submission as the applicant-confirmed
+   * line: the server prefers it over its own weaker derivation.
+   */
+  label?: string;
+  /** Where the label was PICKED for. Presence means the label is
+   *  human-confirmed, so it survives pin nudges instead of being re-derived on
+   *  every drag. Absent = the label came from a reverse geocode. Display
+   *  bookkeeping — never on the wire. */
+  pickedAt?: { lat: number; lng: number };
+  /** The applicant explicitly chose to KEEP the picked label after moving the
+   *  pin. Reset when the pin crosses the credibility radius, so the question
+   *  is asked again exactly once out there. Never on the wire. */
+  labelKept?: boolean;
+  /** The label broken down — what the details sheet shows as structured rows.
+   *  Display only, like label's own anchor fields. */
+  parts?: {
+    street?: string | null;
+    area?: string | null;
+    city?: string | null;
+    state?: string | null;
+    postcode?: string | null;
+    /** The pin's own ISO-2, from the geocoder; never a sheet row. */
+    country?: string | null;
+  };
+  /** Street View entrance frame: coordinates only, so the server fetches the
+   *  image with its own key. Captured here through the framed
+   *  /embed/street-view page in a WebView (FramedStreetView), and also
+   *  restored from a session begun on a hosted page. */
+  streetView?: { panoId: string; heading: number; pitch: number; fov: number };
+  deviceLat?: number;
+  deviceLng?: number;
+  deviceAccuracy?: number;
+  capturedAt?: string;
+}
+
 /** Document-capture sub-phase — drives the sheet header title/description. */
 export type DocumentCapturePhase = 'front' | 'front-preview' | 'back' | 'review';
 
@@ -248,6 +315,13 @@ export interface KycState {
    * single-country flow, where `config.country` is the answer.
    */
   selectedCountry: string | null;
+  /**
+   * The declared country was GUESSED (the address scope's IP default, or a
+   * geocode adopted from the applicant's fix) rather than picked, so later
+   * evidence may correct it; an explicit pick clears it. Mirrors the web
+   * SDK's `countryAutoPicked`. See lib/country-adoption.ts.
+   */
+  countryAutoPicked: boolean;
   selectedIdType: IdType | null;
   idNumber: string | null;
   /**
@@ -266,6 +340,22 @@ export interface KycState {
    * on the forward journey.
    */
   multiIdRestored: { front?: string; back?: string } | null;
+  /**
+   * The captured selfie's local file path, kept CENTRALLY (the liveness
+   * screen's own state dies with it on unmount) so leaving the step and
+   * returning restores the review screen instead of re-running the whole
+   * gesture check. mediaIds.selfie beside it is the durable record; on a
+   * restored session the path may be gone while the mediaId survives.
+   */
+  selfiePreviewUri: string | null;
+  /**
+   * Where the selfie (and its liveness video) upload has got to. The liveness
+   * step kicks the upload off and, with the review hidden, hands over BEFORE
+   * it lands; the submitted step waits on this record rather than on the
+   * step that started it (lib/selfie-upload-wait.ts). mediaIds.selfie beside
+   * it is the durable proof; this is the in-flight state.
+   */
+  selfieUpload: SelfieUploadState;
   mediaIds: KYCMediaIds;
   submissionResult: KYCSubmissionResult | null;
   serverConfig: ServerConfigState;
@@ -337,6 +427,26 @@ export interface KycState {
   poaDocumentType: PoaDocumentType | null;
   /** Its file name, so the uploaded state can name what it has. */
   poaFileName: string | null;
+  /** The smart address, when the address-collection step gathered one. */
+  address: AddressState | null;
+  /** Local URI of the uploaded entrance photo, so the review step can show it.
+   *  A display artefact — never serialised, never restored (a resumed session
+   *  holds the mediaId but not the bytes). */
+  addressPhotoPreview: string | null;
+  /** The presence "how it works" primer was acknowledged this session. */
+  addressIntroSeen: boolean;
+  /** The entrance step is showing the Street View framer, so the sheet
+   *  header says so. Transient: never serialised, never restored. */
+  addressEntranceFraming: boolean;
+  /** Dev/sandbox only: the pinned address RESULT outcome (the web SDK's
+   *  Test-result tabs). Null = the server default. Rides
+   *  metadata.sandboxOutcome at submit; production ignores it. */
+  addressSandboxOutcome:
+    | 'address_attested'
+    | 'address_corroborated'
+    | 'address_collected'
+    | 'address_mismatch'
+    | null;
   /**
    * Contact-verification results. The proofs are single-use and ride the
    * /verify submission; the addresses are kept so returning to the step (or a
@@ -351,6 +461,9 @@ export interface KycState {
   // Actions
   loadServerConfig: () => Promise<void>;
   setCountry: (country: string) => void;
+  /** Declare a GUESSED country: the same reset as `setCountry`, flagged so
+   *  later evidence may correct it. Mirrors the web SDK's SET_COUNTRY_AUTO. */
+  setCountryAuto: (country: string) => void;
   setIdType: (idType: IdType) => void;
   setIdNumber: (idNumber: string) => void;
   /** Commit the current slot's evidence and move to the next check. The
@@ -359,6 +472,12 @@ export interface KycState {
   /** Step BACK into the previous slot, restoring what it captured. */
   uncommitMultiIdSlot: (step: KYCStep) => void;
   setMediaId: (key: MediaIdKey, mediaId: string) => void;
+  /** Record the captured selfie's local path (null on retake). */
+  setSelfiePreview: (uri: string | null) => void;
+  /** Retake: drop the selfie preview + its uploaded media ids in one set. */
+  clearSelfie: () => void;
+  /** The upload hook's progress report (see `selfieUpload`). */
+  setSelfieUpload: (upload: SelfieUploadState) => void;
   setDocumentMediaId: (mediaId: string, side: 'front' | 'back') => void;
   setQuestionnaireAnswer: (key: string, value: QuestionnaireAnswerValue | undefined) => void;
   setContactVerified: (channel: 'email' | 'phone', destination: string, token: string) => void;
@@ -387,6 +506,21 @@ export interface KycState {
   setChipData: (data: EmrtdReadResult) => void;
   setProofOfAddress: (mediaId: string, docType: PoaDocumentType, fileName: string) => void;
   clearProofOfAddress: () => void;
+  /** Set / update the smart address (null clears it). */
+  setAddress: (address: AddressState | null) => void;
+  setAddressSandboxOutcome: (outcome: KycState['addressSandboxOutcome']) => void;
+  /** Attach / remove the door photo (null removes it). */
+  setAddressPhoto: (mediaId: string | null) => void;
+  /** Remember the local URI of the picked entrance photo (null on remove). */
+  setAddressPhotoPreview: (uri: string | null) => void;
+  /** The applicant acknowledged the presence primer. */
+  markAddressIntroSeen: () => void;
+  /** The entrance step is (or stops) showing the Street View framer. */
+  setAddressEntranceFraming: (framing: boolean) => void;
+  /** Drop the pin, its uploaded photo and that photo's preview together — a
+   *  half-cleared address would show an entrance for a building nobody
+   *  pinned. */
+  clearAddress: () => void;
   setDocumentCapturePhase: (phase: DocumentCapturePhase) => void;
   setContactChallenge: (challenge: ContactChallenge | null) => void;
   setImmersiveCapture: (immersive: boolean) => void;

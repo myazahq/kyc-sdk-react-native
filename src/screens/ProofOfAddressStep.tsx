@@ -1,18 +1,21 @@
-import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View } from 'react-native';
 
-import { radius, spacing } from '../config/theme';
-import { useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
+import { spacing } from '../config/theme';
+import { useEffectiveCountry, useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
 import { MyazaText } from '../components/Typography';
 import { MyazaButton } from '../components/MyazaButton';
-import { Icon } from '../components/Icon';
 import { MediaSourceSheet } from '../components/MediaSourceSheet';
-import { MyazaSelect } from '../components/MyazaSelect';
-import { DashedBorder } from '../components/DashedBorder';
+import { PoaDocumentTypeList } from './PoaDocumentTypeList';
+import { configScope } from '../lib/scope';
 import { withRetry } from '../services/retry';
 import { compressDocumentImage } from '../services/mediaCompress';
+import { uploadFailureMessage } from '../services/uploadErrors';
 import { poaDocumentTypes, poaMaxAgeDays, poaTypeLabel } from '../config/proofOfAddress';
 import { usePoaAttach, type PoaPick } from './usePoaAttach';
+import { AddressCountryControl, poaOfferedCountries } from './AddressCountryControl';
+import { poaCountryDeclared } from '../lib/poa-country-gate';
+import { PoaDropzone, PoaUploadedRow } from './ProofOfAddressParts';
 import type { PoaDocumentType } from '../types/workflow';
 
 // ---------------------------------------------------------------------------
@@ -28,10 +31,17 @@ import type { PoaDocumentType } from '../types/workflow';
 // beyond making sure a file was actually attached.
 // ---------------------------------------------------------------------------
 
-export function proofOfAddressMeta(maxAgeDays: number): { title: string; description: string } {
+export function proofOfAddressMeta(
+  maxAgeDays: number,
+  /** Whether the workflow's name rule wants the applicant's name on THIS
+   *  document. False for e.g. a Nigerian utility bill that names the meter,
+   *  not the tenant — asking for "your name" there sends people hunting for a
+   *  document they do not have. */
+  nameNeeded = true,
+): { title: string; description: string } {
   return {
     title: 'Proof of address',
-    description: `Upload a document that shows your name and home address, issued within the last ${maxAgeDays} days.`,
+    description: `Upload a document that shows your ${nameNeeded ? 'name and home address' : 'home address'}, issued within the last ${maxAgeDays} days.`,
   };
 }
 
@@ -43,8 +53,23 @@ export function ProofOfAddressStep(): React.ReactElement {
   const fileName = useKyc((s) => s.poaFileName);
   const storedType = useKyc((s) => s.poaDocumentType);
 
-  const types = poaDocumentTypes(config.proofOfAddress);
+  // The kinds on offer follow the country — on the address scope the picker
+  // below changes it, and an org may accept different documents per market.
+  const country = useEffectiveCountry();
+  const types = poaDocumentTypes(config.proofOfAddress, country);
+  // The flag on the attachment area: on the address scope only a country the
+  // applicant picked (the scope has no seeded country to show), else the
+  // flow's effective country.
+  const selectedCountry = useKyc((s) => s.selectedCountry);
+  const flagCountry = configScope(config) === 'address' ? (selectedCountry ?? null) : (country ?? null);
   const [selectedType, setSelectedType] = useState<PoaDocumentType>(storedType ?? types[0]!);
+  const typesKey = types.join(',');
+  useEffect(() => {
+    // A country change can withdraw the picked kind; fall back to the first
+    // offered rather than submitting a label that country does not accept.
+    if (!types.includes(selectedType)) setSelectedType(types[0]!);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [typesKey]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // The picked file, kept for the thumbnail — the only way a user catches
@@ -67,9 +92,9 @@ export function ProofOfAddressStep(): React.ReactElement {
           store.getState().api.upload({ uri: finalUri, type: mimeType, name }, 'proof_of_address'),
         );
         store.getState().setProofOfAddress(id, selectedType, name);
-      } catch {
+      } catch (e) {
         setPreview(null);
-        setError('We could not upload that document. Please try again.');
+        setError(uploadFailureMessage(e));
       } finally {
         setBusy(false);
       }
@@ -89,6 +114,14 @@ export function ProofOfAddressStep(): React.ReactElement {
   }, [store]);
 
   const uploaded = Boolean(mediaId) && !busy;
+  // The address scope's country is the applicant's declaration and drives the
+  // document's market; Continue holds until it is made (the control above
+  // asks for it). Never bites elsewhere. See lib/poa-country-gate.ts.
+  const countryDeclared = poaCountryDeclared({
+    scope: configScope(config),
+    selectedCountry,
+    offered: poaOfferedCountries(config.proofOfAddress?.countries),
+  });
 
   return (
     <View>
@@ -117,111 +150,37 @@ export function ProofOfAddressStep(): React.ReactElement {
           },
         ]}
       />
+      <AddressCountryControl />
       {types.length > 1 ? (
         <>
           <MyazaText variant="bodySmall" style={{ fontWeight: '600', marginBottom: spacing.xs }}>
             Document type
           </MyazaText>
-          <MyazaSelect<PoaDocumentType>
+          <PoaDocumentTypeList
             value={selectedType}
-            sheetTitle="Document type"
             // Locked once a file is attached: switching the kind afterwards
             // would mislabel the document already uploaded.
-            enabled={!uploaded && !busy}
+            disabled={uploaded || busy}
             options={types.map((type) => ({
               value: type,
               label: poaTypeLabel(type, config.proofOfAddress),
             }))}
             onChange={setSelectedType}
           />
-          <View style={{ height: spacing.lg }} />
+          <View style={{ height: spacing.sm }} />
         </>
       ) : null}
 
       {uploaded ? (
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            padding: spacing.md,
-            borderRadius: radius.md,
-            borderWidth: 1,
-            borderColor: colors.border,
-            backgroundColor: colors.backgroundSecondary,
-          }}
-        >
-          {preview && !preview.isPdf ? (
-            <Image
-              source={{ uri: preview.uri }}
-              style={{ width: 48, height: 48, borderRadius: radius.sm }}
-              resizeMode="cover"
-            />
-          ) : (
-            <View
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: radius.sm,
-                borderWidth: 1,
-                borderColor: colors.border,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Icon name="file-text" size={22} color={colors.primary} />
-            </View>
-          )}
-          <View style={{ width: spacing.md, flexShrink: 0 }} />
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <MyazaText variant="bodySmall" style={{ fontWeight: '600' }} numberOfLines={1}>
-              {fileName ?? 'Document uploaded'}
-            </MyazaText>
-            <MyazaText variant="bodySmall" color={colors.textSecondary} numberOfLines={1}>
-              {typeLabel}
-            </MyazaText>
-          </View>
-          <Pressable
-            onPress={remove}
-            accessibilityRole="button"
-            accessibilityLabel="Remove document"
-            hitSlop={8}
-          >
-            <Icon name="x" size={18} color={colors.textSecondary} />
-          </Pressable>
-        </View>
+        <PoaUploadedRow
+          preview={preview}
+          fileName={fileName}
+          typeLabel={typeLabel}
+          country={flagCountry}
+          onRemove={remove}
+        />
       ) : (
-        <Pressable
-          onPress={() => {
-            if (!busy) void pick();
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={`Upload your ${typeLabel.toLowerCase()}`}
-          style={{
-            alignItems: 'center',
-            justifyContent: 'center',
-            paddingVertical: spacing.xl,
-            paddingHorizontal: spacing.lg,
-            borderRadius: radius.md,
-          }}
-        >
-          <DashedBorder
-            color={colors.border}
-            radius={radius.md}
-            strokeWidth={1.5}
-          />
-          {busy ? (
-            <ActivityIndicator size="small" color={colors.primary} />
-          ) : (
-            <Icon name="upload" size={30} color={colors.textSecondary} />
-          )}
-          <View style={{ height: spacing.sm }} />
-          <MyazaText variant="bodySmall" style={{ fontWeight: '600' }}>
-            {busy ? 'Uploading…' : `Upload your ${typeLabel.toLowerCase()}`}
-          </MyazaText>
-          <MyazaText variant="bodySmall" color={colors.textSecondary}>
-            Photo or PDF, up to 20MB
-          </MyazaText>
-        </Pressable>
+        <PoaDropzone busy={busy} typeLabel={typeLabel} country={flagCountry} onPress={() => void pick()} />
       )}
 
       {error ? (
@@ -233,7 +192,7 @@ export function ProofOfAddressStep(): React.ReactElement {
       <View style={{ height: spacing.lg }} />
       <MyazaButton
         label="Continue"
-        disabled={!mediaId || busy}
+        disabled={!mediaId || busy || !countryDeclared}
         onPress={() => store.getState().nextStep()}
       />
     </View>

@@ -56,8 +56,11 @@ npx expo install @myazahq/kyc-sdk-react-native \
   react-native-safe-area-context react-native-svg
 ```
 
-Add the config plugins to `app.json`. The SDK's plugin adds the iOS camera usage
-string + Android `CAMERA`/`INTERNET` permissions; the VisionCamera plugin wires up
+Add the config plugins to `app.json`. The SDK's plugin adds the iOS camera and
+location usage strings + Android `CAMERA`/`INTERNET` and foreground location
+permissions (location backs the address-collection step's "Use my current
+location" and presence attestation; `["@myazahq/kyc-sdk-react-native",
+{ "location": false }]` opts out); the VisionCamera plugin wires up
 the camera + frame processors. Make sure the **New Architecture** is on (it is by
 default on Expo SDK 56):
 
@@ -82,8 +85,9 @@ npx expo run:ios                                  # iOS
 JAVA_HOME=/path/to/jdk-17 npx expo run:android    # Android — needs JDK 17
 ```
 
-> The SDK plugin accepts an optional custom camera prompt:
-> `["@myazahq/kyc-sdk-react-native", { "cameraPermission": "Your message…" }]`.
+> The SDK plugin accepts optional custom prompts:
+> `["@myazahq/kyc-sdk-react-native", { "cameraPermission": "Your message…",
+> "locationPermission": "Your message…" }]`.
 
 ### Bare React Native app (no Expo prebuild)
 
@@ -100,7 +104,8 @@ npm install @myazahq/kyc-sdk-react-native \
   react-native-worklets react-native-nitro-modules react-native-nitro-image \
   react-native-safe-area-context react-native-svg \
   expo expo-image-manipulator expo-image-picker expo-speech expo-font \
-  expo-glass-effect expo-application expo-crypto expo-device expo-localization
+  expo-glass-effect expo-application expo-crypto expo-device expo-localization \
+  expo-location
 
 # 3. iOS pods:
 cd ios && pod install && cd ..
@@ -113,11 +118,15 @@ prebuild):
   ```xml
   <key>NSCameraUsageDescription</key>
   <string>We use the camera to photograph your ID and capture a live selfie.</string>
+  <key>NSLocationWhenInUseUsageDescription</key>
+  <string>We use your location to confirm you are at the address you pin during verification.</string>
   ```
 - **Android** — add to `android/app/src/main/AndroidManifest.xml`:
   ```xml
   <uses-permission android:name="android.permission.CAMERA" />
   <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
   ```
 - Ensure the **New Architecture** is enabled (`newArchEnabled=true` in
   `android/gradle.properties`; `RCT_NEW_ARCH_ENABLED=1` for the iOS Podfile install),
@@ -560,3 +569,140 @@ Full documentation, configuration options, and webhook setup: **[trust.myaza.co/
 ## License
 
 MIT © Flitstack Technologies Inc.
+
+## Presence reporting (Address Intelligence)
+
+When a workflow enables presence verification (`addressCollection.presence.enabled`),
+the SDK stores the confirmed pin on-device at capture. Call the reporter from your
+app on a natural moment (app open works well):
+
+```tsx
+import { reportAddressPresence, clearPresencePin } from '@myazahq/kyc-sdk-react-native';
+
+const result = await reportAddressPresence({
+  apiKey: 'pk_live_…',
+  externalUserId: 'user_42', // the same userId the KYC flow ran with
+});
+// result.reason: 'reported' | 'no_pin' | 'services_off' | 'no_fix' | 'outside_fence' | 'network_error'
+```
+
+It never throws and never blocks startup. The geofence is evaluated ON-DEVICE:
+only the derived record (calendar day + a night flag) is transmitted, never a
+coordinate. A fix outside the fence sends nothing (the server scores presence,
+never absence); a mock-location fix is reported flagged. `clearPresencePin`
+drops the stored pin (sign-out, or once the watch resolves).
+
+### Background monitoring (OS geofencing)
+
+The stronger tier: the OS wakes the SDK on fence crossings around the stored
+pin, app closed or not, so dwell and nights accrue with nobody in the loop.
+Entries stamp a timestamp; exits fold the dwell span into per-day aggregates
+and flush them. As with the foreground tier, only the derived day records
+ever leave the phone.
+
+Three opt-ins, each deliberate:
+
+1. Install the optional peer: `npx expo install expo-task-manager` (without
+   it the background tier simply does not exist — never a crash).
+2. Declare background location via the config plugin — this is what changes
+   your app's store review posture, so it is never a default:
+
+   ```json
+   ["@myazahq/kyc-sdk-react-native", { "location": "always" }]
+   ```
+
+3. Register the task at your app's ROOT module (before the component tree —
+   a task defined inside a component never fires headlessly), then enable:
+
+   ```tsx
+   // index.js
+   import { registerBackgroundPresence } from '@myazahq/kyc-sdk-react-native';
+   registerBackgroundPresence();
+
+   // later, after the KYC flow stored a pin:
+   const result = await enableBackgroundPresence({
+     apiKey: 'pk_live_…',
+     externalUserId: 'user_42',
+   });
+   // result.reason: 'enabled' | 'module_missing' | 'no_pin'
+   //              | 'foreground_denied' | 'background_denied' | 'start_failed'
+   ```
+
+`disableBackgroundPresence()` disarms the fence. A permission refusal leaves
+the foreground tier working exactly as before — the tiers degrade, never
+break.
+
+### The Android foreground service (reliability on OEM-managed phones)
+
+A geofence alone is not reliable on Android once a manufacturer's battery
+manager decides your app is idle: transitions are dropped, nothing says so,
+and the watch quietly lapses to inconclusive. The phones on that list (Tecno,
+Infinix, itel, Xiaomi, Oppo, Vivo) are the ones the market carries. A
+foreground service, with its persistent notification, is the one thing those
+managers leave alone — and OkHi's own integration guidance for the same
+markets is exactly this.
+
+Opt-in, Android only (iOS region monitoring is reliable on its own), on the
+same `location: "always"` plugin setting, which also declares the
+`FOREGROUND_SERVICE` and `FOREGROUND_SERVICE_LOCATION` permissions it needs.
+`registerBackgroundPresence()` at the root already defines its task; then:
+
+```tsx
+const result = await enableForegroundService({
+  apiKey: 'pk_live_…',
+  externalUserId: 'user_42',
+  notification: {
+    title: 'Address verification in progress', // shown in the status bar
+    body: 'Open the app to see your progress',
+    color: '#5645F5',
+  },
+});
+// result.reason: 'enabled' | 'unsupported_platform' | 'module_missing' | 'no_pin'
+//              | 'foreground_denied' | 'background_denied' | 'start_failed'
+```
+
+While it runs, a low-power fix every ten minutes (or hundred metres) is
+turned into the same enter/exit spans the geofence folds, on the same stored
+state, so the two never double-count a stay; the queue flushes while the
+process is alive; and a fence the OS dropped (a location toggle clears every
+registered fence) is re-armed. `disableForegroundService()` stops it and its
+notification. Word the notification honestly — it is on screen for days.
+
+### Which tier is running?
+
+Permissions get revoked in Settings and nothing tells the app. Ask:
+
+```tsx
+import { presenceStatus, openLocationSettings } from '@myazahq/kyc-sdk-react-native';
+
+const status = await presenceStatus('user_42');
+// status.tier: 'background' | 'foreground' | 'none'
+// plus pinStored, alwaysOn, locationServicesEnabled, both permission states,
+// geofenceArmed, foregroundServiceRunning
+if (!status.locationServicesEnabled) {
+  // The phone's location toggle is off: permission granted or not, no fix
+  // can be taken. Android deep-links to the toggle itself.
+  await openLocationSettings('services');
+} else if (status.tier === 'none' && status.pinStored) {
+  // The road back runs through Settings — no OS allows re-prompting in-app.
+  await openLocationSettings();
+}
+```
+
+### Showing the person where the check stands
+
+Somebody kept from a feature until their address is verified should be able
+to see the progress in your app, without a webhook relayed through your
+backend. The status endpoint is publishable-safe and enumeration-safe (an
+unknown user and a user with no watch answer the same `not_started` shape):
+
+```ts
+const res = await fetch(`${serverUrl}/api/kyc/address/presence/${externalUserId}`, {
+  headers: { Authorization: `Bearer pk_live_…` },
+});
+const { status, progress, tier } = await res.json();
+// status: 'not_started' | 'in_progress' | 'verified' | 'failed' | 'inconclusive' | 'expired' | 'revoked'
+// progress.score: 0..1 on WEIGHTED evidence (five foreground nights and three
+//                 geofence nights both read 1); nightsObserved/daysObserved beside it
+// tier: 'background' | 'foreground' | null — what is actually feeding it
+```

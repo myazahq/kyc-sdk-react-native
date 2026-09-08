@@ -116,3 +116,27 @@ export function groupCountriesByRegion(codes: string[]): RegionGroup[] {
     countries: buckets.get(region)!.sort((a, b) => a.name.localeCompare(b.name)),
   }));
 }
+
+/**
+ * Lift the visitor's IP country out of its alphabetical or regional place to
+ * the top of a picker, so the one country most likely to be theirs is the
+ * first thing they see rather than something to scroll for.
+ *
+ * Takes the ALREADY-FILTERED list: the pin stays subject to the search, so
+ * typing narrows to what was asked for rather than keeping a row that does
+ * not match it. Generic over the row shape because the country-select step
+ * pins bare ISO codes and the dial-code sheet pins option objects; one rule,
+ * two callers. Mirrors the web SDK's CountryRegionPicker + PhoneNumberInput
+ * and Flutter's `pinGeoRow`.
+ */
+export function pinGeoRow<T>(
+  visible: readonly T[],
+  geoCountry: string | null | undefined,
+  codeOf: (item: T) => string,
+): { pinned: T | null; rest: T[] } {
+  const geo = geoCountry?.trim().toUpperCase();
+  if (!geo) return { pinned: null, rest: [...visible] };
+  const hit = visible.find((item) => codeOf(item).toUpperCase() === geo);
+  if (hit === undefined) return { pinned: null, rest: [...visible] };
+  return { pinned: hit, rest: visible.filter((item) => item !== hit) };
+}

@@ -36,6 +36,7 @@ import { COUNTRY_NAMES } from '../config/countryNames.g';
 export function PhoneNumberInput({
   value,
   defaultCountry,
+  geoCountry,
   disabled,
   autoFocus = false,
   onChange,
@@ -49,6 +50,12 @@ export function PhoneNumberInput({
   value?: string;
   /** Seeds the picker (ISO-2). Falls back to NG. */
   defaultCountry?: string;
+  /**
+   * The visitor's IP country. Pinned to the top of the picker and tagged, so
+   * a guess we made on their behalf is visible AS a guess and one tap away
+   * rather than buried at its alphabetical position. Mirrors the web SDK.
+   */
+  geoCountry?: string | null;
   disabled?: boolean;
   /** Focus + keyboard on mount. Opt-in: right for a single-field OTP screen,
    *  wrong for a row in a company-profile form. */
@@ -174,6 +181,7 @@ export function PhoneNumberInput({
         visible={open}
         options={options}
         selected={country}
+        pinned={geoCountry}
         onPick={pickCountry}
         onClose={() => setOpen(false)}
       />

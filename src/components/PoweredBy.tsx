@@ -36,12 +36,12 @@ export function PoweredBy({ bottomInset = 0 }: { bottomInset?: number }): React.
   return (
     <View
       style={{
-        paddingTop: spacing.md,
+        paddingTop: 10,
         // Symmetric with the top. It was `lg`, which read as a heavy band on the
         // one screen where vertical space is contested — the searchable country
         // list, where the footer costs a visible row. The home-indicator inset
         // rides on top, so notched devices still clear it comfortably.
-        paddingBottom: spacing.md + bottomInset,
+        paddingBottom: 12 + bottomInset,
         alignItems: 'center',
       }}
     >
@@ -70,9 +70,9 @@ export function PoweredBy({ bottomInset = 0 }: { bottomInset?: number }): React.
           hitSlop={8}
           style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
         >
-          <MyazaWordmark height={28} wordmark={markColor} />
+          <MyazaWordmark height={24} wordmark={markColor} />
 
-          <View style={{ width: 1, height: 24, backgroundColor: markColor, opacity: 0.35 }} />
+          <View style={{ width: 1, height: 20, backgroundColor: markColor, opacity: 0.35 }} />
 
           {/* ~half the wordmark's height — the ratio the dashboard lockup uses. */}
           {/* Pinned to the brand face rather than inheriting: this word is part
@@ -83,7 +83,7 @@ export function PoweredBy({ bottomInset = 0 }: { bottomInset?: number }): React.
             brandMark
             variant="body"
             color={markColor}
-            style={{ flexShrink: 1, fontSize: 14, fontWeight: '600', letterSpacing: 2 }}
+            style={{ flexShrink: 1, fontSize: 12, fontWeight: '600', letterSpacing: 1.68 }}
           >
             TRUST
           </MyazaText>

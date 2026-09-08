@@ -7,7 +7,7 @@ import type { ResubmitConfig } from '../lib/resubmit';
 // `types/config` remains the single import for consumers.
 // ---------------------------------------------------------------------------
 
-import type { KYCSubmission, KYCError } from './verification';
+import type { KYCSubmission, KYCError, KYCResult } from './verification';
 import type { IdType, IdTypeForCountry, SupportedCountry } from './id-types';
 import type {
   KYCAppearance,
@@ -25,6 +25,7 @@ import type {
   QuestionnaireConfig,
   WorkflowCountry,
   MultiIdConfig,
+  AddressCollectionConfig,
 } from './workflow';
 
 export type * from './workflow';
@@ -56,6 +57,13 @@ export type KYCStep =
   | 'applicant-role'
   | 'liveness'
   | 'proof-of-address'
+  // The address flow, in order: find it (search) → confirm it (the PIN step,
+  // which keeps the original 'address-collection' wire name so older session
+  // progress restores cleanly) → show it (entrance photo) → commit it.
+  | 'address-search'
+  | 'address-collection'
+  | 'address-entrance'
+  | 'address-review'
   | 'questionnaire'
   | 'submitted';
 
@@ -164,8 +172,32 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> {
    */
   keyPeopleLinkRecovery?: boolean;
 
+  /**
+   * Show the consent (welcome) screen as the flow's first step. Default true.
+   * `false` is for a host app that has already collected the person's
+   * consent: the flow then opens straight on its first real step (the contact
+   * codes, the country picker, the ID list, the business form, or a scoped
+   * flow's own check). Normally set by a workflow. It does not change what
+   * the organisation attests to the verification provider.
+   */
+  consentStep?: boolean;
+
   /** Colours in the flash sequence (2–5, default 4). Flash modes only. */
   flashSequenceLength?: number;
+
+  /**
+   * The biometric scopes' flow options (workflow-driven, or passed here on a
+   * prop-configured mount): `selfieReview` shows the captured selfie with
+   * Retake and Continue before submitting (off by default on both biometric
+   * scopes); `resultDelivery` says where a re-authentication's verdict lands,
+   * 'both' (the default: the SDK holds the person on one loading screen until
+   * the check settles, and the org's webhook receives it too), 'app' (the
+   * same wait, but the server sends no webhook for the check) or 'webhook'
+   * (fire-and-forget); `doneButton` (default true) hides the final screen's Done
+   * when the host app closes the flow itself from `onResult`. A flow key wins
+   * per field. See config/biometricOptions.
+   */
+  biometric?: import('../config/biometricOptions').BiometricFlowConfig;
 
   // ── Workflow-driven blocks ────────────────────────────────────────────────
   // Authored in the dashboard's workflow builder, not usually in consumer code.
@@ -173,6 +205,9 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> {
 
   /** What this flow verifies. Absent = 'individual' (classic KYC). */
   subjectType?: SubjectType;
+  /** Workflow scope — what this flow verifies (absent = full verification).
+   *  Only ever set by a resolved workflow config / hosted session snapshot. */
+  scope?: import('../lib/scope').WorkflowScope;
 
   /** KYB registry configuration. Required when `subjectType` is 'business'. */
   business?: WorkflowBusinessConfig;
@@ -195,6 +230,10 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> {
 
   /** Proof-of-address document check, after capture. */
   proofOfAddress?: ProofOfAddressConfig;
+
+  /** Address Intelligence: a map-pin smart address (+ optional door photo and
+   *  directions), corroborated server-side. KYC AND KYB (premises pin). */
+  addressCollection?: AddressCollectionConfig;
 
   /** Compliance declarations asked just before submission. */
   questionnaire?: QuestionnaireConfig;
@@ -279,6 +318,14 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> {
    * status: 'processing' — results arrive async via webhook.
    */
   onSubmit?: (submission: KYCSubmission) => void;
+  /**
+   * Fires once with the verdict when the flow WAITS for it in-app (a
+   * biometric re-authentication on `resultDelivery: 'both'`, the default, or 'app').
+   * Never fires on a fire-and-forget flow, and never on a wait that timed out:
+   * the webhook stays the record either way. Carries state and reason only,
+   * never result data.
+   */
+  onResult?: (result: KYCResult) => void;
   onClose?: () => void;
   /**
    * Fires for technical errors only. Receives a {@link KYCError} carrying a

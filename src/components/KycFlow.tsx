@@ -3,6 +3,7 @@ import { View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { buildStepOrder } from '../config/stepOrder';
+import { isAddressStep } from '../lib/address-flow';
 import { stepOrderOptions } from '../store/kycStore';
 import { KYCError } from '../types/verification';
 import { safeReportError } from '../services/errors';
@@ -50,6 +51,7 @@ export function KycFlow({
   const contactChallenge = useKyc((s) => s.contactChallenge);
   const serverConfig = useKyc((s) => s.serverConfig);
   const immersiveCapture = useKyc((s) => s.immersiveCapture);
+  const addressIntroSeen = useKyc((s) => s.addressIntroSeen);
 
   const startedRef = useRef(false);
   const reportedRef = useRef(false);
@@ -76,7 +78,26 @@ export function KycFlow({
     }
   }, [isFatal, serverConfig.statusCode, serverConfig.message, config.onError]);
 
-  // ── Per-step header meta ──────────────────────────────────────────────────
+  // ── The flow's ordered steps ──────────────────────────────────────────────
+  // ONE list, read by the step indicator AND by the address primer below, so
+  // neither can describe a flow the user is not walking. This used to be a
+  // hand-written copy of the sequence, which meant a step added to the flow
+  // silently didn't count towards progress.
+  //
+  // The derivation is memoised rather than done inside the selector: zustand
+  // compares snapshots by identity, so a selector that mints a fresh object on
+  // every call re-renders forever.
+  const state = useKyc((s) => s);
+  const order = useMemo(() => buildStepOrder(stepOrderOptions(state)), [state]);
+
+  // The presence primer replaces the FIRST address step's body and carries its
+  // own title, so the header blanks while it is up. Matched against the order
+  // rather than a second copy of "which step comes first".
+  const addressIntroPending =
+    config.addressCollection?.presence?.enabled === true &&
+    !addressIntroSeen &&
+    order.find(isAddressStep) === currentStep;
+
   const meta = useMemo(
     () =>
       stepHeaderMeta(currentStep, {
@@ -85,40 +106,48 @@ export function KycFlow({
         selectedIdType,
         documentCapturePhase,
         contactChallenge,
+        addressIntroPending,
+        addressEntranceFraming: state.addressEntranceFraming,
+        poaDocumentType: state.poaDocumentType,
       }),
-    [currentStep, config, country, selectedIdType, documentCapturePhase, contactChallenge],
+    [
+      currentStep,
+      config,
+      country,
+      selectedIdType,
+      documentCapturePhase,
+      contactChallenge,
+      addressIntroPending,
+      state.addressEntranceFraming,
+      state.poaDocumentType,
+    ],
   );
 
   // ── Step indicator info ───────────────────────────────────────────────────
-  // Read from the SAME ordered list navigation uses, so the dots can never
-  // describe a different flow than the one the user is walking. This used to be
-  // its own hand-written copy of the sequence, which meant a step added to the
-  // flow silently didn't count towards progress.
-  //
   // 'submitted' is excluded on purpose — it is the terminal screen, not a step
   // to make progress towards, and the indicator is hidden there.
-  //
-  // The derivation is memoised rather than done inside the selector: zustand
-  // compares snapshots by identity, so a selector that mints a fresh object on
-  // every call re-renders forever.
-  const state = useKyc((s) => s);
   const stepInfo = useMemo(() => {
-    if (state.currentStep === 'submitted') return null;
-    const steps = buildStepOrder(stepOrderOptions(state)).filter((s) => s !== 'submitted');
-    const idx = steps.indexOf(state.currentStep);
+    if (currentStep === 'submitted') return null;
+    const steps = order.filter((s) => s !== 'submitted');
+    const idx = steps.indexOf(currentStep);
     if (idx < 0) return null;
     return { progress: (idx + 1) / steps.length, stepCount: steps.length };
-  }, [state]);
+  }, [currentStep, order]);
 
   // The flag beside the title names the country whose IDs are on screen.
   const headerCountry =
     currentStep === 'id-type' || currentStep === 'id-input' ? country : null;
-  const onBack = currentStep === 'consent' || currentStep === 'submitted' ? null : () => store.getState().previousStep();
+  // Back is hidden on the flow's OPENING step (consent, or the first real step
+  // when the workflow switched the consent screen off), not on consent by
+  // name. A multi-ID run returns to the ID picker for its next check, where
+  // Back means "redo the previous one", so a committed slot keeps it.
+  const onOpeningStep = currentStep === order[0] && state.multiIdSlots.length === 0;
+  const onBack = onOpeningStep || currentStep === 'submitted' ? null : () => store.getState().previousStep();
 
   // Android hardware back arrives via the <Modal>'s onRequestClose. Expose a
   // back-aware handler through `backRef` so that handler navigates a step back
   // when the flow can, instead of dismissing the whole SDK. It only reports
-  // 'close' from the first step (consent) with close allowed; with
+  // 'close' from the opening step with close allowed; with
   // `disableClose` set it reports 'blocked' so back can never force the flow
   // closed. (iOS has no hardware back; its swipe-down keeps the standard
   // dismiss behaviour, handled by the Modal.)
@@ -152,22 +181,21 @@ export function KycFlow({
         country={headerCountry}
         onBack={onBack}
         onClose={onClose}
-        // The searchable country picker pins its search box above a list that
-        // can run to ~240 rows. Only the multi-country variant needs it: a
-        // short flat list is happier in the normal scroll body.
+        // The searchable country picker (>5 countries) pins its search box
+        // above a ~240-row list; the address pin and entrance steps fill it
+        // too, since a map or panorama owns every touch and their actions
+        // ride StickyActions at the bottom of a BOUNDED body.
         fillsViewport={
-          currentStep === 'country-select' &&
-          countrySelectOptions({ config, serverConfig }).length > COUNTRY_SEARCH_THRESHOLD
+          (currentStep === 'country-select' &&
+            countrySelectOptions({ config, serverConfig }).length > COUNTRY_SEARCH_THRESHOLD) ||
+          currentStep === 'address-collection' ||
+          currentStep === 'address-entrance'
         }
-        // A live camera asks for the whole screen: the sheet's header, padding
-        // and scroll view are exactly what force a small viewfinder on a short
-        // phone, and a camera you have to scroll to is a broken camera.
-        //
-        // Passed as a PROP rather than rendered as its own tree. The earlier
-        // shape early-returned a different element tree, which changed the
-        // step's parent MID-STEP — React unmounted and remounted it, wiping the
-        // acknowledged primer and bouncing straight back to it. Scoped to the
-        // step as well as the flag so the next step cannot inherit it.
+        // A live camera asks for the whole screen (a camera you have to scroll
+        // to is a broken camera). Passed as a PROP rather than rendered as its
+        // own tree: an early-returned tree changed the step's parent MID-STEP,
+        // so React remounted it and wiped the acknowledged primer. Scoped to
+        // the step as well as the flag so the next step cannot inherit it.
         immersive={immersiveCapture && currentStep === 'document-capture'}
       >
         <StepView step={currentStep} onClose={onClose} />

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Linking, Pressable, View } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
+import Svg, { Circle } from 'react-native-svg';
 
 import { radius, spacing } from '../config/theme';
 import { PRIVACY_URL, TERMS_URL } from '../config/brand';
@@ -81,21 +81,10 @@ export function ConsentStep(): React.ReactElement {
               elevation: 6,
             }}
           >
-            {/* Top-left → bottom-right gradient badge, matching Flutter. A flat
-                fill was the last visual difference on this screen. The second
-                stop is the SAME primary at 70% opacity rather than a
-                pre-blended colour: composited over the sheet it produces
-                Flutter's `alphaBlend(primary@0.7, background)` exactly, and it
-                keeps working when the consumer overrides primaryColor or the
-                theme flips, which a hardcoded blend would not. */}
+            {/* Solid primary badge — no gradients in the flow (house rule
+                2026-08-29, applied across all three SDKs in lockstep). */}
             <Svg width={56} height={56} style={{ position: 'absolute' }}>
-              <Defs>
-                <LinearGradient id="myazaShieldHero" x1="0" y1="0" x2="1" y2="1">
-                  <Stop offset="0" stopColor={colors.primary} stopOpacity={1} />
-                  <Stop offset="1" stopColor={colors.primary} stopOpacity={0.7} />
-                </LinearGradient>
-              </Defs>
-              <Circle cx={28} cy={28} r={28} fill="url(#myazaShieldHero)" />
+              <Circle cx={28} cy={28} r={28} fill={colors.primary} />
             </Svg>
             <Icon name="shield" size={28} color={colors.onPrimary} />
           </View>
@@ -153,7 +142,7 @@ export function ConsentStep(): React.ReactElement {
         <MyazaText
           variant="bodySmall"
           color={colors.textDark}
-          style={{ fontWeight: '600', textDecorationLine: 'underline' }}
+          style={{ fontWeight: '500', textDecorationLine: 'underline' }}
           onPress={() => void Linking.openURL(TERMS_URL).catch(() => undefined)}
         >
           End User Terms
@@ -162,7 +151,7 @@ export function ConsentStep(): React.ReactElement {
         <MyazaText
           variant="bodySmall"
           color={colors.textDark}
-          style={{ fontWeight: '600', textDecorationLine: 'underline' }}
+          style={{ fontWeight: '500', textDecorationLine: 'underline' }}
           onPress={() => void Linking.openURL(PRIVACY_URL).catch(() => undefined)}
         >
           Privacy Policy

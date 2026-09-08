@@ -77,6 +77,21 @@ describe('products', () => {
     expect(def.key).toBe('brand-new-product');
     expect(def.inputLabel).toBeTruthy();
   });
+
+  it('never OFFERS a product it has never heard of', () => {
+    // An unknown key cannot be narrowed by country, so offering it would show
+    // country-specific products everywhere and dead-end the pick at verify
+    // (product_unsupported). It is hidden until the SDK learns it.
+    const cfg = business({ products: ['business', 'brand-new-product'] });
+    expect(businessProductsForCountry(cfg, 'NG')).toEqual(['business']);
+  });
+
+  it('narrows the country-specific products to their own registries', () => {
+    const cfg = business({ products: ['business', 'business-address', 'business-filings'] });
+    expect(businessProductsForCountry(cfg, 'ZA')).toEqual(['business', 'business-address']);
+    expect(businessProductsForCountry(cfg, 'CI')).toEqual(['business', 'business-filings']);
+    expect(businessProductsForCountry(cfg, 'NG')).toEqual(['business']);
+  });
 });
 
 describe('registry countries', () => {

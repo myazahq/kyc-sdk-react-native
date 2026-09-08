@@ -13,8 +13,9 @@ import { useTheme } from './runtime';
 import { MyazaText } from './Typography';
 import { MyazaInput } from './MyazaInput';
 import { Icon } from './Icon';
-import { CountryFlag } from './CountryFlag';
 import { FloatingSheet } from './glass/FloatingSheet';
+import { DialCodeDivider, DialCodeRegionHeader, DialCodeRow } from './DialCodeRow';
+import { buildDialCodeItems, dialCodeItemKey, filterDialCodeOptions, type DialCodeItem } from './dialCodeRows';
 
 // ---------------------------------------------------------------------------
 // THE country sheet — the phone field's dial-code picker, generalised.
@@ -33,6 +34,10 @@ import { FloatingSheet } from './glass/FloatingSheet';
 // The sheet is sized against the space left ABOVE the keyboard, like Flutter's.
 // The search field autofocuses, so measuring against the full screen would put
 // every result underneath the keys the moment the user started typing.
+//
+// `grouped` lists the countries under region headers (Africa first), the way
+// the country-select step does — what the address-scope country control asks
+// for. The list itself is built by dialCodeRows.ts.
 // ---------------------------------------------------------------------------
 
 export interface DialCodeOption {
@@ -46,6 +51,8 @@ export function DialCodePicker({
   visible,
   options,
   selected,
+  pinned,
+  grouped = false,
   onPick,
   onClose,
   searchPlaceholder = 'Search country or code',
@@ -53,6 +60,14 @@ export function DialCodePicker({
   visible: boolean;
   options: DialCodeOption[];
   selected: string;
+  /**
+   * The visitor's IP country. Lifted out of the alphabet to the top and
+   * tagged, so a guess we made on their behalf is visible AS a guess and one
+   * tap away rather than buried among two hundred others.
+   */
+  pinned?: string | null;
+  /** Region headers between the rows (the pinned row stays on top). */
+  grouped?: boolean;
   onPick: (code: string) => void;
   onClose: () => void;
   searchPlaceholder?: string;
@@ -78,19 +93,13 @@ export function DialCodePicker({
   const available = screenHeight - keyboard;
   const maxHeight = Math.min(Math.max(available * 0.85, 240), screenHeight * 0.6);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return options;
-    // Match the name, the ISO code, or the dial code with or without its '+',
-    // because people search for "+234", "234" and "Nigeria" in equal measure.
-    const bare = q.replace(/^\+/, '');
-    return options.filter(
-      (o) =>
-        o.name.toLowerCase().includes(q) ||
-        o.code.toLowerCase() === q ||
-        (o.dialCode != null && o.dialCode.replace(/^\+/, '').startsWith(bare)),
-    );
-  }, [options, query]);
+  // Where they appear to be, lifted out of the alphabet. It stays subject to
+  // the search, so typing still narrows to what was asked for rather than
+  // keeping a row that does not match.
+  const rows = useMemo(
+    () => buildDialCodeItems(filterDialCodeOptions(options, query), pinned, grouped),
+    [options, query, pinned, grouped],
+  );
 
   const close = (): void => {
     setQuery('');
@@ -121,67 +130,37 @@ export function DialCodePicker({
         </View>
 
         <FlatList
-          data={filtered}
-          keyExtractor={(o) => o.code}
+          data={rows.items}
+          keyExtractor={dialCodeItemKey}
           keyboardShouldPersistTaps="handled"
+          // A hairline under the pinned row only: the alphabet below it is one
+          // list, and a rule between every row is noise.
+          ItemSeparatorComponent={({ leadingItem }: { leadingItem: DialCodeItem }) =>
+            rows.geo != null && leadingItem.kind === 'row' && leadingItem.option.code === rows.geo.code ? (
+              <DialCodeDivider />
+            ) : null
+          }
           ListEmptyComponent={
             <MyazaText variant="bodyMedium" style={{ padding: spacing.lg, textAlign: 'center' }}>
               No countries match your search.
             </MyazaText>
           }
-          renderItem={({ item }) => (
-            <CountryRow
-              option={item}
-              isSelected={item.code === selected}
-              onPress={() => {
-                setQuery('');
-                onPick(item.code);
-              }}
-            />
-          )}
+          renderItem={({ item }) =>
+            item.kind === 'header' ? (
+              <DialCodeRegionHeader region={item.region} />
+            ) : (
+              <DialCodeRow
+                option={item.option}
+                isSelected={item.option.code === selected}
+                badge={rows.geo != null && item.option.code === rows.geo.code ? 'Your location' : undefined}
+                onPress={() => {
+                  setQuery('');
+                  onPick(item.option.code);
+                }}
+              />
+            )
+          }
         />
     </FloatingSheet>
-  );
-}
-
-function CountryRow({
-  option,
-  isSelected,
-  onPress,
-}: {
-  option: DialCodeOption;
-  isSelected: boolean;
-  onPress: () => void;
-}): React.ReactElement {
-  const { colors } = useTheme();
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="radio"
-      accessibilityState={{ checked: isSelected }}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: spacing.md,
-        // Roomier rows: a country list is a long scan, and cramped rows make
-        // every tap a precision job. Matches the web dropdown's row height.
-        paddingVertical: 12,
-        backgroundColor: isSelected ? colors.primary50 : 'transparent',
-      }}
-    >
-      <CountryFlag country={option.code} size={28} />
-      <View style={{ width: spacing.md }} />
-      {/* No line clamp: "Bosnia & Herzegovina" and the like must read in full,
-          which is what Flutter's Expanded(Text) gives. Full body size (16),
-          the web dropdown's reading size — 14 read small against the flags. */}
-      <MyazaText variant="body" style={{ flex: 1 }}>
-        {option.name}
-      </MyazaText>
-      {option.dialCode != null ? (
-        <MyazaText variant="bodyMedium" color={colors.textSecondary}>
-          {option.dialCode}
-        </MyazaText>
-      ) : null}
-    </Pressable>
   );
 }

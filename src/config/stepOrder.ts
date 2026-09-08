@@ -21,19 +21,37 @@
 import type { WorkflowBusinessConfig } from '../types/business';
 import type { KYCStep } from '../types/config';
 import { applyResubmitSteps, type ResubmitConfig } from '../lib/resubmit';
+import { addressFlowSteps, type AddressFlowOptions } from '../lib/address-flow';
 import { businessSectionSteps, hasApplicantVerification } from './businessSteps';
 
 export interface StepOrderOptions {
   isBusiness: boolean;
+  /** Scoped flows: no identity section — each scope's headline step is the
+   *  flow (see lib/scope.ts). */
+  scope?: import('../lib/scope').WorkflowScope | null;
   /** Business (KYB) configuration — drives the application-section steps. */
   business?: WorkflowBusinessConfig;
   hasDocCapture: boolean;
   hasNfc: boolean;
   hasLiveness: boolean;
   hasCountrySelect: boolean;
+  /**
+   * Whether the flow opens on the consent screen. Absent = yes. `false` is the
+   * workflow's `consentStep: false`: the host app has already asked, so the
+   * flow opens on its first real step instead (config/consentStep.ts).
+   */
+  hasConsent?: boolean;
   hasEmailVerification: boolean;
   hasPhoneVerification: boolean;
   hasPoa: boolean;
+  hasAddressCollection: boolean;
+  /**
+   * Which address screens the flow has, from the ONE `addressFlowFor` call.
+   * The list is built by `addressFlowSteps`, the same builder the address
+   * steps navigate by, so the progress bar and the flow cannot disagree.
+   * Absent falls back to the default shape (no search, entrance offered).
+   */
+  addressFlow?: AddressFlowOptions;
   hasQuestionnaire: boolean;
   /**
    * A reviewer sent this back to redo specific steps.
@@ -68,6 +86,11 @@ export function buildStepOrder(o: StepOrderOptions): KYCStep[] {
   return applyResubmitSteps(fullStepOrder(o), o.resubmit);
 }
 
+/** The flow's opening screen: consent, unless the workflow switched it off. */
+function openingSteps(o: StepOrderOptions): KYCStep[] {
+  return o.hasConsent === false ? [] : ['consent'];
+}
+
 /** The flow as configured, before any reviewer narrowing. */
 function fullStepOrder(o: StepOrderOptions): KYCStep[] {
   // Business (KYB) flow — the application section, then (when the workflow
@@ -77,9 +100,9 @@ function fullStepOrder(o: StepOrderOptions): KYCStep[] {
     // its questions are about the company, so it stays with the company form
     // rather than trailing the applicant's own capture leg.
     const steps: KYCStep[] = [
-      'consent',
+      ...openingSteps(o),
       ...contactSteps(o),
-      ...businessSectionSteps(o.business, o.hasQuestionnaire),
+      ...businessSectionSteps(o.business, o.hasQuestionnaire, o.hasAddressCollection),
     ];
     if (hasApplicantVerification(o.business)) {
       // The applicant may hold an ID issued anywhere the org can verify —
@@ -93,11 +116,52 @@ function fullStepOrder(o: StepOrderOptions): KYCStep[] {
     return steps;
   }
 
+  // Scoped flows: the scope's headline section IS the flow.
+  if (o.scope === 'address') {
+    const steps: KYCStep[] = [...openingSteps(o), ...contactSteps(o)];
+    if (o.hasPoa) steps.push('proof-of-address');
+    steps.push(
+      ...addressFlowSteps(
+        o.addressFlow ?? { searchAvailable: false, photoMode: 'optional', streetViewOffered: false },
+      ),
+    );
+    if (o.hasQuestionnaire) steps.push('questionnaire');
+    steps.push('submitted');
+    return steps;
+  }
+  if (o.scope === 'biometric-authentication' || o.scope === 'biometric-enrollment') {
+    const steps: KYCStep[] = [...openingSteps(o), ...contactSteps(o), 'liveness'];
+    if (o.hasQuestionnaire) steps.push('questionnaire');
+    steps.push('submitted');
+    return steps;
+  }
+  if (o.scope === 'questionnaire') {
+    return [...openingSteps(o), ...contactSteps(o), 'questionnaire', 'submitted'];
+  }
+  if (o.scope === 'contact') {
+    return [...openingSteps(o), ...contactSteps(o), 'submitted'];
+  }
+
   const middle: KYCStep[] = [...captureLeg(o)];
   if (o.hasPoa) middle.push('proof-of-address');
+  // The address flow is FOUR real steps on an individual flow (find it, confirm
+  // it, show it, commit it), so the progress bar advances through them and back
+  // is ordinary step navigation. KYB keeps the single premises step, inserted
+  // by businessSectionSteps above.
+  if (o.hasAddressCollection) {
+    middle.push(
+      ...addressFlowSteps(
+        o.addressFlow ?? {
+          searchAvailable: false,
+          photoMode: 'optional',
+          streetViewOffered: false,
+        },
+      ),
+    );
+  }
   if (o.hasQuestionnaire) middle.push('questionnaire');
   return [
-    'consent',
+    ...openingSteps(o),
     ...contactSteps(o),
     ...(o.hasCountrySelect ? (['country-select'] as KYCStep[]) : []),
     'id-type',
@@ -129,10 +193,20 @@ export function nextStepInOrder(step: KYCStep, o: StepOrderOptions): KYCStep {
   return order[index + 1] ?? order[order.length - 1]!;
 }
 
-/** The step before `step` — what the back button goes to. */
+/**
+ * The step before `step` — what the back button goes to.
+ *
+ * A step not in the order stands still, for the same reason `nextStepInOrder`
+ * refuses to guess at one: it has no predecessor in a flow that does not
+ * contain it. This used to fall through to `order[0]`, so an applicant resumed
+ * onto a step the flow had since dropped was thrown all the way back to consent
+ * by a single back-press, discarding everything they had done. Standing still
+ * is recoverable; that was not.
+ */
 export function previousStepInOrder(step: KYCStep, o: StepOrderOptions): KYCStep {
   const order = buildStepOrder(o);
   const index = order.indexOf(step);
-  if (index <= 0) return order[0]!;
+  if (index < 0) return step;
+  if (index === 0) return order[0]!;
   return order[index - 1]!;
 }

@@ -12,11 +12,13 @@
 // unconfigured contact proof must not claim a check that never ran.
 // ---------------------------------------------------------------------------
 
+import { configScope, SCOPE_ID_TYPES } from '../lib/scope';
 import { collectDeviceMetadata } from '../services/deviceMetadata';
 import { generateRequestId } from '../utils/uuid';
 import { hasActiveQuestionnaire, questionnairePayload } from '../config/questionnaire';
 import { multiIdWireSlots } from '../lib/multi-id';
 import { isBusinessFlow } from '../config/business';
+import { addressPayload } from '../config/addressCollection';
 import { businessSubmission, effectiveCountry } from './derive';
 import type { ClientFingerprint } from '../services/fingerprint';
 import type { VerifyRequest } from '../services/api';
@@ -66,7 +68,13 @@ export function buildVerifyRequest(
 
   return {
   country: business ? business.country : effectiveCountry(state),
-  idType: business ? business.product : (primary?.idType ?? state.selectedIdType ?? ''),
+  // Scoped flows carry the scope's transport marker instead of a picked ID —
+  // the server requires a published workflow of the matching scope for it.
+  idType: business
+    ? business.product
+    : configScope(state.config)
+      ? SCOPE_ID_TYPES[configScope(state.config)!]
+      : (primary?.idType ?? state.selectedIdType ?? ''),
   idNumber: business ? undefined : (primary?.idNumber ?? state.idNumber ?? undefined),
   ...(multiSlots
     ? {
@@ -91,6 +99,10 @@ export function buildVerifyRequest(
       : state.mediaIds,
   ...(state.config.workflowId ? { workflowId: state.config.workflowId } : {}),
   ...(state.poaDocumentType ? { proofOfAddressType: state.poaDocumentType } : {}),
+  // The smart address, when the step gathered one. Sent on individual AND
+  // business submissions (a KYB flow's pin is the business premises) — the
+  // server validates it against the workflow either way.
+  ...(state.address ? { address: addressPayload(state.address, state.config.addressCollection) } : {}),
   ...(state.contact.emailToken || state.contact.phoneToken
     ? {
         contact: {
@@ -135,6 +147,11 @@ export function buildVerifyRequest(
     // Ignored by production, so it is safe to send whenever it is set.
     ...(business && state.business.sandboxOutcome
       ? { sandboxOutcome: state.business.sandboxOutcome }
+      : {}),
+    // The address flow's Test-result pick (dev/sandbox tabs on the review
+    // step) — same contract, same key, no clash: business flows never set it.
+    ...(!business && state.addressSandboxOutcome
+      ? { sandboxOutcome: state.addressSandboxOutcome }
       : {}),
     requestId: generateRequestId(),
     device: {

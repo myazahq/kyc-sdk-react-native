@@ -26,6 +26,7 @@ export function BusinessDetailsFields({
   formatOk,
   requireName,
   country,
+  geoCountry,
   modes,
   showCompanyInfo,
   showContactEmail,
@@ -38,6 +39,7 @@ export function BusinessDetailsFields({
   formatOk: boolean;
   requireName: boolean;
   country: string;
+  geoCountry?: string | null;
   modes: Record<CompanyInfoField, CompanyInfoMode>;
   showCompanyInfo: boolean;
   showContactEmail: boolean;
@@ -84,6 +86,7 @@ export function BusinessDetailsFields({
             values={business}
             modes={modes}
             country={country}
+            geoCountry={geoCountry}
             onChange={(field, value) => onChange(field, value)}
           />
         </>

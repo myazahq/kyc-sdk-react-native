@@ -23,6 +23,7 @@ const base: StepOrderOptions = {
   hasEmailVerification: false,
   hasPhoneVerification: false,
   hasPoa: false,
+  hasAddressCollection: false,
   hasQuestionnaire: false,
 };
 
@@ -236,5 +237,79 @@ describe('navDirection', () => {
     // Without this the user lands on nfc, is thrown to liveness, and can never
     // reach document-capture again.
     expect(skipTo('nfc', 'back')).toBe('document-capture');
+  });
+});
+
+describe('address-only flow', () => {
+  it('has no identity steps at all, and navigation walks the address section', () => {
+    const o: StepOrderOptions = {
+      ...base,
+      scope: 'address',
+      hasAddressCollection: true,
+      hasEmailVerification: true,
+      hasPoa: true,
+      hasQuestionnaire: true,
+      addressFlow: { searchAvailable: true, photoMode: 'optional', streetViewOffered: false },
+    };
+    const order = buildStepOrder(o);
+    expect(order[0]).toBe('consent');
+    expect(order[order.length - 1]).toBe('submitted');
+    for (const step of ['id-type', 'id-input', 'document-capture', 'liveness', 'nfc', 'country-select']) {
+      expect(order).not.toContain(step);
+    }
+    // Forward and backward both read the same list, by construction.
+    expect(nextStepInOrder('consent', o)).toBe('email-verification');
+    expect(nextStepInOrder('email-verification', o)).toBe('proof-of-address');
+    expect(previousStepInOrder('proof-of-address', o)).toBe('email-verification');
+  });
+});
+
+describe('the other scopes', () => {
+  it('biometric scopes run only the liveness capture (plus companions)', () => {
+    for (const scope of ['biometric-authentication', 'biometric-enrollment'] as const) {
+      const order = buildStepOrder({ ...base, scope, hasEmailVerification: true, hasQuestionnaire: true });
+      expect(order).toEqual(['consent', 'email-verification', 'liveness', 'questionnaire', 'submitted']);
+    }
+  });
+
+  it('contact scope is the codes alone', () => {
+    expect(
+      buildStepOrder({ ...base, scope: 'contact', hasEmailVerification: true, hasPhoneVerification: true }),
+    ).toEqual(['consent', 'email-verification', 'phone-verification', 'submitted']);
+  });
+});
+
+// ─── The consent screen switched off (`consentStep: false`) ──────────────────
+//
+// The host app has already asked, so the flow opens on its first real step.
+// Every branch builds its head from the flag; the store opens and resets on
+// order[0], the progress watcher judges "untouched" against it and the flow
+// hides Back on it, so nothing here may assume 'consent' by name.
+describe('consentStep off', () => {
+  const off = (o: Partial<StepOrderOptions> = {}) => opts({ hasConsent: false, ...o });
+
+  it('opens the individual flow on the ID list, the country picker, or the contact codes', () => {
+    expect(buildStepOrder(off())[0]).toBe('id-type');
+    expect(buildStepOrder(off({ hasCountrySelect: true }))[0]).toBe('country-select');
+    expect(buildStepOrder(off({ hasEmailVerification: true }))[0]).toBe('email-verification');
+    expect(buildStepOrder(off())).not.toContain('consent');
+  });
+
+  it('opens a KYB flow on the business form and a scoped flow on its own check', () => {
+    expect(buildStepOrder(off({ isBusiness: true }))[0]).toBe('business-details');
+    expect(buildStepOrder(off({ scope: 'biometric-authentication' }))[0]).toBe('liveness');
+    expect(buildStepOrder(off({ scope: 'questionnaire', hasQuestionnaire: true }))[0]).toBe('questionnaire');
+    expect(buildStepOrder(off({ scope: 'contact', hasPhoneVerification: true }))[0]).toBe('phone-verification');
+    expect(buildStepOrder(off({ scope: 'address' }))[0]).toBe('address-collection');
+  });
+
+  it('is one step shorter, so progress counts what is walked', () => {
+    expect(buildStepOrder(off())).toHaveLength(buildStepOrder(opts()).length - 1);
+    expect(getStepProgress('id-type', off())).toBeGreaterThan(0);
+  });
+
+  it('is absent by default, so an unset flag changes nothing', () => {
+    expect(buildStepOrder(opts())[0]).toBe('consent');
+    expect(buildStepOrder(opts({ hasConsent: true }))).toEqual(buildStepOrder(opts()));
   });
 });

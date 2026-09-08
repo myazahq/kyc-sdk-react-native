@@ -16,6 +16,7 @@
  */
 export const WORKFLOW_KEYS = [
   'subjectType',
+  'scope',
   'business',
   'country',
   'countries',
@@ -27,8 +28,10 @@ export const WORKFLOW_KEYS = [
   'enableLiveness',
   'livenessMode',
   'flashSequenceLength',
+  'biometric',
   'deviceIntelligence',
   'keyPeopleLinkRecovery',
+  'consentStep',
   'requireMobileDevice',
   'voiceGuidance',
   'showThemeToggle',
@@ -41,6 +44,7 @@ export const WORKFLOW_KEYS = [
   'phoneVerification',
   'questionnaire',
   'proofOfAddress',
+  'addressCollection',
   'nfc',
   // Set only on a session a reviewer sent back, never on a published flow.
   'resubmit',
@@ -53,8 +57,10 @@ export type WorkflowKey = (typeof WORKFLOW_KEYS)[number];
  * key it DEFINES; an absent key leaves the prop alone (which is how a flow that
  * only sets, say, `livenessMode` doesn't wipe a prop-supplied `userId`).
  *
- * `appearance` merges shallowly with flow keys winning per-field, so a flow
- * that only sets `primaryColor` doesn't wipe a prop-supplied `logo`.
+ * `appearance` and `biometric` merge shallowly with flow keys winning
+ * per-field, so a flow that only sets `primaryColor` doesn't wipe a
+ * prop-supplied `logo`, and a flow that only switches the selfie review on
+ * doesn't wipe a host app's `doneButton: false`.
  *
  * Pure and side-effect free.
  */
@@ -67,10 +73,10 @@ export function mergeWorkflowConfig<P extends Record<string, unknown>>(
   for (const key of WORKFLOW_KEYS) {
     const value = flowConfig[key];
     if (value === undefined) continue;
-    if (key === 'appearance') {
-      const propAppearance = props['appearance'];
+    if (key === 'appearance' || key === 'biometric') {
+      const propBlock = props[key];
       merged[key] = {
-        ...(typeof propAppearance === 'object' && propAppearance !== null ? propAppearance : {}),
+        ...(typeof propBlock === 'object' && propBlock !== null ? propBlock : {}),
         ...(value as Record<string, unknown>),
       };
     } else {

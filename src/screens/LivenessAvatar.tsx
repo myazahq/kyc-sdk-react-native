@@ -17,9 +17,21 @@ const GIFS: Record<LivenessChallenge, number> = {
   smile: require('../assets/liveness/Smile.gif'),
 };
 
-const SIZE = 96;
+/** The badge on a tall phone; the step hands a smaller size down on a short one
+ *  (lib/livenessLayout), so the gesture stays on screen beside the circle. */
+const DEFAULT_SIZE = 96;
+const DEFAULT_ICON = 40;
 
-export function LivenessAvatar({ challenge }: { challenge: LivenessChallenge }): React.ReactElement {
+export function LivenessAvatar({
+  challenge,
+  size = DEFAULT_SIZE,
+  iconSize = DEFAULT_ICON,
+}: {
+  challenge: LivenessChallenge;
+  size?: number;
+  iconSize?: number;
+}): React.ReactElement {
+  const SIZE = size;
   const { colors } = useTheme();
   const [displayed, setDisplayed] = useState<LivenessChallenge>(challenge);
   const [broken, setBroken] = useState(false);
@@ -55,7 +67,7 @@ export function LivenessAvatar({ challenge }: { challenge: LivenessChallenge }):
       }}
     >
       {broken ? (
-        <Icon name="scan-face" size={40} color={colors.primary} />
+        <Icon name="scan-face" size={iconSize} color={colors.primary} />
       ) : (
         <Image
           source={GIFS[displayed]}
