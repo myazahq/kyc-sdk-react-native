@@ -57,6 +57,8 @@ namespace margelo::nitro::myazakyc {
       // Methods
       virtual TextResult recognizeText(const std::shared_ptr<margelo::nitro::camera::HybridFrameSpec>& frame, double bottomFraction) = 0;
       virtual std::shared_ptr<Promise<TextResult>> recognizeTextInImage(const std::string& uri, double bottomFraction) = 0;
+      virtual bool isModelReady() = 0;
+      virtual std::shared_ptr<Promise<bool>> prepareModel() = 0;
 
     protected:
       // Hybrid Setup

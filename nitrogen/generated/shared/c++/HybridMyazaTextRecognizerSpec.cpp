@@ -16,6 +16,8 @@ namespace margelo::nitro::myazakyc {
     registerHybrids(this, [](Prototype& prototype) {
       prototype.registerHybridMethod("recognizeText", &HybridMyazaTextRecognizerSpec::recognizeText);
       prototype.registerHybridMethod("recognizeTextInImage", &HybridMyazaTextRecognizerSpec::recognizeTextInImage);
+      prototype.registerHybridMethod("isModelReady", &HybridMyazaTextRecognizerSpec::isModelReady);
+      prototype.registerHybridMethod("prepareModel", &HybridMyazaTextRecognizerSpec::prepareModel);
     });
   }
 

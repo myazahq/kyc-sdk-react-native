@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, LayoutChangeEvent, Modal, PanResponder, Platform, Pressable, StatusBar, StyleSheet, View } from 'react-native';
 import Svg, { Line, Rect } from 'react-native-svg';
 
-import { spacing } from '../config/theme';
+import { headerSurface, spacing } from '../config/theme';
 import { cropImage, imageSize } from '../services/mediaCompress';
 import { MyazaText } from './Typography';
 import { MyazaButton } from './MyazaButton';
 import { Icon } from './Icon';
+import { useTheme } from './runtime';
 import { Image } from 'react-native';
 
 // Interactive ID-card cropper — a 1:1 RN port of the Flutter SDK's
@@ -19,7 +20,11 @@ import { Image } from 'react-native';
 const ID_AR = 85.6 / 53.98;
 const HANDLE_RADIUS = 28; // touch radius for the corner handles
 const ARM = 22; // corner-bracket arm length
-const APPBAR_BG = '#1A1A2E';
+// The photo sits on a neutral dark stage in both themes (the web SDK's
+// neutral-900): it is the backdrop a document photo reads well against, and it
+// keeps the white crop strokes legible. Everything around the photo takes the
+// workflow's own colours.
+export const CROPPER_STAGE = '#171717';
 // Keep the title clear of the status bar / notch on the full-screen cropper Modal.
 const TOP_INSET = Platform.OS === 'ios' ? 56 : (StatusBar.currentHeight ?? 24) + 8;
 
@@ -95,6 +100,7 @@ export function DocumentCropper({ uri, onCancel, onConfirm }: DocumentCropperPro
   const [container, setContainer] = useState<{ w: number; h: number } | null>(null);
   const [crop, setCrop] = useState<Rectangle | null>(null);
   const [processing, setProcessing] = useState(false);
+  const { colors, mode } = useTheme();
 
   // Pan state held in refs so the PanResponder callbacks stay stable.
   const handleRef = useRef<Handle>('none');
@@ -219,17 +225,18 @@ export function DocumentCropper({ uri, onCancel, onConfirm }: DocumentCropperPro
 
   return (
     <Modal visible animationType="slide" presentationStyle="fullScreen" onRequestClose={onCancel}>
-      <View style={{ flex: 1, backgroundColor: '#000' }}>
-        {/* App bar */}
-        <View style={styles.appBar}>
-          <Pressable onPress={onCancel} accessibilityRole="button" accessibilityLabel="Cancel" hitSlop={8} style={{ padding: 4, marginRight: 4 }}>
-            <Icon name="close" size={20} color="#FFFFFF" />
+      <StatusBar barStyle={mode === 'dark' ? 'light-content' : 'dark-content'} />
+      <View style={{ flex: 1, backgroundColor: CROPPER_STAGE }}>
+        {/* App bar: the band the flow's steps sit under */}
+        <View style={[styles.appBar, { backgroundColor: headerSurface(colors, mode), borderBottomColor: colors.border }]}>
+          <Pressable onPress={onCancel} accessibilityRole="button" accessibilityLabel="Cancel" hitSlop={8} style={styles.close}>
+            <Icon name="close" size={20} color={colors.textDark} />
           </Pressable>
-          <View>
-            <MyazaText variant="bodyMedium" color="#FFFFFF" style={{ fontWeight: '600' }}>
+          <View style={{ flexShrink: 1 }}>
+            <MyazaText variant="bodyMedium" color={colors.textDark} style={{ fontWeight: '600' }}>
               Crop to ID Card
             </MyazaText>
-            <MyazaText variant="bodySmall" color="rgba(255,255,255,0.6)">
+            <MyazaText variant="bodySmall" color={colors.textMuted}>
               Drag to reposition · handles to resize
             </MyazaText>
           </View>
@@ -274,18 +281,9 @@ export function DocumentCropper({ uri, onCancel, onConfirm }: DocumentCropperPro
         </View>
 
         {/* Action bar */}
-        <View style={styles.actionBar}>
-          {processing ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 48 }}>
-              <ActivityIndicator color="#FFFFFF" />
-              <View style={{ width: 10 }} />
-              <MyazaText variant="bodyMedium" color="rgba(255,255,255,0.8)" style={{ flexShrink: 1 }}>
-                Processing…
-              </MyazaText>
-            </View>
-          ) : (
-            <MyazaButton label="Crop & Use" leadingIcon="check" onPress={confirm} disabled={!crop} />
-          )}
+        <View style={[styles.actionBar, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
+          {/* The flow's own button: primary from the workflow, its loading state while the crop runs. */}
+          <MyazaButton label="Crop & Use" leadingIcon="check" onPress={confirm} disabled={!crop} loading={processing} />
         </View>
       </View>
     </Modal>
@@ -311,15 +309,23 @@ const styles = StyleSheet.create({
   appBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: APPBAR_BG,
     paddingTop: TOP_INSET,
     paddingBottom: spacing.sm,
     paddingHorizontal: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  // 44pt: the tap target the platforms ask for, around a 20pt glyph.
+  close: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 4,
   },
   actionBar: {
-    backgroundColor: APPBAR_BG,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
     paddingBottom: spacing.lg,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
 });

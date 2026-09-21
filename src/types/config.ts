@@ -142,6 +142,12 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> {
      * mirroring the web SDK.
      */
     businessName?: string;
+    /**
+     * The applicant's email, when you already hold it. Not asked for in the flow:
+     * it is submitted so your organisation can have the applicant emailed about a
+     * decision, for example once their verification is approved.
+     */
+    email?: string;
   };
 
   /** Enable the live-selfie capture step. */
@@ -156,6 +162,15 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> {
    * instead" affordances are hidden during normal capture.
    */
   allowDocumentUpload?: boolean;
+
+  /**
+   * Allow photographing the document with the live camera. Default `true`.
+   * When `false`, the document step never asks for camera access: the
+   * applicant chooses a photo of each side from the device instead. At least
+   * one of this and `allowDocumentUpload` stays on, so a config that switches
+   * both off keeps the camera.
+   */
+  allowDocumentScan?: boolean;
 
   /** Enable liveness detection during selfie capture. Default `true`. */
   enableLiveness?: boolean;

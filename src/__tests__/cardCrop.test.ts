@@ -1,3 +1,5 @@
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { cardCropRect } from '../services/cardCrop';
 import { CARD_GUIDE_ASPECT, PASSPORT_GUIDE_ASPECT } from '../config/idTypes';
 
@@ -59,5 +61,51 @@ describe('full-screen viewport (the regression the user caught on device)', () =
     const a = cardCropRect(3000, 4000, 1.586);
     const b = cardCropRect(3000, 4000, 1.586, 3 / 4);
     expect(a).toEqual(b);
+  });
+});
+
+describe('the crop is measured in the units it is applied in', () => {
+  // The rect maths above was always right. What broke was its INPUT.
+  //
+  // Found on a TECNO KM5 (density 320 → scale 2.0), 2026-09-20: the applicant
+  // framed a voter's card and the stored photo was a corner of the desk behind
+  // it. `imageSize` used React Native's `Image.getSize`, which on Android
+  // reports DP — pixels ÷ display density — while expo-image-manipulator crops
+  // in real pixels. A 3048x4064 photo measured 1524x2032, so a rect computed as
+  // perfectly centred was applied at half scale and landed in the UPPER-LEFT
+  // QUADRANT of the real image.
+  //
+  // Every Android density is > 1, so this was every Android document capture,
+  // wrong by the device's own density factor. iOS returns real pixels from
+  // getSize and was unaffected, which is why an iPhone-led test history never
+  // saw it. It fails silently: no crash, just a photo of the wrong thing that
+  // fails OCR later and reads as the applicant's fault.
+  //
+  // Measuring through the manipulator means the ruler and the knife are the
+  // same tool. A PixelRatio multiplier would also work today, but it re-states
+  // the cropper's units elsewhere and leaves this one refactor away.
+  it('imageSize does not use Image.getSize', () => {
+    const source = readFileSync(
+      join(__dirname, '../services/mediaCompress.ts'),
+      'utf8',
+    );
+    // The CALL, not the name: the fix's own comment explains the old API, and
+    // matching the bare name would fail on the explanation of why it is gone.
+    expect(source).not.toMatch(/Image\.getSize\(/);
+    expect(source).toMatch(/manipulate\([^)]*\)\.renderAsync\(\)/);
+  });
+
+  it('a rect built from half-scale dimensions lands off-centre — the bug, pinned', () => {
+    // What the device actually did: measure 1524x2032, crop 3048x4064.
+    const asMeasured = cardCropRect(1524, 2032, PASSPORT_GUIDE_ASPECT, 0.45);
+    const trueCentreX = 3048 / 2;
+    const centreOfRect = asMeasured.originX + asMeasured.width / 2;
+    // Nowhere near the middle of the real image — it sits in the left third.
+    expect(centreOfRect).toBeLessThan(trueCentreX * 0.7);
+
+    // And measured correctly, it is centred.
+    const correct = cardCropRect(3048, 4064, PASSPORT_GUIDE_ASPECT, 0.45);
+    expect(correct.originX + correct.width / 2).toBeCloseTo(trueCentreX, 0);
+    expect(correct.originY + correct.height / 2).toBeCloseTo(4064 / 2, 0);
   });
 });

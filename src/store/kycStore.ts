@@ -62,6 +62,7 @@ import { IDLE_SELFIE_UPLOAD } from '../lib/selfie-upload-wait';
 import { resetBusinessCheck, runBusinessCheck } from './businessCheck';
 import { startAttemptSession, watchSessionProgress } from './session';
 import { applicantMediaCaptured, buildApplicantVerifyRequest } from './submitApplicant';
+import { keptIdType } from '../lib/resubmit';
 
 export * from './state';
 export {
@@ -102,7 +103,10 @@ export function createKycStore(
       businessCheck: { ...EMPTY_BUSINESS_CHECK },
       selectedCountry: null,
       countryAutoPicked: false,
-      selectedIdType: null,
+      // A send-back that did not ask for the ID keeps the original one: the
+      // ID steps are narrowed out, so the kept ID is selected here instead.
+      // A restored session only overwrites it with a saved pick.
+      selectedIdType: keptIdType(config.resubmit) as KycState['selectedIdType'],
       idNumber: null,
       multiIdSlotIndex: 0,
       multiIdSlots: [],
@@ -661,7 +665,9 @@ export function createKycStore(
           currentStep: opening,
           selectedCountry: null,
           countryAutoPicked: false,
-          selectedIdType: null,
+          // Same kept ID as at creation: the narrowed flow has no picker to
+          // choose it again.
+          selectedIdType: keptIdType(config.resubmit) as KycState['selectedIdType'],
           idNumber: null,
           multiIdSlotIndex: 0,
           multiIdSlots: [],

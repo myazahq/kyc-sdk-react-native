@@ -45,4 +45,33 @@ export interface MyazaTextRecognizer extends HybridObject<{ ios: 'swift'; androi
    * crop as the frame version.
    */
   recognizeTextInImage(uri: string, bottomFraction: number): Promise<TextResult>;
+
+  /**
+   * Whether the recogniser can run RIGHT NOW.
+   *
+   * Android fetches ML Kit's text model through Google Play Services rather
+   * than bundling it (see android/build.gradle), so there is a window — first
+   * launch, or a device with no GMS at all — where recognition cannot work.
+   * This MUST be checked before the camera opens: `recognizeText` can only
+   * answer in `TextResult`, where "model missing" and "no text in frame" are
+   * both an empty `lines` array, so relying on it would leave auto-capture
+   * silently never firing and the MRZ never producing a chip key, with nothing
+   * shown to explain why.
+   *
+   * iOS is always true — Apple Vision is a system framework with nothing to
+   * fetch.
+   */
+  isModelReady(): boolean;
+
+  /**
+   * Ask Play Services to download the model, resolving `true` once it is usable
+   * and `false` if it cannot be obtained (no GMS, no network, user declined).
+   *
+   * Call this EARLY — the SDK primes it at flow start, so the download overlaps
+   * the consent and ID-type screens and the model is warm by the time the
+   * document step runs.
+   *
+   * Safe to call repeatedly; resolves immediately when already ready.
+   */
+  prepareModel(): Promise<boolean>;
 }

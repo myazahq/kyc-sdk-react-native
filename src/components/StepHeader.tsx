@@ -17,6 +17,10 @@ import { CountryFlag } from './CountryFlag';
 const BACK_SIZE = 40;
 const BACK_FOOTPRINT = BACK_SIZE + spacing.sm;
 
+// One line of heading2 (fontSize 20). The flag is centred inside a box of this
+// height so it lands on the first line whether the title wraps or not.
+const FLAG_LINE_HEIGHT = 26;
+
 export interface StepHeaderProps {
   title: string;
   description?: string | null;
@@ -44,13 +48,29 @@ export function StepHeader({ title, description, onBack, country }: StepHeaderPr
             />
           </View>
         ) : null}
-        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+        {/* `flex-start`, not `center`. A long document name wraps to two lines
+            on a small screen ("Capture Your Permanent Voter's Card" does at
+            360dp), and centring the flag against the whole block floated it in
+            the gap between the lines, attached to neither. Anchored to the top
+            it reads as a marker on the title, wherever the text wraps.
+            Seen on a Galaxy S24. */}
+        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-start' }}>
           <MyazaText variant="heading2" numberOfLines={2} style={{ flexShrink: 1 }}>
             {title}
           </MyazaText>
           {country ? (
-            <View style={{ marginLeft: spacing.sm }}>
-              <CountryFlag country={country} size={20} />
+            // The flag box is the height of one line of heading2, with the flag
+            // centred in it — so it sits on the first line's optical centre
+            // rather than its top edge, and does not have to be re-nudged if
+            // the type scale moves.
+            <View
+              style={{
+                marginLeft: spacing.sm,
+                height: FLAG_LINE_HEIGHT,
+                justifyContent: 'center',
+              }}
+            >
+              <CountryFlag country={country} size={18} />
             </View>
           ) : null}
         </View>

@@ -9,8 +9,6 @@ import com.google.mlkit.vision.face.Face
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
-import com.google.android.gms.common.moduleinstall.ModuleInstall
-import com.margelo.nitro.NitroModules
 import com.margelo.nitro.core.Promise
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -44,67 +42,13 @@ class HybridMyazaFaceDetector : HybridMyazaFaceDetectorSpec() {
 
   // ── Model availability ───────────────────────────────────────────────────
   //
-  // The default build fetches ML Kit's models through Play Services instead of
-  // bundling them (android/build.gradle), which is what keeps ~18.5 MB per
-  // device out of the APK. The cost is a window where detection cannot run:
-  // first launch before the download completes, or a device with no GMS at all.
-  //
-  // `detectFace` CANNOT report that. Its only channel is FaceResult, where a
-  // missing model and an empty frame are both `faceCount: 0` — so a user on a
-  // fresh install would watch "position your face" forever with nothing to
-  // explain it. Hence a separate, explicit contract, checked before the camera
-  // opens rather than inferred per frame.
-  //
-  // Cached rather than queried live: `areModulesAvailable` is asynchronous and
-  // `isModelReady` is a synchronous Nitro call, so blocking the worklet thread
-  // to answer it would be worse than the problem. The flag starts false and is
-  // set by prepareModel(), which the SDK primes at flow start.
-  @Volatile private var modelReady = false
+  // Shared with the text recogniser: the rule and the reasoning are identical,
+  // so they live once in MlKitModelReadiness.kt rather than twice here.
+  private val readiness = MlKitModelReadiness(detector)
 
-  override fun isModelReady(): Boolean = modelReady
+  override fun isModelReady(): Boolean = readiness.isReady()
 
-  override fun prepareModel(): Promise<Boolean> = Promise.async {
-    if (modelReady) return@async true
-
-    val ctx = NitroModules.applicationContext
-      ?: return@async false // No context — cannot ask Play Services anything.
-
-    val latch = CountDownLatch(1)
-    var ok = false
-    try {
-      val client = ModuleInstall.getClient(ctx)
-      // areModulesAvailable() answers "is it already here"; deferredInstall()
-      // asks Play Services to fetch it in the background if not. Requesting the
-      // install unconditionally is simpler AND correct — it is a no-op when the
-      // module is already present, and starting it early is the entire point.
-      client.areModulesAvailable(detector)
-        .addOnSuccessListener { response ->
-          ok = response.areModulesAvailable()
-          if (!ok) {
-            // `deferredInstall` takes the OptionalModuleApi itself, varargs.
-            // A ModuleInstallRequest belongs to `installModules`, which is the
-            // FOREGROUND install with its own progress listener — a different
-            // call, and the one this used to hand its request to, which is why
-            // the Android build stopped compiling.
-            client.deferredInstall(detector)
-          }
-          latch.countDown()
-        }
-        .addOnFailureListener {
-          // Thrown on devices without Google Play Services at all (Huawei, bare
-          // AOSP). Not an error to retry — it will never succeed on this device.
-          // Such orgs should build with `myazaKycBundledMlKit = true`.
-          ok = false
-          latch.countDown()
-        }
-      latch.await(MODEL_CHECK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-    } catch (_: Throwable) {
-      ok = false
-    }
-
-    modelReady = ok
-    ok
-  }
+  override fun prepareModel(): Promise<Boolean> = Promise.async { readiness.prepare() }
 
   @ExperimentalGetImage
   override fun detectFace(frame: HybridFrameSpec): FaceResult {
@@ -121,13 +65,34 @@ class HybridMyazaFaceDetector : HybridMyazaFaceDetectorSpec() {
     val rotation = proxy.imageInfo.rotationDegrees
     val input = InputImage.fromMediaImage(mediaImage, rotation)
 
+    // Read the frame's dimensions HERE, synchronously, and let the callback use
+    // these ints rather than the Image.
+    //
+    // The listener runs on the main Looper whenever ML Kit finishes, which is
+    // not necessarily before `latch.await` below gives up. Once detectFace has
+    // returned, VisionCamera recycles the frame and closes the underlying
+    // android.media.Image — so a late callback touching `mediaImage.width`
+    // threw `IllegalStateException: Image is already closed` and took the whole
+    // app down, every time a face was actually FOUND (the failure listener
+    // reads nothing, so only success crashed).
+    //
+    // Unbundling the models is what exposed it: play-services-mlkit dispatches
+    // through Play Services IPC and is slower than the in-process bundled
+    // artifact, so the callback overruns the 200 ms wait routinely on real
+    // mid-range hardware. Seen on a TECNO KM5 (Android 15).
+    //
+    // The text recogniser already reads its dimensions up front for the same
+    // reason; this makes the two agree.
+    val imageWidth = mediaImage.width
+    val imageHeight = mediaImage.height
+
     var result: FaceResult? = null
     val latch = CountDownLatch(1)
     detector.process(input)
       .addOnSuccessListener { faces ->
         val face = faces.maxByOrNull { it.boundingBox.width() * it.boundingBox.height() }
         result = face?.let {
-          toResult(it, mediaImage.width, mediaImage.height, rotation, faces.size, brightness, faceRgb)
+          toResult(it, imageWidth, imageHeight, rotation, faces.size, brightness, faceRgb)
         }
         latch.countDown()
       }
@@ -285,14 +250,4 @@ class HybridMyazaFaceDetector : HybridMyazaFaceDetectorSpec() {
     faceG = -1.0,
     faceB = -1.0,
   )
-
-  private companion object {
-    /**
-     * Bound on the availability query. It is a local Play Services call, not the
-     * model download — the download runs in the background afterwards. Generous
-     * enough for a cold Play Services process, short enough that a wedged one
-     * cannot stall flow start.
-     */
-    const val MODEL_CHECK_TIMEOUT_MS = 3_000L
-  }
 }

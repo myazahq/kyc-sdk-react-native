@@ -11,7 +11,16 @@ import { StyleAbsFill } from './constants';
 // The captured selfie, shown back while it uploads.
 // ---------------------------------------------------------------------------
 
-export function SelfiePreview({ uri, uploading }: { uri: string | null; uploading?: boolean }): React.ReactElement {
+export function SelfiePreview({
+  uri,
+  uploading,
+  soft = false,
+}: {
+  uri: string | null;
+  uploading?: boolean;
+  /** The still reads out of focus (lib/selfie-sharpness). */
+  soft?: boolean;
+}): React.ReactElement {
   const { colors } = useTheme();
   const S = 200;
   return (
@@ -37,11 +46,17 @@ export function SelfiePreview({ uri, uploading }: { uri: string | null; uploadin
         ) : null}
       </View>
       <View style={{ height: spacing.md }} />
-      <MyazaText variant="heading3" style={{ textAlign: 'center' }}>
-        Looking good!
+      {/* The heading is the review's verdict on the photo, so a soft still must
+          not read "Looking good!". Continue stays available either way: the
+          floor is uncalibrated, and a wrong one should cost a sentence, never
+          a retake loop. */}
+      <MyazaText variant="heading3" color={soft ? colors.warning : undefined} style={{ textAlign: 'center' }}>
+        {soft ? 'This photo looks blurry' : 'Looking good!'}
       </MyazaText>
       <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ textAlign: 'center' }}>
-        Tap Continue to submit, or Retake to try again.
+        {soft
+          ? 'For the best chance of a match, retake it holding the phone steady until your face is sharp.'
+          : 'Tap Continue to submit, or Retake to try again.'}
       </MyazaText>
     </View>
   );

@@ -11,16 +11,6 @@
 export { MyazaKYC, useMyazaKYC } from './MyazaKYC';
 export type { MyazaKYCProps, UseMyazaKYCReturn } from './MyazaKYC';
 
-// Returning-user face re-authentication (the web SDK's MyazaBiometricAuth).
-export { MyazaBiometricAuth } from './MyazaBiometricAuth';
-export type { MyazaBiometricAuthProps } from './MyazaBiometricAuth';
-export type {
-  BiometricAuthRequest,
-  BiometricAuthResponse,
-  BiometricStatusResponse,
-  BiometricLivenessClaim,
-} from './services/api-types-biometric';
-
 // Public config + callback types
 export type {
   MyazaKYCConfig,
@@ -192,6 +182,11 @@ export { mrzCheckDigit, parseMrz, type MrzScan } from './mrz/parse';
 // "this document has no MRZ" — the two look identical from the outside, and
 // only the first is worth reporting as a build problem.
 export { hasTextRecognizer } from './mrz/textRecognizer';
+// Whether that recogniser can run RIGHT NOW. On Android the model is fetched
+// through Play Services rather than bundled, so a build that HAS the recogniser
+// can still be unable to read for a while after install — a different fact from
+// the probe above, and the one a host app would show a "getting ready" note for.
+export { isTextModelReady, primeTextModel } from './mrz/textRecognizer';
 export { hasRectDetector } from './capture/rectDetector';
 export { extractMrz, sanitizeMrzLine } from './mrz/extract';
 

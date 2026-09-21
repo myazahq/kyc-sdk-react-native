@@ -70,12 +70,17 @@ default on Expo SDK 56):
   "expo": {
     "newArchEnabled": true,
     "plugins": [
-      ["react-native-vision-camera", { "enableMicrophonePermission": false }],
       "@myazahq/kyc-sdk-react-native"
     ]
   }
 }
 ```
+
+VisionCamera v5 ships **no config plugin** (v4 did), so it takes no `plugins`
+entry. Listing it makes `expo prebuild` load the package's main entry as a
+plugin and fail with `Cannot find module '.../lib/VisionCamera'`. The camera
+permission and usage strings come from this SDK's own plugin; pass
+`cameraPermission` to change the iOS wording.
 
 Then build a dev client (regenerates the native projects):
 
@@ -87,7 +92,62 @@ JAVA_HOME=/path/to/jdk-17 npx expo run:android    # Android — needs JDK 17
 
 > The SDK plugin accepts optional custom prompts:
 > `["@myazahq/kyc-sdk-react-native", { "cameraPermission": "Your message…",
-> "locationPermission": "Your message…" }]`.
+> "locationPermission": "Your message…", "nfcPermission": "Your message…" }]`.
+
+#### NFC is opt-in
+
+Reading the eMRTD chip in a passport or chip ID card needs platform permissions
+that most apps should not carry, so the SDK declares **none of them** unless you
+ask:
+
+```jsonc
+["@myazahq/kyc-sdk-react-native", { "nfc": true }]
+```
+
+With it on, the plugin writes the Android `NFC` permission plus a
+`uses-feature android:required="false"` declaration, and on iOS the
+`NFCReaderUsageDescription`, the reader-session entitlement and the eMRTD
+application identifier.
+
+Leave it off and none of that is added. The chip step already checks for a radio
+at runtime and skips itself when there is none, so an app built without NFC
+behaves exactly like a phone that has no NFC hardware — every other step is
+unaffected.
+
+Two reasons this is opt-in rather than on by default:
+
+- **iOS code signing.** The reader entitlement requires the App ID to carry the
+  "NFC Tag Reading" capability in the Apple Developer portal. Adding it
+  unconditionally breaks signing for every consumer who does not read chips and
+  has not enabled that capability.
+- **Play Store visibility.** `android.permission.NFC` makes Android infer that
+  the app *requires* an NFC radio, which hides it from every device without one.
+  That is why the permission and the `uses-feature` declaration are written
+  together and never separately.
+
+> **Changed in 3.0.0.** Earlier versions declared the Android NFC permission in
+> the library manifest, so it merged into every host app regardless of this
+> option — the opt-in only ever governed iOS. If you read chips on Android and
+> have not set `nfc: true`, set it now: without it the permission is no longer
+> declared and the chip step will find no radio. Apps that never read chips need
+> no change and lose a permission they never wanted.
+
+### Optional modules
+
+Four `expo-*` modules are **optional peers**. The SDK loads each one lazily and
+carries on without it, so nothing crashes if you skip them — but each one is
+missing a capability rather than a detail, so install them deliberately:
+
+| Module | What installing it buys | Without it |
+|--------|------------------------|-----------|
+| `expo-device` | Make, model, manufacturer and physical-vs-simulator in the device metadata | Those fields are omitted and the device class is guessed from the platform, so Device Intelligence has a weaker fingerprint and shared-device detection suffers |
+| `expo-application` | Your app's id, version and build number on the submission | The `app` block is omitted entirely, so a result cannot be traced to the build that produced it |
+| `expo-localization` | The device's region, explicitly | Country defaults and the reported locale fall back to the JS runtime's locale, which often carries no region at all (`en` rather than `en-NG`) |
+| `expo-document-picker` | "Choose a file" on the proof-of-address and KYB document steps | Those steps accept a camera capture only, so a PDF bank statement cannot be submitted at all |
+
+```sh
+npx expo install expo-device expo-application expo-localization expo-document-picker
+```
 
 ### Bare React Native app (no Expo prebuild)
 
@@ -104,7 +164,7 @@ npm install @myazahq/kyc-sdk-react-native \
   react-native-worklets react-native-nitro-modules react-native-nitro-image \
   react-native-safe-area-context react-native-svg \
   expo expo-image-manipulator expo-image-picker expo-speech expo-font \
-  expo-glass-effect expo-application expo-crypto expo-device expo-localization \
+  expo-glass-effect expo-crypto \
   expo-location
 
 # 3. iOS pods:
@@ -244,6 +304,7 @@ export default function VerifyScreen() {
 | `enableSelfie`          | `boolean`                                 | `true`              | Capture a selfie during liveness.                                                                                    |
 | `enableDocumentCapture` | `boolean`                                 | `true`              | Enable the document-scan step for document IDs.                                                                      |
 | `allowDocumentUpload`   | `boolean`                                 | `true`              | Allow picking a document photo from the gallery as an alternative to the camera. `false` hides every "upload instead" affordance (it's still offered on the camera-permission-denied screen as an escape hatch). |
+| `allowDocumentScan`     | `boolean`                                 | `true`              | Allow photographing the document with the live camera. `false` makes document capture upload-only: the SDK never asks for camera access and the applicant chooses a photo of each side from their device. At least one of `allowDocumentScan` and `allowDocumentUpload` must stay on; a config that switches both off keeps the camera on. |
 | `enableLiveness`        | `boolean`                                 | `true`              | Run the liveness challenge step. The server can still disable it per ID type.                                        |
 | `livenessMode`          | `'gestures' \| 'flash' \| 'both'`         | `'gestures'`        | How liveness is proven. See [Liveness](#liveness).                                                                   |
 | `flashSequenceLength`   | `number` (2–5)                            | `4`                 | Colours in the flash sequence, for `'flash'` / `'both'`.                                                             |
@@ -536,7 +597,9 @@ terminal `4xx` surface immediately. The UI shows a top toast while retrying, and
 If the user denies camera access, the SDK shows a clear "camera access needed"
 screen (with an **Open Settings** action) instead of hanging, and reports
 `camera_permission_denied` to `onError`. Document capture additionally offers a
-gallery-upload fallback unless `allowDocumentUpload` is `false`.
+gallery-upload fallback unless `allowDocumentUpload` is `false`. When
+`allowDocumentScan` is `false` the document step never requests the camera, so
+this screen cannot appear there: each side is a photo chosen from the device.
 
 ### Liveness quality guards
 
@@ -561,6 +624,67 @@ Both run as a [react-native-vision-camera](https://github.com/mrousavy/react-nat
 v5 Nitro frame processor: the camera frame never crosses the JS bridge. The selfie
 is **auto-captured** once challenges pass (anti-spoofing — never user-triggered),
 and a short liveness video is recorded and uploaded best-effort.
+
+## App size
+
+The SDK adds native machine learning to a host app, and that is where the weight
+sits. Two things decide what a user actually downloads, and the defaults are
+already the small ones — but the third and fourth are the host app's to set, and
+they are worth more than everything the SDK can do on its own.
+
+**On-device models are fetched, not bundled.** Face detection and text
+recognition both run on Google ML Kit on Android, and the SDK depends on the
+Play Services variants, which download their models on first use. Measured on a
+real integrator's release APK, the bundled pair cost **18.5 MB per device**
+(arm64: text 10.55 MB, face 7.95 MB) plus `.tflite` files in `assets/`, which
+ship to every device because assets are not split by ABI. Fetched, that is about
+0.4 MB of shims.
+
+The SDK primes both downloads the moment the flow opens, so they overlap the
+consent and ID-type screens. If a model has not arrived by the time it is needed,
+the step says so rather than failing silently — the liveness step waits and
+explains, and the MRZ scanner tells the user the code cannot be read and lets
+them continue without the chip.
+
+The trade is real: the Play Services variants need Google Play Services, so they
+do not work on Huawei or bare AOSP builds. If you ship to those devices, put this
+in your root `build.gradle` and you get fully-offline models back, at 18.5 MB per
+device:
+
+```gradle
+ext { myazaKycBundledMlKit = true }
+```
+
+**Ship an App Bundle, or filter your ABIs.** Native libraries dominate the rest
+of the download, and a universal APK carries every architecture at once. An `.aab`
+lets Play deliver only the one a device needs. If you must ship an APK, name the
+architectures your users actually have:
+
+```gradle
+android {
+  defaultConfig {
+    ndk { abiFilters 'arm64-v8a', 'armeabi-v7a' }
+  }
+}
+```
+
+**Turn on R8 and resource shrinking.** The SDK ships its own consumer rules
+(`consumer-rules.pro`), so you do not need to learn which of its classes Nitro
+constructs by name:
+
+```gradle
+android {
+  buildTypes {
+    release {
+      minifyEnabled true
+      shrinkResources true
+    }
+  }
+}
+```
+
+**Use Expo SDK 54 or newer.** Its default template builds smaller than earlier
+ones, and the SDK's peer range assumes it.
 
 ## Documentation
 

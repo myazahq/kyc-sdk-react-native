@@ -43,6 +43,34 @@ export interface UploadResponse {
   mediaId: string;
 }
 
+/** Which side of a document a capture check is about. */
+export type DocumentCaptureSide = 'front' | 'back';
+
+/**
+ * Ask whether an uploaded document photo will be readable, using the same
+ * detectors the server later decides the verification with.
+ */
+export interface DocumentCaptureCheckRequest {
+  mediaId: string;
+  side: DocumentCaptureSide;
+  country: string;
+  idType: string;
+  /** The workflow the submission will carry, when it carries one. */
+  workflowId?: string;
+  /** The attempt session from /session/start, when the flow has one. */
+  sessionId?: string;
+}
+
+/**
+ * `false` = looked and found nothing (ask for a retake); `true` = fine;
+ * `null` = not applicable, or the server could not look (treat as fine).
+ */
+export interface DocumentCaptureCheckResponse {
+  side: DocumentCaptureSide;
+  face: boolean | null;
+  barcode: boolean | null;
+}
+
 export interface KeyPersonInvite {
   keyPersonId: string;
   name: string;
@@ -408,5 +436,3 @@ export interface BusinessSearchResponse {
 export interface BusinessRegionsResponse {
   regions: { code: string; name: string }[];
 }
-
-export * from './api-types-biometric';

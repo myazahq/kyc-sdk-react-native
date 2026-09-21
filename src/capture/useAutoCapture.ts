@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFrameOutput } from 'react-native-vision-camera';
 import { runOnJS } from 'react-native-worklets';
 
-import { hasTextRecognizer, recognizeAllLines } from '../mrz/textRecognizer';
+import { hasTextRecognizer, primeTextModel, recognizeAllLines } from '../mrz/textRecognizer';
 import { extractMrz } from '../mrz/extract';
 import type { MrzScan } from '../mrz/parse';
 import { DocumentTextGate } from './documentTextGate';
@@ -97,6 +97,13 @@ export function useAutoCapture({
   // body is the one place that is both.
   hasTextRecognizer();
   hasRectDetector();
+  // Android fetches the text model through Play Services, so start it here too.
+  // The flow primes at open and this is normally a no-op, but the document step
+  // can be reached directly in a resumed session. Auto-capture deliberately does
+  // NOT gate on readiness: it is an accelerator, the manual shutter is live
+  // throughout, so a model that never arrives costs convenience rather than
+  // leaving the user stuck.
+  primeTextModel();
 
   const gate = useMemo(() => new DocumentTextGate(), []);
   const [guidance, setGuidance] = useState<DocumentGuidance>(INITIAL);

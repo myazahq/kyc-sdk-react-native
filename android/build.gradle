@@ -32,6 +32,11 @@ def safeExtGet(prop, fallback) {
   rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
 }
 
+// Resolved ONCE and used twice: it picks the ML Kit artifacts below AND is
+// compiled into BuildConfig so the native readiness checks can answer without
+// asking Play Services about a model that is sitting in the APK.
+def bundledMlKit = safeExtGet('myazaKycBundledMlKit', false).toString().toBoolean()
+
 android {
   namespace 'co.myazahq.kyc.rn'
   compileSdk safeExtGet('compileSdkVersion', 34)
@@ -40,6 +45,17 @@ android {
   defaultConfig {
     minSdk safeExtGet('minSdkVersion', 24)
     targetSdk safeExtGet('targetSdkVersion', 34)
+
+    // Shipped to the host app's shrinker so an integrator can enable R8 without
+    // learning which of our classes Nitro constructs by name. See the file.
+    consumerProguardFiles 'consumer-rules.pro'
+
+    // Whether the ML Kit models ship inside the APK. Read by the face detector
+    // and the text recogniser to short-circuit their readiness checks: on a
+    // bundled build the model is already here, and asking Play Services whether
+    // it holds the OPTIONAL module would answer "no" and strand a build that
+    // works perfectly offline.
+    buildConfigField "boolean", "BUNDLED_ML_KIT", "${bundledMlKit}"
 
     externalNativeBuild {
       cmake {
@@ -125,24 +141,22 @@ dependencies {
   // GMS. An org shipping to those devices sets `myazaKycBundledMlKit = true` in
   // its root build.gradle ext and gets today's fully-offline behaviour back.
   //
-  // Availability is NOT inferred per frame — `isModelReady()` is checked once
-  // before the camera opens (see HybridMyazaFaceDetector.kt), because a missing
-  // model would otherwise be indistinguishable from "no face in frame".
-  if (safeExtGet('myazaKycBundledMlKit', false).toString().toBoolean()) {
+  // Availability is NOT inferred per frame. Both models carry the same
+  // `isModelReady()` / `prepareModel()` contract, checked once before the
+  // camera opens, because the failure they guard against is identical: an
+  // absent model is indistinguishable from an empty frame (no face found, no
+  // text found), so a fresh install would sit on "position your face" or never
+  // auto-capture, with nothing able to say why.
+  //
+  // The Kotlin and Swift sources are unchanged by the switch — the unbundled
+  // artifacts expose the same `com.google.mlkit.vision.*` API, and the
+  // OptionalModuleApi the readiness check needs comes from the shared
+  // play-services common artifact both variants depend on.
+  if (bundledMlKit) {
     implementation 'com.google.mlkit:face-detection:16.1.6'
+    implementation 'com.google.mlkit:text-recognition:16.0.1'
   } else {
     implementation 'com.google.android.gms:play-services-mlkit-face-detection:17.1.0'
+    implementation 'com.google.android.gms:play-services-mlkit-text-recognition:19.0.1'
   }
-
-  // Text recognition is STILL BUNDLED, deliberately, and it is the larger of the
-  // two (10.55 MB vs 7.95 MB on arm64) — so this is the bigger half of the win,
-  // deferred rather than abandoned.
-  //
-  // Unbundling it needs the same isModelReady()/prepareModel() contract the face
-  // detector just gained. Without that, a missing OCR model is indistinguishable
-  // from "no text in frame": document auto-capture would simply never fire and
-  // MRZ scanning would never produce a key for the chip read, with nothing shown
-  // to the user. Shipping the dependency swap ahead of the availability handling
-  // would trade 10 MB for a silent failure on every fresh install.
-  implementation 'com.google.mlkit:text-recognition:16.0.1'
 }

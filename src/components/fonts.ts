@@ -1,26 +1,29 @@
 import type { TextStyle } from 'react-native';
 import { useFonts } from 'expo-font';
-import { SpaceGrotesk_500Medium, SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
-import { Karla_400Regular, Karla_500Medium, Karla_600SemiBold, Karla_700Bold } from '@expo-google-fonts/karla';
 import { fontFamilyFor } from '../config/font-resolve';
 import { useTheme } from './theme-provider';
 
 export { fontFamilyFor, markFamilyName, brandFamilyName, BRAND_WEIGHTS } from '../config/font-resolve';
 
-
 // Typography fonts — the SAME families the Flutter SDK uses via google_fonts:
 // Space Grotesk for headings, Karla for body. Loaded at runtime through
 // expo-font (already natively linked), so no native rebuild is needed. Each
 // weight is its own RN font family, so we resolve family-by-weight below.
-
+//
+// The files are VENDORED under src/assets/fonts and required one by one (see
+// the README there). They used to be named imports from the
+// @expo-google-fonts packages, whose index requires EVERY weight the family
+// ships — and Metro bundles every `require` it can see, used or not — so 19
+// font files reached every integrator's app for the seven faces the SDK draws
+// with. Measured at 1.85 MB on a real integrator's release APK.
 export const MYAZA_FONTS = {
-  SpaceGrotesk_500Medium,
-  SpaceGrotesk_600SemiBold,
-  SpaceGrotesk_700Bold,
-  Karla_400Regular,
-  Karla_500Medium,
-  Karla_600SemiBold,
-  Karla_700Bold,
+  SpaceGrotesk_500Medium: require('../assets/fonts/SpaceGrotesk_500Medium.ttf'),
+  SpaceGrotesk_600SemiBold: require('../assets/fonts/SpaceGrotesk_600SemiBold.ttf'),
+  SpaceGrotesk_700Bold: require('../assets/fonts/SpaceGrotesk_700Bold.ttf'),
+  Karla_400Regular: require('../assets/fonts/Karla_400Regular.ttf'),
+  Karla_500Medium: require('../assets/fonts/Karla_500Medium.ttf'),
+  Karla_600SemiBold: require('../assets/fonts/Karla_600SemiBold.ttf'),
+  Karla_700Bold: require('../assets/fonts/Karla_700Bold.ttf'),
 };
 
 /** Loads the Myaza fonts. Returns true once they're ready (system font until then). */
@@ -28,12 +31,6 @@ export function useMyazaFonts(): boolean {
   const [loaded] = useFonts(MYAZA_FONTS);
   return loaded;
 }
-
-/**
- * Resolves the concrete RN font family for a (heading vs body, weight) pair.
- * Returns `undefined` until fonts are loaded so text falls back to the system
- * font + `fontWeight` without triggering an "unrecognized font" warning.
- */
 
 /**
  * The body font family for a TEXT INPUT, at the given weight.

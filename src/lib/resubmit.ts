@@ -17,6 +17,30 @@ export interface ResubmitConfig {
   steps: string[];
   /** Reviewer's note to the applicant. */
   message?: string | null;
+  /**
+   * The ID the verification being redone used, when the server CARRIES it.
+   *
+   * A redo keeps the verification id, so a reviewer who did not tick the ID
+   * has asked for nothing about it: the server keeps the original number,
+   * document photos, typed name and chip read, and says so by sending the
+   * idType here. Present only on an individual, single-ID send-back whose
+   * reviewer did not tick 'id-type'. Absent (an older server, a business redo,
+   * a multi-ID run, or the ID was ticked) keeps the old behaviour.
+   */
+  idType?: string | null;
+}
+
+/**
+ * The ID a redo keeps, or null when the applicant must name one again.
+ *
+ * Read defensively rather than trusted: an idType beside a plan that ticks the
+ * ID picker, or beside no plan at all, is not an instruction to skip it.
+ */
+export function keptIdType(resubmit: ResubmitConfig | undefined | null): string | null {
+  const asked = resubmit?.steps;
+  if (!asked?.length || asked.includes('id-type')) return null;
+  const idType = resubmit?.idType;
+  return typeof idType === 'string' && idType.trim().length > 0 ? idType : null;
 }
 
 /**
@@ -48,10 +72,12 @@ const EVIDENCE: KYCStep[] = ['id-input', 'document-capture', 'nfc'];
  * Steps a narrowed flow keeps regardless, because without them it cannot
  * produce a submission at all.
  *
- * A resubmission is a NEW verification on a FRESH session: nothing is carried
- * forward from the one being redone, so the applicant must still say which ID
- * this is and supply it. `POST /verify` requires an `idType`, and a number-only
- * ID requires the number with it.
+ * Unless the server carries the original ID (`keptIdType`), nothing is carried
+ * forward from the attempt being redone, so the applicant must still say which
+ * ID this is and supply it. `POST /verify` requires an `idType`, and a
+ * number-only ID requires the number with it. When the ID IS carried, the
+ * identity steps drop out: the SDK preselects the kept ID and the server fills
+ * in the number, the document photos and the chip read.
  *
  * So narrowing removes the things arranged AROUND the identity — liveness,
  * proof of address, the questionnaire, contact checks — and never the identity
@@ -93,9 +119,12 @@ export function applyResubmitSteps(
 
   const wanted = new Set<string>(asked);
   if (wantsEvidence) for (const step of EVIDENCE) wanted.add(step);
-  for (const step of order.includes('business-details') ? BUSINESS_REQUIRED : INDIVIDUAL_REQUIRED) {
-    wanted.add(step);
-  }
+  // A kept ID needs no picker and, unless the reviewer asked for the evidence,
+  // no evidence step either: the redo is only what was ticked. KYB never keeps
+  // an ID (the server never sends one for a business redo), so it stays as is.
+  const isBusiness = order.includes('business-details');
+  const required = isBusiness ? BUSINESS_REQUIRED : keptIdType(resubmit) ? [] : INDIVIDUAL_REQUIRED;
+  for (const step of required) wanted.add(step);
 
   const narrowed = order.filter((step) => wanted.has(step) || ALWAYS.includes(step));
 

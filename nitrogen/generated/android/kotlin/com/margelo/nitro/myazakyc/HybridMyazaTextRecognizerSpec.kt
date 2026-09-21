@@ -37,6 +37,14 @@ abstract class HybridMyazaTextRecognizerSpec: HybridObject() {
   @DoNotStrip
   @Keep
   abstract fun recognizeTextInImage(uri: String, bottomFraction: Double): Promise<TextResult>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun isModelReady(): Boolean
+  
+  @DoNotStrip
+  @Keep
+  abstract fun prepareModel(): Promise<Boolean>
 
   // Default implementation of `HybridObject.toString()`
   override fun toString(): String {

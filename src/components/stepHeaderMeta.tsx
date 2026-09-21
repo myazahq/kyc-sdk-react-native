@@ -1,6 +1,7 @@
 import { ID_TYPES } from '../config/idTypes';
 import { poaDocumentTypes, poaMaxAgeDays, poaNamePolicy } from '../config/proofOfAddress';
 import { documentCaptureMeta } from '../screens/DocumentCaptureStep';
+import { documentCaptureMethods } from '../config/documentCaptureMethods';
 import { questionnaireMeta } from '../screens/QuestionnaireStep';
 import { contactCodeLength, contactMeta, type ContactChallenge } from '../config/contact';
 
@@ -77,7 +78,11 @@ export function stepHeaderMeta(
       case 'document-capture':
         // Phase-aware title/description live in the header (synced from the
         // capture screen via `documentCapturePhase`) — mirrors Flutter.
-        return documentCaptureMeta(documentCapturePhase, label);
+        return documentCaptureMeta(
+          documentCapturePhase,
+          label,
+          documentCaptureMethods(config).scan ? 'scan' : 'upload',
+        );
       case 'liveness':
         return { title: 'Face Verification', description: 'Follow the on-screen instructions' };
       case 'questionnaire':

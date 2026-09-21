@@ -1,5 +1,4 @@
 import React from 'react';
-import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { ICONS, type IconName } from './icon-map';
 
@@ -15,11 +14,13 @@ export interface IconProps {
 }
 
 export function Icon({ name, size = 20, color, strokeWidth = 2, solid = false }: IconProps): React.ReactElement {
-  // Solid moon/sun for the theme toggle — Lucide has no filled variants, so use
-  // Ionicons' purpose-built solid glyphs (matches Flutter's dark_mode/light_mode).
-  if (solid && (name === 'moon' || name === 'sun')) {
-    return <Ionicons name={name === 'moon' ? 'moon' : 'sunny'} size={size} color={color} />;
-  }
   const Glyph = ICONS[name];
-  return <Glyph size={size} color={color} strokeWidth={strokeWidth} />;
+  // The theme toggle's filled moon/sun (Flutter's dark_mode/light_mode). Lucide
+  // ships no filled variants, so the glyph's own body takes the colour: the
+  // moon's crescent and the sun's disc fill, the sun's rays stay strokes. This
+  // replaced an Ionicons import that was the SDK's ONLY use of
+  // @expo/vector-icons, a package whose icon fonts still reached every
+  // integrator's app for those two glyphs (1.35 MB on a real release APK).
+  const fill = solid && (name === 'moon' || name === 'sun') ? color : 'none';
+  return <Glyph size={size} color={color} strokeWidth={strokeWidth} fill={fill} />;
 }

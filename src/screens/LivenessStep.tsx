@@ -14,6 +14,7 @@ import { radius, spacing } from '../config/theme';
 import { withRetry } from '../services/retry';
 import { mapToKycError, safeReportError } from '../services/errors';
 import { compressSelfieImage, compressVideo } from '../services/mediaCompress';
+import { isSelfieBlurry, measureSelfieSharpness } from '../lib/selfie-sharpness';
 import { KYCError } from '../types/verification';
 import { useStore } from 'zustand';
 import { useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
@@ -184,6 +185,11 @@ export function LivenessStep(): React.ReactElement {
     uploadSelfieAndVideo,
   } = upload;
 
+  // The still the review should flag as soft, held BY URI, so a measurement
+  // that lands after a retake can never flag the next photo. A notice only,
+  // never a gate: see lib/selfie-sharpness.
+  const [softSelfieUri, setSoftSelfieUri] = useState<string | null>(null);
+
   // A stored selfie with no uploaded mediaId is an interrupted upload (failed,
   // or the user left mid-flight): resume it once on mount. Idempotent — with a
   // mediaId there is nothing to do.
@@ -255,6 +261,11 @@ export function LivenessStep(): React.ReactElement {
       const raw = `file://${file.filePath}`;
       const compressed = await compressSelfieImage(raw).catch(() => raw);
       setSelfieUri(compressed);
+      // Measured on the still the applicant is about to see. It never holds
+      // the review back: the notice appears when the answer does.
+      void measureSelfieSharpness(compressed).then((score) => {
+        if (isSelfieBlurry(score)) setSoftSelfieUri(compressed);
+      });
       // Recorded at capture, not at submit: by then the liveness hook is gone
       // and its flash result with it.
       setCaptureIntegrity({
@@ -448,6 +459,7 @@ export function LivenessStep(): React.ReactElement {
     return (
       <LivenessComplete
         selfieUri={selfieUri}
+        soft={!!selfieUri && softSelfieUri === selfieUri}
         upload={upload}
         onRetake={() => {
           setSelfieUri(null);
@@ -491,6 +503,31 @@ export function LivenessStep(): React.ReactElement {
   }
   if (permissionDenied) {
     return <CameraPermissionView onRetry={() => setPerm('requesting')} />;
+  }
+  // The model is still arriving. Measured at ~9s on a freshly installed device
+  // over fast wifi, and the connections this SDK actually serves are slower, so
+  // the head start from opening the flow does not always win the race.
+  //
+  // Without this the camera opened anyway and `detectFace` returned
+  // `faceCount: 0` for every frame, which is indistinguishable from "no face in
+  // shot" — so the user was told to position a face that was never going to
+  // register, for as long as the download took. That is the exact failure the
+  // readiness gate exists to prevent, and MrzScanView already answers it this
+  // way; only this screen was missing it.
+  //
+  // Deliberately AFTER the primer and the permission prompt: those need no
+  // model, so letting them run first keeps the download overlapping something
+  // the user is already reading. Only the camera itself waits.
+  if (modelState === 'preparing') {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg }}>
+        <MyazaPulseLoader size={24} />
+        <View style={{ height: spacing.md }} />
+        <MyazaText variant="bodyMedium" style={{ textAlign: 'center' }}>
+          Getting face verification ready. This only happens once.
+        </MyazaText>
+      </View>
+    );
   }
 
   if (liveness.phase === 'failed') {

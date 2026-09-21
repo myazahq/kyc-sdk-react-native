@@ -27,6 +27,14 @@ import NitroModules
 // ---------------------------------------------------------------------------
 
 final class HybridMyazaTextRecognizer: HybridMyazaTextRecognizerSpec {
+  // Apple Vision ships with the OS — there is no model to fetch, no Play
+  // Services equivalent, and no window in which recognition is unavailable.
+  // These exist only because Android fetches ML Kit's models on demand; iOS
+  // answers "ready" unconditionally so the shared TS flow needs no platform
+  // branch.
+  func isModelReady() throws -> Bool { true }
+
+  func prepareModel() throws -> Promise<Bool> { Promise.resolved(withResult: true) }
 
   func recognizeText(frame: any HybridFrameSpec, bottomFraction: Double) throws -> TextResult {
     guard

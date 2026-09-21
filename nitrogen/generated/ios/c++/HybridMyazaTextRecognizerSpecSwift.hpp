@@ -90,6 +90,22 @@ namespace margelo::nitro::myazakyc {
       auto __value = std::move(__result.value());
       return __value;
     }
+    inline bool isModelReady() override {
+      auto __result = _swiftPart.isModelReady();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<bool>> prepareModel() override {
+      auto __result = _swiftPart.prepareModel();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
 
   private:
     KycSdkReactNative::HybridMyazaTextRecognizerSpec_cxx _swiftPart;

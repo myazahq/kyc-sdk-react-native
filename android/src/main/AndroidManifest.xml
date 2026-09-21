@@ -1,12 +1,23 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <!--
-    NFC, for reading a passport's eMRTD chip. `required="false"` on the feature
-    is deliberate: the rest of the SDK works without NFC, and marking it
-    required would hide the host app from every device that has no NFC radio.
-    The chip step checks availability at runtime and skips instead.
+    NFC is DELIBERATELY NOT DECLARED HERE.
+    ======================================
+    Reading a passport's eMRTD chip needs android.permission.NFC, but a library
+    manifest is MERGED into every host app, so declaring it here gave the
+    permission to every integrator — including the majority whose workflows
+    never touch a chip, and who had no way to remove it. That is the opposite
+    of opt-in, and it silently contradicted the config plugin's own `nfc`
+    option, which defaults to OFF.
+
+    The permission AND the feature are now written by app.plugin.js, and only
+    on `nfc: true`. They must travel TOGETHER — see ensureNfcFeatureOptional()
+    there for why the feature is not an optional extra: Android infers
+    `required="true"` from the permission alone, which hides the host app from
+    every device with no NFC radio.
+
+    The chip step still checks availability at runtime and auto-skips on a
+    device with no radio, so a host that opts out loses nothing else.
   -->
-  <uses-permission android:name="android.permission.NFC" />
-  <uses-feature android:name="android.hardware.nfc" android:required="false" />
 
   <application>
     <!--

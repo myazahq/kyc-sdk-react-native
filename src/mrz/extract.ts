@@ -57,6 +57,15 @@ function fit(line: string, width: number): string | null {
   if (line.length >= width - 2 && line.length < width) return line.padEnd(width, '<');
   // Long by a stray glyph or three: drop the trailing noise.
   if (line.length > width && line.length <= width + 3) return line.slice(0, width);
+  // A filler run the recogniser miscounted. Android returns runs of '<' as
+  // guillemets whose number does not match the fillers printed, so the mapped
+  // run overshoots or falls short by many characters (a passport's first line
+  // came back 53 wide on the Flutter SDK, 2026-09-15). Trailing fillers are
+  // padding and carry no data, so only they are removed or added.
+  if (line.length > width && !/[^<]/.test(line.slice(width))) return line.slice(0, width);
+  if (line.length < width && line.length >= Math.floor(width / 2) && line.endsWith('<')) {
+    return line.padEnd(width, '<');
+  }
   return null;
 }
 
@@ -65,10 +74,9 @@ function fit(line: string, width: number): string | null {
  * not carry a complete, valid one.
  */
 export function extractMrz(recognizedLines: string[], now: Date = new Date()): MrzScan | null {
-  const candidates = recognizedLines
-    .map(sanitizeMrzLine)
-    .filter(looksLikeMrzLine);
-  if (candidates.length === 0) return null;
+  const pieces = recognizedLines.map(sanitizeMrzLine).filter((line) => line.length > 0);
+  const candidates = pieces.filter(looksLikeMrzLine);
+  if (candidates.length === 0) return fromFragments(pieces, now);
 
   // 1) A single line already holding the whole MRZ (some recognisers merge).
   for (const line of candidates) {
@@ -97,5 +105,64 @@ export function extractMrz(recognizedLines: string[], now: Date = new Date()): M
     if (scan) return scan;
   }
 
+  return fromFragments(pieces, now);
+}
+
+// ---------------------------------------------------------------------------
+// Split lines.
+//
+// On a high-resolution still, Android's recogniser can return ONE printed MRZ
+// line as two text lines (seen on the Flutter SDK, 2026-09-15: a passport's
+// two-line band came back as three lines). Joining runs of adjacent pieces back
+// to line width recovers it; a wrong join is harmless, as above. Mirrored in
+// kyc-sdk-flutter's mrz_extract.dart.
+// ---------------------------------------------------------------------------
+
+/** The longest run of pieces one printed line is ever split into. */
+const MAX_PIECES_PER_LINE = 4;
+
+interface JoinedRow {
+  end: number;
+  text: string;
+}
+
+/** Joined rows of `width`, keyed by the index of the piece each one starts at. */
+function rowsByStart(pieces: string[], width: number): Map<number, JoinedRow[]> {
+  const rows = new Map<number, JoinedRow[]>();
+  for (let i = 0; i < pieces.length; i++) {
+    let text = '';
+    for (let j = i; j < pieces.length && j < i + MAX_PIECES_PER_LINE; j++) {
+      text += pieces[j]!;
+      // Generous: a joined row may carry an over-counted filler run `fit` trims.
+      if (text.length > width * 2) break;
+      const fitted = fit(text, width);
+      if (fitted) rows.set(i, [...(rows.get(i) ?? []), { end: j, text: fitted }]);
+    }
+  }
+  return rows;
+}
+
+/** Consecutive joined rows of line width: TD3 two of 44, TD1 three of 30. */
+function fromFragments(pieces: string[], now: Date): MrzScan | null {
+  const td3 = rowsByStart(pieces, 44);
+  for (const list of td3.values()) {
+    for (const a of list) {
+      for (const b of td3.get(a.end + 1) ?? []) {
+        const scan = parseMrz(a.text + b.text, now);
+        if (scan) return scan;
+      }
+    }
+  }
+  const td1 = rowsByStart(pieces, 30);
+  for (const list of td1.values()) {
+    for (const a of list) {
+      for (const b of td1.get(a.end + 1) ?? []) {
+        for (const c of td1.get(b.end + 1) ?? []) {
+          const scan = parseMrz(a.text + b.text + c.text, now);
+          if (scan) return scan;
+        }
+      }
+    }
+  }
   return null;
 }

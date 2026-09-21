@@ -1,4 +1,3 @@
-import { Image } from 'react-native';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Video } from 'react-native-compressor';
 
@@ -41,10 +40,29 @@ export async function compressVideo(uri: string): Promise<string> {
 //   • SELFIE   — moderate: JPEG q0.8, capped to ~1280 px.
 // Runs natively via expo-image-manipulator (off the JS thread).
 
-export function imageSize(uri: string): Promise<{ width: number; height: number }> {
-  return new Promise((resolve, reject) =>
-    Image.getSize(uri, (width, height) => resolve({ width, height }), reject),
-  );
+/**
+ * The image's TRUE pixel dimensions.
+ *
+ * Measured through expo-image-manipulator — the same native module that does
+ * the cropping — because the two must agree, and they did not.
+ *
+ * This used `Image.getSize`, which on Android reports DP (pixels ÷ display
+ * density), while ImageManipulator crops in real pixels. On a density-2 phone
+ * a 3048x4064 photo measured 1524x2032, so a crop rect computed as "centred"
+ * was applied at half scale and landed in the UPPER-LEFT QUADRANT of the real
+ * image. Every Android document capture cropped the wrong region — the card
+ * the applicant framed was simply not in the stored photo. iOS was unaffected
+ * (getSize returns pixels there), which is how an iPhone-led test history
+ * never saw it. Found on a TECNO KM5 (density 320 → scale 2.0), 2026-09-20:
+ * reported 1524x2032 against a true 3048x4064, a factor of exactly 2.
+ *
+ * Correcting by `PixelRatio.get()` would also work on today's devices, but it
+ * re-states the cropper's units somewhere else and leaves the same class of
+ * bug one refactor away. Asking the cropper itself cannot drift from it.
+ */
+export async function imageSize(uri: string): Promise<{ width: number; height: number }> {
+  const ref = await ImageManipulator.ImageManipulator.manipulate(uri).renderAsync();
+  return { width: ref.width, height: ref.height };
 }
 
 /**

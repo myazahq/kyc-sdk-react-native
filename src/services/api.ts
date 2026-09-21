@@ -6,6 +6,8 @@ import type {
   BusinessSearchResponse,
   BusinessSelectResponse,
   ContactCheckResponse,
+  DocumentCaptureCheckRequest,
+  DocumentCaptureCheckResponse,
   NfcChallengeResponse,
   ContactSendResponse,
   HealthResponse,
@@ -22,7 +24,6 @@ import type {
   VerifyResponse,
   WorkflowResolutionResponse,
 } from './api-types';
-import { biometricCalls } from './api-biometric';
 
 // The HTTP contract lives in ./api-types and is re-exported here, so importers
 // keep a single entry point for both the client and the shapes it exchanges.
@@ -167,8 +168,6 @@ export function createKYCApi(baseUrl: string, apiKey: string) {
   }
 
   return {
-    ...biometricCalls(request),
-
     /**
      * Single multipart upload: the local file is POSTed to our server, which
      * stores it and returns the `mediaId` referenced later by /verify.
@@ -207,6 +206,23 @@ export function createKYCApi(baseUrl: string, apiKey: string) {
       });
       const { mediaId } = await handleResponse<UploadResponse>(res);
       return mediaId;
+    },
+
+    /**
+     * Ask whether an uploaded document side will be readable: a face on the
+     * printed photo, a barcode that decodes. Best-effort by contract at the
+     * call site (lib/documentCaptureCheck runCaptureChecks): a failure or a
+     * timeout reads as "no problem" and never blocks the flow.
+     */
+    async checkDocumentCapture(
+      body: DocumentCaptureCheckRequest,
+      signal?: AbortSignal,
+    ): Promise<DocumentCaptureCheckResponse> {
+      return request<DocumentCaptureCheckResponse>('/document-capture/check', {
+        method: 'POST',
+        body: JSON.stringify(body),
+        ...(signal ? { signal } : {}),
+      });
     },
 
     async verify(body: VerifyRequest): Promise<VerifyResponse> {

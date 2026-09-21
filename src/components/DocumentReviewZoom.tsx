@@ -7,6 +7,7 @@ import { Icon } from './Icon';
 import { MyazaText } from './Typography';
 import { MyazaButton } from './MyazaButton';
 import { Chip, CHIP_TEXT, type ReviewSide } from './DocumentReviewSide';
+import type { DocumentReviewCopy } from './documentReviewCopy';
 
 /**
  * Full-bleed view of one side, with retake to hand — checking a capture and
@@ -43,11 +44,14 @@ function bottomInset(): number {
 export function DocumentReviewZoom({
   side,
   isBusy,
+  copy,
   onClose,
   onRetake,
 }: {
   side: ReviewSide;
   isBusy: boolean;
+  /** The review's words for the capture mode (documentReviewCopy). */
+  copy: DocumentReviewCopy;
   onClose: () => void;
   onRetake: () => void;
 }): React.ReactElement {
@@ -107,7 +111,7 @@ export function DocumentReviewZoom({
 
         <View style={{ height: spacing.sm }} />
         <MyazaButton
-          label={`Retake ${side.label.toLowerCase()}`}
+          label={copy.redoSide(side.label)}
           leadingIcon="refresh"
           variant="outline"
           disabled={isBusy}

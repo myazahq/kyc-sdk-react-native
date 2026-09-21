@@ -6,6 +6,7 @@ import { Icon } from './Icon';
 import { MyazaText } from './Typography';
 import { DocumentReviewThumb, type ReviewSide } from './DocumentReviewSide';
 import { DocumentReviewZoom } from './DocumentReviewZoom';
+import { documentReviewCopy, type DocumentCaptureMode } from './documentReviewCopy';
 import { radius, spacing } from '../config/theme';
 
 // ─── Document review ──────────────────────────────────────────────────────────
@@ -33,6 +34,9 @@ import { radius, spacing } from '../config/theme';
 // Unlike Flutter, the step here sits inside the sheet's own ScrollView (which
 // already carries the bottom safe-area inset), so the footer is pushed down by
 // a flexible spacer rather than pinned with a hand-computed inset.
+//
+// The words follow `mode` (see documentReviewCopy): an upload-only workflow
+// never showed a camera, so it says "Replace" and "added".
 
 export function DocumentReview({
   frontUri,
@@ -43,6 +47,7 @@ export function DocumentReview({
   footer,
   onRetakeFront,
   onRetakeBack,
+  mode = 'scan',
 }: {
   frontUri: string;
   backUri?: string | null;
@@ -56,6 +61,8 @@ export function DocumentReview({
   footer: React.ReactNode;
   onRetakeFront?: () => void;
   onRetakeBack?: () => void;
+  /** How the photos got in: the camera (default) or chosen from the device. */
+  mode?: DocumentCaptureMode;
 }): React.ReactElement {
   const { colors } = useTheme();
   const [zoomed, setZoomed] = useState<ReviewSide | null>(null);
@@ -65,6 +72,7 @@ export function DocumentReview({
     ...(backUri ? [{ id: 'back' as const, label: 'Back', uri: backUri, onRetake: onRetakeBack }] : []),
   ];
   const twoSided = sides.length > 1;
+  const copy = documentReviewCopy(mode, twoSided);
 
   return (
     <View style={{ flex: 1 }}>
@@ -85,7 +93,7 @@ export function DocumentReview({
         </View>
         <View style={{ width: spacing.xs }} />
         <MyazaText variant="bodySmall" style={{ fontWeight: '600' }}>
-          {twoSided ? 'Both sides captured' : 'Photo captured'}
+          {copy.status}
         </MyazaText>
       </View>
 
@@ -108,6 +116,7 @@ export function DocumentReview({
                 // the screen read as permanently stuck.
                 busyOverlay={isBusy ? busyOverlay : null}
                 onZoom={() => setZoomed(side)}
+                copy={copy}
               />
             </View>
           </React.Fragment>
@@ -129,6 +138,7 @@ export function DocumentReview({
         <DocumentReviewZoom
           side={zoomed}
           isBusy={isBusy}
+          copy={copy}
           onClose={() => setZoomed(null)}
           onRetake={() => {
             const retake = zoomed.onRetake;

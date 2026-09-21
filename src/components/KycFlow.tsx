@@ -134,9 +134,16 @@ export function KycFlow({
     return { progress: (idx + 1) / steps.length, stepCount: steps.length };
   }, [currentStep, order]);
 
-  // The flag beside the title names the country whose IDs are on screen.
+  // The flag beside the title names the country whose IDs are on screen. The
+  // document steps ask for a country's document just as directly as the ID
+  // ones do, so they carry the same flag rather than a second treatment.
   const headerCountry =
-    currentStep === 'id-type' || currentStep === 'id-input' ? country : null;
+    currentStep === 'id-type' ||
+    currentStep === 'id-input' ||
+    currentStep === 'document-capture' ||
+    currentStep === 'nfc'
+      ? country
+      : null;
   // Back is hidden on the flow's OPENING step (consent, or the first real step
   // when the workflow switched the consent screen off), not on consent by
   // name. A multi-ID run returns to the ID picker for its next check, where

@@ -1,6 +1,6 @@
 {
   "name": "@myazahq/kyc-sdk-react-native",
-  "version": "2.6.0",
+  "version": "3.0.0",
   "description": "Myaza KYC SDK for React Native (Expo) — ID verification, liveness detection, and document capture",
   "author": "Flitstack Technologies Inc.",
   "repository": {
@@ -49,6 +49,10 @@
   "license": "MIT",
   "peerDependencies": {
     "expo": ">=56",
+    "expo-application": ">=56",
+    "expo-device": ">=56",
+    "expo-document-picker": ">=56",
+    "expo-localization": ">=56",
     "expo-task-manager": ">=14",
     "react-native-webview": ">=13",
     "react": ">=19",
@@ -61,6 +65,18 @@
     "react-native-worklets": ">=0.8"
   },
   "peerDependenciesMeta": {
+    "expo-application": {
+      "optional": true
+    },
+    "expo-device": {
+      "optional": true
+    },
+    "expo-document-picker": {
+      "optional": true
+    },
+    "expo-localization": {
+      "optional": true
+    },
     "expo-task-manager": {
       "optional": true
     },
@@ -69,21 +85,14 @@
     }
   },
   "dependencies": {
-    "@expo-google-fonts/karla": "^0.4.2",
-    "@expo-google-fonts/space-grotesk": "^0.4.1",
-    "@expo/vector-icons": "^14.0.4",
     "country-flag-icons": "^1.6.17",
-    "expo-application": "~56.0.3",
     "libphonenumber-js": "^1.13.8",
     "expo-crypto": "~56.0.4",
     "expo-clipboard": "~56.0.0",
-    "expo-device": "~56.0.4",
-    "expo-document-picker": "~56.0.4",
     "expo-font": "~56.0.5",
     "expo-glass-effect": "~56.0.4",
     "expo-image-manipulator": "~56.0.17",
     "expo-image-picker": "~56.0.16",
-    "expo-localization": "~56.0.6",
     "expo-location": "~56.0.24",
     "expo-speech": "~56.0.3",
     "lucide-react-native": "^1.17.0",

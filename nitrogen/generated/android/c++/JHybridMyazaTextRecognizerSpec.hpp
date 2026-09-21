@@ -56,6 +56,8 @@ namespace margelo::nitro::myazakyc {
     // Methods
     TextResult recognizeText(const std::shared_ptr<margelo::nitro::camera::HybridFrameSpec>& frame, double bottomFraction) override;
     std::shared_ptr<Promise<TextResult>> recognizeTextInImage(const std::string& uri, double bottomFraction) override;
+    bool isModelReady() override;
+    std::shared_ptr<Promise<bool>> prepareModel() override;
 
   private:
     jni::global_ref<JHybridMyazaTextRecognizerSpec::JavaPart> _javaPart;

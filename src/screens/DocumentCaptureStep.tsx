@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Image, Platform, Pressable, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 
 import { radius, spacing } from '../config/theme';
@@ -10,8 +9,8 @@ import { withRetry } from '../services/retry';
 import { mapToKycError, safeReportError } from '../services/errors';
 import { compressDocumentImage, compressVideo, cropCardRegion } from '../services/mediaCompress';
 import { MAX_VIDEO_BYTES } from '../config/captureSettings';
-import { KYCError } from '../types/verification';
 import type { DocumentCapturePhase } from '../store/kycStore';
+import { documentCaptureMethods } from '../config/documentCaptureMethods';
 import { useEffectiveCountry, useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
 import { MyazaText } from '../components/Typography';
 import { MyazaButton } from '../components/MyazaButton';
@@ -20,16 +19,33 @@ import { MyazaPulseLoader } from '../components/MyazaPulseLoader';
 import { CameraPhase } from './document/CameraPhase';
 import { CameraPermissionView, CameraUnavailableView, CameraPermissionPrimingView } from '../components/CameraPermissionView';
 import { ReadyPrimer } from '../components/ReadyPrimer';
+import { RequiredDocumentPill } from '../components/RequiredDocumentPill';
 import { READY_DOCUMENT } from '../components/readyPrimerContent';
 import { DocumentCropper } from '../components/DocumentCropper';
 import { DocumentReview } from '../components/DocumentReview';
 import { scanMrzFromImage } from '../mrz/textRecognizer';
 import { Icon } from '../components/Icon';
+import { useDocumentCamera, type DocumentCamera } from './document/useDocumentCamera';
+import { UploadPhase, documentUploadMeta } from './document/UploadPhase';
+import { CaptureCheckNotice } from './document/CaptureCheckNotice';
+import { isBusinessFlow } from '../config/business';
+import { captureCheckProblems, runCaptureChecks, type CaptureProblem } from '../lib/documentCaptureCheck';
+import type { DocumentCaptureCheckRequest, DocumentCaptureSide } from '../services/api';
 
 // Document capture — the RN mirror of the Flutter/web DocumentCaptureStep.
 // Phases: front → front-preview → back → review (two-sided); front → review
 // (one-sided). Manual shutter (VisionCamera) or gallery upload; each side is
 // compressed (OCR-conservative) then eagerly uploaded on Continue with retry.
+//
+// Which of the two ways in is offered comes from `documentCaptureMethods`
+// (allowDocumentScan / allowDocumentUpload). With scanning off, each side is
+// UploadPhase instead of the camera, and the camera's hooks are never mounted.
+//
+// Before moving on, each uploaded side goes past the server's capture check
+// (lib/documentCaptureCheck): no face on the printed photo, or a barcode that
+// will not read, turns the review footer into a retake notice. A notice, never
+// a gate: "Continue anyway" always advances, and a failed or slow check reads
+// as no problem.
 //
 // The per-phase title/description live in the SHEET HEADER (KycFlow reads the
 // synced `documentCapturePhase` from the store and calls `documentCaptureMeta`),
@@ -39,7 +55,10 @@ import { Icon } from '../components/Icon';
 export function documentCaptureMeta(
   phase: DocumentCapturePhase,
   documentLabel: string,
+  mode: 'scan' | 'upload' = 'scan',
 ): { title: string; description: string } {
+  // An upload-only workflow asks for a photo, so it cannot say "scan".
+  if (mode === 'upload') return documentUploadMeta(phase, documentLabel);
   // Copy matches the Flutter SDK's document-capture header meta exactly.
   switch (phase) {
     case 'front':
@@ -77,6 +96,33 @@ function cameraBottomInset(): number {
 }
 
 export function DocumentCaptureStep(): React.ReactElement {
+  const config = useKycConfig();
+  const methods = documentCaptureMethods(config);
+  // The camera's hooks live in their own wrapper so an upload-only workflow
+  // (`allowDocumentScan: false`) never mounts them: no permission read, no
+  // device enumeration, no prompt. The element types stay fixed for a given
+  // config, so the capture state below keeps the step's whole lifetime.
+  return methods.scan ? (
+    <ScanningDocumentCapture allowUpload={methods.upload} />
+  ) : (
+    <DocumentCapture camera={null} allowUpload />
+  );
+}
+
+function ScanningDocumentCapture({ allowUpload }: { allowUpload: boolean }): React.ReactElement {
+  const config = useKycConfig();
+  const camera = useDocumentCamera(config.onError);
+  return <DocumentCapture camera={camera} allowUpload={allowUpload} />;
+}
+
+function DocumentCapture({
+  camera,
+  allowUpload,
+}: {
+  /** Null in upload-only mode, where each side is a photo from the device. */
+  camera: DocumentCamera | null;
+  allowUpload: boolean;
+}): React.ReactElement {
   const { colors } = useTheme();
   const toast = useToast();
   const config = useKycConfig();
@@ -90,12 +136,23 @@ export function DocumentCaptureStep(): React.ReactElement {
   const setImmersiveCapture = useKyc((s) => s.setImmersiveCapture);
   const store = useKycStore();
   const nextStep = useKyc((s) => s.nextStep);
+  const sessionId = useKyc((s) => s.sessionId);
 
-  const allowUpload = config.allowDocumentUpload !== false;
   const documentLabel =
     (selectedIdType && Object.values(ID_TYPES).flat().find((t) => t.key === selectedIdType)?.label) || 'Document';
   const scanSides = selectedIdType ? getScanSides(selectedIdType) : 'front_only';
   const isTwoSided = scanSides === 'front_and_back';
+
+  // "Required: <document>" — shown on the screens either side of the camera,
+  // matching the web SDK's badge and Flutter's _RequiredPill. Not over a live
+  // viewfinder: that screen is full-bleed and owns the display.
+  const requiredPill = (side: 'front' | 'back' | null) => (
+    <RequiredDocumentPill
+      idTypeLabel={documentLabel}
+      sideBadge={isTwoSided && side ? (side === 'back' ? 'Back Side' : 'Front Side') : null}
+      stepLabel={isTwoSided && side ? (side === 'back' ? 'Step 2 of 2' : 'Step 1 of 2') : null}
+    />
+  );
   const guideAspect = documentGuideAspect(selectedIdType);
 
   const [phase, setPhase] = useState<DocumentCapturePhase>('front');
@@ -106,6 +163,10 @@ export function DocumentCaptureStep(): React.ReactElement {
   const [retryInfo, setRetryInfo] = useState<{ attempt: number; total: number } | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [cropUri, setCropUri] = useState<string | null>(null); // gallery photo awaiting crop
+  // What the server's capture check found wrong with the uploaded sides. Set
+  // only when there is something to retake; any new capture clears it, so the
+  // next Continue uploads and checks again.
+  const [captureProblems, setCaptureProblems] = useState<CaptureProblem[] | null>(null);
   // Best-effort document videos recorded alongside each side's still (uploaded as
   // document_front_video / document_back_video). Refs — they don't drive the UI.
   const frontVideoRef = useRef<string | null>(null);
@@ -117,42 +178,14 @@ export function DocumentCaptureStep(): React.ReactElement {
   }, [phase, setDocumentCapturePhase]);
 
 
-  // ── Camera permission ──────────────────────────────────────────────────────
-  // `perm` is derived from the ASYNC requestPermission result, not synchronously
-  // from `hasPermission` — otherwise the brief window while the OS prompt is open
-  // (hasPermission still false) would read as "denied" and fire onError early.
-  // 'priming' shows the "Allow camera access" screen BEFORE the OS prompt
-  // (Stripe-style); the prompt only fires (→ 'requesting') once the user taps
-  // "Grant access".
-  const { hasPermission, requestPermission } = useCameraPermission();
-  const [perm, setPerm] = useState<'priming' | 'requesting' | 'granted' | 'denied'>(
-    hasPermission ? 'granted' : 'priming',
-  );
-  const permReportedRef = useRef(false);
-
-  // ── Camera availability ─────────────────────────────────────────────────────
-  // Even with permission granted, there may be no usable back camera (the iOS/
-  // Android simulator has none; a real device may fail to init). Give the device
-  // list a moment to resolve, then surface a proper "Camera not available" error
-  // with an upload fallback — on every iOS version (glass or not) and Android.
-  // Device enumeration does NOT need camera permission (iOS AVCaptureDevice /
-  // Android CameraManager list hardware regardless), so `!device` reliably means
-  // "no back-camera hardware" — true on every simulator. That's a different state
-  // from "permission denied": no hardware → nothing to grant.
-  const device = useCameraDevice('back');
-  const [cameraGrace, setCameraGrace] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setCameraGrace(true), 1500);
-    return () => clearTimeout(t);
-  }, []);
-  // No camera hardware at all → "Camera not available" (regardless of what the
-  // permission API says — on a camera-less sim it may even report denied).
-  const cameraUnavailable = cameraGrace && !device;
+  // ── Camera permission + availability ───────────────────────────────────────
+  // Owned by `useDocumentCamera` (called by ScanningDocumentCapture), so
+  // `camera` is null in upload-only mode and every camera gate below is skipped.
+  //
   // Gate the camera path on the user acknowledging the primer. Shown once for
   // the step, not per side — repeating it before the back of a card would be
   // noise, not a warning.
   const [ready, setReady] = useState(false);
-  const showPrimer = perm === 'priming' && !!device;
   // Tell the shell when the full-bleed camera is on screen. Scoped tightly:
   // only the live preview earns the whole display — the ready primer, the
   // permission screens, the previews and the review all keep their chrome.
@@ -161,56 +194,21 @@ export function DocumentCaptureStep(): React.ReactElement {
   // cleanup here would fire during any remount and fight the effect that had
   // just raised it.
   const cameraLive =
-    (phase === 'front' || phase === 'back') && ready && perm === 'granted' && !!device;
+    (phase === 'front' || phase === 'back') &&
+    ready &&
+    !!camera &&
+    camera.perm === 'granted' &&
+    camera.hasDevice;
   useEffect(() => {
     setImmersiveCapture(cameraLive);
   }, [cameraLive, setImmersiveCapture]);
-
-  // Reflect an externally-granted permission.
-  useEffect(() => {
-    if (hasPermission) setPerm('granted');
-  }, [hasPermission]);
-
-  // Fire the real OS prompt only after the user taps "Grant access" (or retry).
-  useEffect(() => {
-    if (perm !== 'requesting') return;
-    let cancelled = false;
-    void (async () => {
-      const granted = await requestPermission();
-      if (!cancelled) setPerm(granted ? 'granted' : 'denied');
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [perm, requestPermission]);
-
-  // A *genuine* permission denial requires a camera to exist but be blocked. On a
-  // camera-less sim the OS may report denied — that's "not available", not a
-  // permission problem, so don't treat it as denied or report onError there.
-  const permissionDenied = perm === 'denied' && !!device;
-  useEffect(() => {
-    if (permissionDenied && !permReportedRef.current) {
-      permReportedRef.current = true;
-      safeReportError(
-        config.onError,
-        new KYCError(
-          'camera_permission_denied',
-          'Camera access is required to photograph your document. Allow camera access or upload a photo instead.',
-        ),
-      );
-    }
-    if (!permissionDenied) permReportedRef.current = false;
-  }, [permissionDenied, config.onError]);
-
-  const retryPermission = useCallback(() => {
-    setPerm('requesting');
-  }, []);
 
   // ── Capture → compress → store for the current side ────────────────────────
   const storeCapture = useCallback(
     async (rawUri: string) => {
       setBusy(true);
       setUploadError(null);
+      setCaptureProblems(null);
       try {
         const compressed = await compressDocumentImage(rawUri);
         // Read the MRZ off the FRONT while we have it. It is the key that
@@ -317,25 +315,34 @@ export function DocumentCaptureStep(): React.ReactElement {
     [api, setMediaId],
   );
 
-  // ── Upload both sides, then advance (KycFlow routes to liveness/submitted) ──
+  // ── Advance (KycFlow routes to liveness/submitted, or the next multi-ID ID) ─
+  // Shared by a clean Continue and "Continue anyway". The media ids are already
+  // in the store, so moving on never uploads or checks a second time.
+  const advance = useCallback(() => {
+    setCaptureProblems(null);
+    nextStep();
+  }, [nextStep]);
+
+  // ── Upload both sides, check they will read, then advance ──────────────────
   const handleContinue = useCallback(async () => {
     if (!frontUri) return;
     setUploading(true);
     setUploadError(null);
+    setCaptureProblems(null);
     setRetryInfo(null);
     const onRetry = (attempt: number, total: number) => setRetryInfo({ attempt, total });
+    const uploaded: { side: DocumentCaptureSide; mediaId: string }[] = [];
     try {
       const frontId = await withRetry(() => api.upload({ uri: frontUri, type: 'image/jpeg' }, 'document_front'), { onRetry });
       setMediaId('documentFront', frontId);
+      uploaded.push({ side: 'front', mediaId: frontId });
       await uploadDocVideo(frontVideoRef.current, 'document_front_video', 'documentFrontVideo');
       if (isTwoSided && backUri) {
         const backId = await withRetry(() => api.upload({ uri: backUri, type: 'image/jpeg' }, 'document_back'), { onRetry });
         setMediaId('documentBack', backId);
+        uploaded.push({ side: 'back', mediaId: backId });
         await uploadDocVideo(backVideoRef.current, 'document_back_video', 'documentBackVideo');
       }
-      setRetryInfo(null);
-      setUploading(false);
-      nextStep();
     } catch (err) {
       setRetryInfo(null);
       setUploading(false);
@@ -343,11 +350,51 @@ export function DocumentCaptureStep(): React.ReactElement {
       setUploadError(kycError.message);
       toast.show({ variant: 'error', title: 'Upload failed', message: kycError.message });
       safeReportError(config.onError, kycError);
+      return;
     }
-  }, [frontUri, backUri, isTwoSided, api, setMediaId, nextStep, config.onError, toast, uploadDocVideo]);
+    setRetryInfo(null);
 
-  const retake = (side: 'front' | 'back') => {
+    // The same workflow the submission will carry: a KYB flow's document is
+    // the applicant's own leg, which submits under the mapped applicant
+    // workflow (store/submitApplicant). Best-effort throughout:
+    // runCaptureChecks never throws and gives up on a side after 8s.
+    const workflowId = isBusinessFlow(config) ? config.applicantWorkflowId : config.workflowId;
+    const requests: DocumentCaptureCheckRequest[] = selectedIdType
+      ? uploaded.map(({ side, mediaId }) => ({
+          mediaId,
+          side,
+          country,
+          idType: selectedIdType,
+          ...(workflowId ? { workflowId } : {}),
+          ...(sessionId ? { sessionId } : {}),
+        }))
+      : [];
+    const results = await runCaptureChecks(requests, (body, signal) => api.checkDocumentCapture(body, signal));
+    const problems = captureCheckProblems(results);
+    setUploading(false);
+    if (problems.length > 0) {
+      setCaptureProblems(problems);
+      return;
+    }
+    advance();
+  }, [
+    frontUri,
+    backUri,
+    isTwoSided,
+    api,
+    setMediaId,
+    config,
+    toast,
+    uploadDocVideo,
+    selectedIdType,
+    country,
+    sessionId,
+    advance,
+  ]);
+
+  const retake = (side: DocumentCaptureSide) => {
     setUploadError(null);
+    setCaptureProblems(null);
     if (side === 'back') {
       setBackUri(null);
       backVideoRef.current = null;
@@ -377,7 +424,25 @@ export function DocumentCaptureStep(): React.ReactElement {
   // states keep the title/description in the header, and always offer the gallery
   // escape hatch). These never overlap: one needs a device, the other needs none.
   if (phase === 'front' || phase === 'back') {
-    if (cameraUnavailable) {
+    if (!camera) {
+      // Upload-only: no ready primer (it describes a camera scan), no
+      // permission screens, no viewfinder. The pick runs the same cropper and
+      // store path a gallery photo takes from the camera screen.
+      return (
+        <>
+          {cropper}
+          <View style={{ marginBottom: spacing.md }}>{requiredPill(phase === 'back' ? 'back' : 'front')}</View>
+          <UploadPhase
+            isBack={phase === 'back'}
+            documentLabel={documentLabel}
+            isTwoSided={isTwoSided}
+            busy={busy}
+            onUpload={pickFromGallery}
+          />
+        </>
+      );
+    }
+    if (camera.cameraUnavailable) {
       // No back-camera hardware (e.g. a simulator) — permission is moot here.
       return (
         <>
@@ -393,28 +458,29 @@ export function DocumentCaptureStep(): React.ReactElement {
       return (
         <>
           {cropper}
+          <View style={{ marginBottom: spacing.md }}>{requiredPill(phase === 'back' ? 'back' : 'front')}</View>
           <ReadyPrimer content={READY_DOCUMENT} onReady={() => setReady(true)} />
         </>
       );
     }
-    if (showPrimer) {
+    if (camera.showPrimer) {
       // Primer before the OS prompt — camera not started yet.
       return (
         <>
           {cropper}
           <CameraPermissionPrimingView
             message="When prompted, allow camera access to photograph your document."
-            onGrant={() => setPerm('requesting')}
+            onGrant={camera.requestAccess}
           />
         </>
       );
     }
-    if (permissionDenied) {
+    if (camera.permissionDenied) {
       // A real camera exists but the OS blocked access.
       return (
         <>
           {cropper}
-          <CameraPermissionView onRetry={retryPermission} onUpload={pickFromGallery} />
+          <CameraPermissionView onRetry={camera.requestAccess} onUpload={pickFromGallery} />
         </>
       );
     }
@@ -426,7 +492,7 @@ export function DocumentCaptureStep(): React.ReactElement {
         <CameraPhase
           isBack={isBack}
           cameraLive={cameraLive}
-          active={perm === 'granted'}
+          active={camera.perm === 'granted'}
           documentLabel={documentLabel}
           guideAspect={guideAspect}
           isTwoSided={isTwoSided}
@@ -453,13 +519,19 @@ export function DocumentCaptureStep(): React.ReactElement {
   if (phase === 'front-preview') {
     return (
       <View>
+        <View style={{ marginBottom: spacing.md }}>{requiredPill('front')}</View>
         <DocImage uri={frontUri!} />
         <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.md }}>
           <View style={{ flex: 1 }}>
-            <MyazaButton label="Retake" variant="outline" leadingIcon="refresh" onPress={() => retake('front')} />
+            <MyazaButton
+              label={camera ? 'Retake' : 'Replace'}
+              variant="outline"
+              leadingIcon="refresh"
+              onPress={() => retake('front')}
+            />
           </View>
           <View style={{ flex: 1 }}>
-            <MyazaButton label="Next — Scan Back" onPress={() => setPhase('back')} />
+            <MyazaButton label={camera ? 'Next: Scan Back' : 'Next: Add Back'} onPress={() => setPhase('back')} />
           </View>
         </View>
       </View>
@@ -468,7 +540,10 @@ export function DocumentCaptureStep(): React.ReactElement {
 
   // ── Review ─────────────────────────────────────────────────────────────────
   return (
-    <DocumentReview
+    <>
+      <View style={{ marginBottom: spacing.md }}>{requiredPill(null)}</View>
+      <DocumentReview
+      mode={camera ? 'scan' : 'upload'}
       frontUri={frontUri!}
       backUri={isTwoSided ? backUri : null}
       aspect={guideAspect}
@@ -494,18 +569,27 @@ export function DocumentCaptureStep(): React.ReactElement {
         <>
           {retryInfo && uploading ? (
             <MyazaText variant="bodySmall" color={colors.warning} style={{ textAlign: 'center', marginBottom: spacing.sm }}>
-              {`Upload failed — retrying (${retryInfo.attempt}/${retryInfo.total})…`}
+              {`Upload failed. Retrying (${retryInfo.attempt}/${retryInfo.total})…`}
             </MyazaText>
           ) : null}
           {uploadError ? (
             // The error message is shown as a top toast; keep a retry action here.
             <MyazaButton label="Try Again" onPress={handleContinue} loading={uploading} />
+          ) : captureProblems ? (
+            // A side will not read: retake it, or carry on with what was sent.
+            <CaptureCheckNotice
+              problems={captureProblems}
+              uploadOnly={!camera}
+              onRetake={retake}
+              onContinueAnyway={advance}
+            />
           ) : (
             <MyazaButton label="Continue" onPress={handleContinue} loading={uploading} />
           )}
         </>
       }
-    />
+      />
+    </>
   );
 }
 

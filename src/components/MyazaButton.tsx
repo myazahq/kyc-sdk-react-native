@@ -25,6 +25,10 @@ export interface MyazaButtonProps {
   leadingIcon?: IconName;
   style?: StyleProp<ViewStyle>;
   fullWidth?: boolean;
+  /** Screen reader label, when the visible label alone is ambiguous. */
+  accessibilityLabel?: string;
+  /** Screen reader hint describing what the press does. */
+  accessibilityHint?: string;
 }
 
 export function MyazaButton({
@@ -36,6 +40,8 @@ export function MyazaButton({
   leadingIcon,
   style,
   fullWidth = true,
+  accessibilityLabel,
+  accessibilityHint,
 }: MyazaButtonProps): React.ReactElement {
   const { colors } = useTheme();
   const isDisabled = disabled || loading || !onPress;
@@ -59,6 +65,9 @@ export function MyazaButton({
     <Pressable
       onPress={isDisabled ? undefined : onPress}
       disabled={isDisabled}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
       style={({ pressed }) => [
         {
           height: sizing.buttonHeight,

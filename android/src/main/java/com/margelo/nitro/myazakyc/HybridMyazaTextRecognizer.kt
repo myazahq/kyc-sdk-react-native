@@ -32,6 +32,20 @@ class HybridMyazaTextRecognizer : HybridMyazaTextRecognizerSpec() {
   private val recognizer: TextRecognizer =
     TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
+  // ── Model availability ───────────────────────────────────────────────────
+  //
+  // Shared with the face detector, because the failure is the same one: the
+  // model is fetched through Play Services rather than bundled, and a missing
+  // one is indistinguishable from a frame with no text in it. Left to the
+  // per-frame result, document auto-capture would simply never fire and the MRZ
+  // would never produce a key for the chip read, with nothing shown to explain
+  // it. See MlKitModelReadiness.kt.
+  private val readiness = MlKitModelReadiness(recognizer)
+
+  override fun isModelReady(): Boolean = readiness.isReady()
+
+  override fun prepareModel(): Promise<Boolean> = Promise.async { readiness.prepare() }
+
   @ExperimentalGetImage
   override fun recognizeText(frame: HybridFrameSpec, bottomFraction: Double): TextResult {
     val proxy: ImageProxy = (frame as? NativeFrame)?.image ?: return TextResult(emptyArray())

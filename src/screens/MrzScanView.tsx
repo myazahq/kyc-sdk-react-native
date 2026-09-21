@@ -15,6 +15,7 @@ import { MyazaButton } from '../components/MyazaButton';
 import { MyazaPulseLoader } from '../components/MyazaPulseLoader';
 import { extractMrz } from '../mrz/extract';
 import { recognizeMrzLines, MRZ_BAND_FRACTION } from '../mrz/textRecognizer';
+import { useTextModelReady } from '../mrz/useTextModelReady';
 import type { MrzScan } from '../mrz/parse';
 
 // ---------------------------------------------------------------------------
@@ -45,6 +46,11 @@ export function MrzScanView({
   const device = useCameraDevice('back');
   const { hasPermission, requestPermission } = useCameraPermission();
   const [denied, setDenied] = useState(false);
+  // Android fetches the text model through Play Services rather than bundling
+  // it. A recogniser that cannot run reports exactly what a blank page reports
+  // — no lines — so without this the user would aim at their passport while a
+  // scanner that can never read sat there pulsing. iOS is always ready.
+  const modelState = useTextModelReady();
 
   // A ref, not state: the worklet callback lands on the JS thread after the
   // frame that found the MRZ, and a stale render would let a second frame
@@ -108,6 +114,33 @@ export function MrzScanView({
       <Centered>
         <MyazaText variant="bodyMedium" color={colors.error} style={{ textAlign: 'center' }}>
           No camera is available on this device.
+        </MyazaText>
+      </Centered>
+    );
+  }
+
+  // Worded like the camera-denied case above, and for the same reason: the chip
+  // is optional, so the honest thing is to say the code cannot be read and let
+  // the user carry on rather than leave them waiting on something that will not
+  // arrive.
+  if (modelState === 'unavailable') {
+    return (
+      <Centered>
+        <MyazaText variant="bodyMedium" style={{ textAlign: 'center' }}>
+          The text reader could not be set up on this device, so the printed code
+          cannot be read. You can still continue without the chip.
+        </MyazaText>
+      </Centered>
+    );
+  }
+
+  if (modelState === 'preparing') {
+    return (
+      <Centered>
+        <MyazaPulseLoader size={24} />
+        <View style={{ height: spacing.md }} />
+        <MyazaText variant="bodyMedium" style={{ textAlign: 'center' }}>
+          Getting the text reader ready. This only happens once.
         </MyazaText>
       </Centered>
     );

@@ -27,8 +27,12 @@ const pkg = require('./package.json');
 // unconditionally would break code-signing for every consumer who does not read
 // chips and has not enabled it.
 //
-// Camera preview/capture itself comes from react-native-vision-camera; add its
-// config plugin too. This one is intentionally minimal and idempotent.
+// Camera preview/capture itself comes from react-native-vision-camera, but v5
+// ships NO config plugin (v4 did), so it must NOT be listed in the host app's
+// `plugins`. Expo then loads the package's main entry as a plugin and prebuild
+// dies on `Cannot find module '.../lib/VisionCamera'`. That is why the camera
+// permission and usage string are declared HERE. This plugin is intentionally
+// minimal and idempotent.
 // ---------------------------------------------------------------------------
 
 const CAMERA_USAGE =
@@ -170,6 +174,52 @@ function withAndroidPermissions(config, opts) {
   });
 }
 
+/**
+ * Declares `android.hardware.nfc` as NOT required, on the host's manifest.
+ *
+ * This is not decoration, and it must never be separated from the NFC
+ * permission. Android INFERS `<uses-feature android:name="android.hardware.nfc"
+ * android:required="true">` from `android.permission.NFC` whenever the feature
+ * is not declared explicitly — and Play then hides the app from every device
+ * without an NFC radio. For a KYC SDK that is most of the catalogue in the
+ * markets we serve.
+ *
+ * So: the permission (androidPermissionsFor) and this declaration are written
+ * under the same `nfc: true` opt-in in withMyazaKyc, and nothing else writes
+ * either. plugin.test.ts pins that pairing with a source scan, because two
+ * separate functions are otherwise free to drift apart.
+ *
+ * Pure and exported so the pairing can be pinned by a test. The failure it
+ * guards has no runtime symptom in development — the app builds, installs and
+ * runs perfectly on the NFC-capable phone the developer is holding, and is
+ * simply absent from the store listing for everyone else.
+ *
+ * @param {Record<string, any>} manifest the `modResults.manifest` object
+ */
+function ensureNfcFeatureOptional(manifest) {
+  const list = Array.isArray(manifest['uses-feature']) ? manifest['uses-feature'] : [];
+  const existing = list.find((f) => f && f.$ && f.$['android:name'] === 'android.hardware.nfc');
+  if (existing) {
+    // An explicit `required="true"` from the host or another library would
+    // reintroduce exactly the store-visibility problem above, so it is
+    // overwritten rather than respected.
+    existing.$['android:required'] = 'false';
+  } else {
+    list.push({
+      $: { 'android:name': 'android.hardware.nfc', 'android:required': 'false' },
+    });
+  }
+  manifest['uses-feature'] = list;
+  return manifest;
+}
+
+function withAndroidNfcFeature(config) {
+  return withAndroidManifest(config, (cfg) => {
+    ensureNfcFeatureOptional(cfg.modResults.manifest);
+    return cfg;
+  });
+}
+
 /** iOS side of the always-on tier: the Always usage string plus the location
  *  background mode, without which a geofence wake is refused. */
 function withIosBackgroundLocation(config, customMessage) {
@@ -211,6 +261,10 @@ function withMyazaKyc(config, props = {}) {
     config = withIosBackgroundLocation(config, props.locationPermission);
   }
   if (props.nfc === true) {
+    // Android: the permission comes from androidPermissionsFor above; this adds
+    // the uses-feature that must accompany it. Never write one without the
+    // other — see ensureNfcFeatureOptional.
+    config = withAndroidNfcFeature(config);
     config = withIosNfc(config, props.nfcPermission);
   }
   return config;
@@ -222,4 +276,5 @@ module.exports = createRunOncePlugin(withMyazaKyc, pkg.name, pkg.version);
 module.exports.applyNfcInfoPlist = applyNfcInfoPlist;
 module.exports.applyNfcEntitlements = applyNfcEntitlements;
 module.exports.androidPermissionsFor = androidPermissionsFor;
+module.exports.ensureNfcFeatureOptional = ensureNfcFeatureOptional;
 module.exports.EMRTD_AID = EMRTD_AID;

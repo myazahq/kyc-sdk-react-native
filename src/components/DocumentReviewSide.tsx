@@ -6,6 +6,7 @@ import { Icon } from './Icon';
 import { MyazaText } from './Typography';
 import { radius, spacing } from '../config/theme';
 import { CHROME_SCRIM, ChromeGlass } from './glass/ChromeGlass';
+import type { DocumentReviewCopy } from './documentReviewCopy';
 
 /** The chip's flat backing, and still the fallback off iOS 26. */
 const CHIP_SCRIM = CHROME_SCRIM;
@@ -34,12 +35,15 @@ export function DocumentReviewThumb({
   isBusy,
   busyOverlay,
   onZoom,
+  copy,
 }: {
   side: ReviewSide;
   aspect: number;
   isBusy: boolean;
   busyOverlay?: React.ReactNode;
   onZoom: () => void;
+  /** The review's words for the capture mode (documentReviewCopy). */
+  copy: DocumentReviewCopy;
 }): React.ReactElement {
   const { colors } = useTheme();
   return (
@@ -90,7 +94,7 @@ export function DocumentReviewThumb({
         onPress={isBusy ? undefined : side.onRetake}
         disabled={isBusy}
         accessibilityRole="button"
-        accessibilityLabel={`Retake ${side.label.toLowerCase()}`}
+        accessibilityLabel={copy.redoAccessibility(side.label)}
         style={{
           flexDirection: 'row',
           alignItems: 'center',
@@ -103,7 +107,7 @@ export function DocumentReviewThumb({
         <Icon name="refresh" size={14} color={colors.primary} />
         <View style={{ width: 6 }} />
         <MyazaText variant="bodySmall" color={colors.primary} style={{ flexShrink: 1 }}>
-          Retake
+          {copy.redo}
         </MyazaText>
       </Pressable>
     </View>

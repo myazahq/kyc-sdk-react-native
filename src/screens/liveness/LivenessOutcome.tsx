@@ -23,12 +23,15 @@ import type { LivenessFailureReason } from '../../liveness/types';
 
 export function LivenessComplete({
   selfieUri,
+  soft = false,
   upload,
   onRetake,
   onContinue,
 }: {
   /** Null on a restored session: the mediaId survived, the local file did not. */
   selfieUri: string | null;
+  /** The still reads out of focus. A notice on the preview, never a gate. */
+  soft?: boolean;
   upload: SelfieUpload;
   onRetake: () => void;
   onContinue: () => void;
@@ -38,7 +41,7 @@ export function LivenessComplete({
     upload;
   return (
       <View>
-        <SelfiePreview uri={selfieUri} uploading={uploading && !uploadError} />
+        <SelfiePreview uri={selfieUri} uploading={uploading && !uploadError} soft={soft} />
         {retryInfo && uploading ? (
           <MyazaText variant="bodySmall" color={colors.warning} style={{ textAlign: 'center', marginTop: spacing.sm }}>
             {`Upload failed, retrying (${retryInfo.attempt}/${retryInfo.total})`}

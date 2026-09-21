@@ -72,6 +72,42 @@ export function hasTextRecognizer(): boolean {
 }
 
 /**
+ * Start fetching the text model, so it is warm by the time the document step
+ * runs.
+ *
+ * Android fetches ML Kit's models through Play Services rather than bundling
+ * them, which keeps ~18.5 MB per device out of the APK but leaves a window on
+ * first launch where recognition cannot work. Priming at flow start puts that
+ * download behind the consent and ID-type screens instead of in front of the
+ * camera.
+ *
+ * Best-effort and non-blocking, exactly like `primeFaceModel()`: a failure here
+ * is not fatal, because {@link isTextModelReady} is what the document step
+ * actually reads. iOS resolves immediately (Apple Vision is a system
+ * framework).
+ */
+export function primeTextModel(): void {
+  resolve()?.prepareModel().catch(() => {
+    /* best-effort: isTextModelReady() is the real signal */
+  });
+}
+
+/**
+ * Whether text recognition can run right now.
+ *
+ * `recognizeText` cannot answer this — a missing model and a frame with no text
+ * are both an empty `lines` array — so auto-capture would silently never fire
+ * and the MRZ would never produce a chip key, with nothing able to say why.
+ *
+ * `false` when the native module is absent entirely (Expo Go), because in that
+ * build there is no recogniser to become ready. Callers treat both the same
+ * way: fall back to the manual shutter, which was always the primary route.
+ */
+export function isTextModelReady(): boolean {
+  return resolve()?.isModelReady() ?? false;
+}
+
+/**
  * The bottom slice of the frame the MRZ occupies.
  *
  * Generous on purpose: the band tolerates FRAMING, not the document. A tighter

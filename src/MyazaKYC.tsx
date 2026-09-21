@@ -15,8 +15,8 @@ import type { KYCStep, MyazaKYCConfig, SupportedCountry } from './types/config';
 import { KycRuntimeProvider, MyazaThemeProvider } from './components/runtime';
 import { WorkflowGate } from './components/WorkflowGate';
 import { useWorkflowMount } from './components/useWorkflowMount';
+import { usePrimeModels } from './lib/prime-models';
 import { safeReportError } from './services/errors';
-import { primeFaceModel } from './liveness/visionCameraFaceDetector';
 import { KycFlow, type BackResult } from './components/KycFlow';
 import { MyazaButton } from './components/MyazaButton';
 
@@ -99,16 +99,7 @@ function MyazaKYCTrigger({
   const settled = state.status !== 'resolving';
   const open = wantOpen && settled;
 
-  // Start fetching the face model the moment the user opens the flow, so the
-  // download overlaps consent and ID-type selection rather than stalling in
-  // front of the camera. Mirrors the web SDK's primeFaceMesh() on mount; the
-  // liveness step still gates on isFaceModelReady(), so this is best-effort.
-  const primedRef = useRef(false);
-  useEffect(() => {
-    if (!wantOpen || primedRef.current) return;
-    primedRef.current = true;
-    primeFaceModel();
-  }, [wantOpen]);
+  usePrimeModels(wantOpen, config.apiKey, config.devUrl);
 
   // Reported only once the user has actually tried to start. Prefetching must
   // not fire a consumer's error handler for a flow they never opened.
@@ -228,6 +219,8 @@ export function useMyazaKYC<C extends SupportedCountry = SupportedCountry>(
   const configRef = useRef(config);
   configRef.current = config;
   const backRef = useRef<(() => BackResult) | null>(null);
+
+  usePrimeModels(wantOpen, config.apiKey, config.devUrl);
 
   // `refresh` is defined further down (it needs `wrappedConfig`), so it is
   // reached through a ref rather than reordering the component around it.
