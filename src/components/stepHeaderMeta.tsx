@@ -10,6 +10,8 @@ import { addressStepMeta } from '../screens/address';
 import { countrySelectMeta } from '../screens/CountrySelectStep';
 import { businessDetailsMeta } from '../screens/BusinessDetailsStep';
 import { businessKeyPeopleMeta } from '../screens/BusinessKeyPeopleStep';
+import { supportingDocumentsMeta } from '../screens/SupportingDocumentsStep';
+import { resolveSupportingDocuments, verifiedIdsFor } from '../config/supportingDocuments';
 import { businessDocumentsMeta } from '../screens/BusinessDocumentsStep';
 import { applicantRoleMeta } from '../screens/ApplicantRoleStep';
 import { nfcMeta } from '../screens/NfcStep';
@@ -49,6 +51,9 @@ export interface StepHeaderContext {
   /** The proof-of-address kind the applicant has picked, so the header can ask
    *  for what the workflow's name rule wants on THAT document. */
   poaDocumentType?: string | null;
+  /** The committed multi-ID slots, so the supporting-documents header resolves
+   *  the SAME list the screen shows. */
+  multiIdSlots?: Array<{ idType: string }>;
 }
 
 export function stepHeaderMeta(
@@ -62,6 +67,7 @@ export function stepHeaderMeta(
     addressIntroPending,
     addressEntranceFraming,
     poaDocumentType,
+    multiIdSlots,
   }: StepHeaderContext,
 ): { title: string; description: string | null } {
   const label = labelFor(country, selectedIdType);
@@ -121,6 +127,15 @@ export function stepHeaderMeta(
         return businessKeyPeopleMeta;
       case 'business-documents':
         return businessDocumentsMeta;
+      case 'supporting-documents':
+        // Resolved exactly as the screen resolves its own slots, or the header
+        // could name a number the body does not show.
+        return supportingDocumentsMeta(
+          resolveSupportingDocuments(
+            config.supportingDocuments,
+            verifiedIdsFor({ country, idType: selectedIdType, multiIdSlots }),
+          ),
+        );
       case 'applicant-role':
         return applicantRoleMeta;
       case 'nfc':

@@ -64,7 +64,7 @@ describeInMonorepo('the eyebrow pill wears the same mark everywhere', () => {
   it.each([
     ['web', GATES.web, /<MapPinCheck className=/],
     ['rn', GATES.rn, /name="map-pin-check"/],
-    ['flutter', GATES.flutter, /LucideIcons\.mapPinCheck/],
+    ['flutter', GATES.flutter, /MyazaIcons\.mapPinCheck/],
   ])('%s', (_name, rel, pattern) => {
     expect(read(rel as string)).toMatch(pattern as RegExp);
   });

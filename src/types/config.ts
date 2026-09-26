@@ -22,6 +22,7 @@ import type {
   NfcConfig,
   PhoneVerificationConfig,
   ProofOfAddressConfig,
+  SupportingDocumentsConfig,
   QuestionnaireConfig,
   WorkflowCountry,
   MultiIdConfig,
@@ -57,6 +58,7 @@ export type KYCStep =
   | 'applicant-role'
   | 'liveness'
   | 'proof-of-address'
+  | 'supporting-documents'
   // The address flow, in order: find it (search) → confirm it (the PIN step,
   // which keeps the original 'address-collection' wire name so older session
   // progress restores cleanly) → show it (entrance photo) → commit it.
@@ -245,6 +247,14 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> {
 
   /** Proof-of-address document check, after capture. */
   proofOfAddress?: ProofOfAddressConfig;
+
+  /**
+   * Supporting documents: artefacts the org holds ON FILE, which are NOT the
+   * identity evidence the verification is decided on. The org names each one
+   * and writes the guidance under it; the result of any check never changes
+   * the verification's own status.
+   */
+  supportingDocuments?: SupportingDocumentsConfig;
 
   /** Address Intelligence: a map-pin smart address (+ optional door photo and
    *  directions), corroborated server-side. KYC AND KYB (premises pin). */

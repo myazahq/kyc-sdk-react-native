@@ -23,6 +23,7 @@ const base: StepOrderOptions = {
   hasEmailVerification: false,
   hasPhoneVerification: false,
   hasPoa: false,
+  hasSupportingDocuments: false,
   hasAddressCollection: false,
   hasQuestionnaire: false,
 };

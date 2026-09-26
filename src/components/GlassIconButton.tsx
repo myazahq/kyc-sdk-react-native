@@ -17,8 +17,6 @@ export interface GlassIconButtonProps {
   size?: number;
   iconSize?: number;
   disabled?: boolean;
-  /** Render the glyph solid/filled (e.g. the theme toggle). */
-  solid?: boolean;
   /**
    * Skip this button's own glass surface — used when it sits inside a
    * {@link GlassGroup} that already provides one shared glass capsule, so the
@@ -35,7 +33,6 @@ export function GlassIconButton({
   size = 40,
   iconSize = 20,
   disabled = false,
-  solid = false,
   plain = false,
   accessibilityLabel,
 }: GlassIconButtonProps): React.ReactElement {
@@ -54,7 +51,7 @@ export function GlassIconButton({
         overflow: 'hidden',
       }}
     >
-      <Icon name={icon} size={iconSize} color={iconColor} solid={solid} />
+      <Icon name={icon} size={iconSize} color={iconColor} />
     </View>
   );
 
@@ -71,7 +68,7 @@ export function GlassIconButton({
           justifyContent: 'center',
         }}
       >
-        <Icon name={icon} size={iconSize} color={iconColor} solid={solid} />
+        <Icon name={icon} size={iconSize} color={iconColor} />
       </GlassSurface>
     ) : (
       glyph

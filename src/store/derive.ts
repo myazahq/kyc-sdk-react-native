@@ -8,6 +8,7 @@
 // ---------------------------------------------------------------------------
 
 import { configScope } from '../lib/scope';
+import { hasSupportingDocumentsStep, verifiedIdsFor } from '../config/supportingDocuments';
 import { requiresDocumentCapture, supportsNfcChip } from '../config/idTypes';
 import {
   buildStepOrder,
@@ -83,6 +84,16 @@ export function stepOrderOptions(state: KycState): StepOrderOptions {
     hasEmailVerification: config.emailVerification?.enabled === true,
     hasPhoneVerification: config.phoneVerification?.enabled === true,
     hasPoa: hasProofOfAddressStep(config.proofOfAddress),
+    // Resolved against the ID actually picked — that is what decides whether
+    // the step has anything to ask for.
+    hasSupportingDocuments: hasSupportingDocumentsStep(
+      config.supportingDocuments,
+      verifiedIdsFor({
+        country: state.selectedCountry ?? config.country,
+        idType: state.selectedIdType,
+        multiIdSlots: state.multiIdSlots,
+      }),
+    ),
     hasAddressCollection: hasAddressCollectionStep(config.addressCollection),
     // An absent search flag means no search SCREEN, never an error: the
     // applicant places the pin by hand, the fallback every address failure

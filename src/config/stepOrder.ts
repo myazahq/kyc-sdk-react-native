@@ -44,6 +44,14 @@ export interface StepOrderOptions {
   hasEmailVerification: boolean;
   hasPhoneVerification: boolean;
   hasPoa: boolean;
+  /**
+   * Whether the supporting-documents step has anything to ask for on THIS
+   * attempt. Resolved by the caller (config/supportingDocuments.ts) because
+   * the list depends on the ID the person actually picked — a document scoped
+   * to one ID is not asked of somebody who used another, and a step with an
+   * empty list must not appear at all.
+   */
+  hasSupportingDocuments: boolean;
   hasAddressCollection: boolean;
   /**
    * Which address screens the flow has, from the ONE `addressFlowFor` call.
@@ -120,11 +128,15 @@ function fullStepOrder(o: StepOrderOptions): KYCStep[] {
   if (o.scope === 'address') {
     const steps: KYCStep[] = [...openingSteps(o), ...contactSteps(o)];
     if (o.hasPoa) steps.push('proof-of-address');
-    steps.push(
-      ...addressFlowSteps(
-        o.addressFlow ?? { searchAvailable: false, photoMode: 'optional', streetViewOffered: false },
-      ),
-    );
+    // Gated like the full flow, and like Flutter has always done it: an
+    // address flow that asks only for proof of address never opens a map.
+    if (o.hasAddressCollection) {
+      steps.push(
+        ...addressFlowSteps(
+          o.addressFlow ?? { searchAvailable: false, photoMode: 'optional', streetViewOffered: false },
+        ),
+      );
+    }
     if (o.hasQuestionnaire) steps.push('questionnaire');
     steps.push('submitted');
     return steps;
@@ -143,6 +155,9 @@ function fullStepOrder(o: StepOrderOptions): KYCStep[] {
   }
 
   const middle: KYCStep[] = [...captureLeg(o)];
+  // Paperwork the org files comes BEFORE the address evidence the
+  // verification is judged on (user decision 2026-09-22).
+  if (o.hasSupportingDocuments) middle.push('supporting-documents');
   if (o.hasPoa) middle.push('proof-of-address');
   // The address flow is FOUR real steps on an individual flow (find it, confirm
   // it, show it, commit it), so the progress bar advances through them and back

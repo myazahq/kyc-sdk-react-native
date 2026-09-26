@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Circle, G } from 'react-native-svg';
 import { advanceTarget, easeToward, mixHex } from '../../lib/captureRing';
 
 // A single line traced around the camera circle's edge for the length of the
@@ -69,23 +69,37 @@ export function CaptureRing({
       style={{ position: 'absolute', top: 0, left: 0 }}
       width={size}
       height={size}
-      // Static origin, not motion: the arc starts at twelve o'clock.
-      rotation={-90}
-      originX={size / 2}
-      originY={size / 2}
     >
-      <Circle
-        ref={ref}
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        fill="none"
-        stroke={color}
-        strokeWidth={STROKE}
-        strokeLinecap="butt"
-        strokeDasharray={[circumference]}
-        strokeDashoffset={circumference}
-      />
+      {/* Static origin, not motion: the arc starts AND closes at twelve
+          o'clock, matching Flutter's `drawArc(rect, -pi / 2, ...)`.
+
+          The rotation sits on a <G>, not on the root <Svg>. react-native-svg
+          silently drops transform props on the root: its render applies a
+          transform only `if (transform)` — a `rotation`/`originX`/`originY`
+          triple leaves that undefined, so the branch never runs — and the
+          inner group it wraps children in is built from style/fill/stroke
+          props alone, so nothing forwards them there either. `SvgProps
+          extends GProps`, so the compiler accepts it and the arc quietly
+          starts at three o'clock, which is where the web SDK's CSS
+          `-rotate-90` would have put it had CSS applied here.
+
+          It is also deliberately not on the <Circle>: that node takes a
+          setNativeProps write every frame, and the transform has no business
+          sharing a node with the animation. */}
+      <G rotation={-90} originX={size / 2} originY={size / 2}>
+        <Circle
+          ref={ref}
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth={STROKE}
+          strokeLinecap="butt"
+          strokeDasharray={[circumference]}
+          strokeDashoffset={circumference}
+        />
+      </G>
     </Svg>
   );
 }

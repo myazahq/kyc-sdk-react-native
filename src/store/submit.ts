@@ -99,6 +99,17 @@ export function buildVerifyRequest(
       : state.mediaIds,
   ...(state.config.workflowId ? { workflowId: state.config.workflowId } : {}),
   ...(state.poaDocumentType ? { proofOfAddressType: state.poaDocumentType } : {}),
+  // Supporting documents — artefacts held on file. The server validates them
+  // against the resolved workflow's request list and drops anything it did
+  // not ask for. File names are display only and never ride the wire.
+  ...(state.supportingDocuments.length > 0
+    ? {
+        supportingDocuments: state.supportingDocuments.map((d) => ({
+          type: d.type,
+          mediaId: d.mediaId,
+        })),
+      }
+    : {}),
   // The smart address, when the step gathered one. Sent on individual AND
   // business submissions (a KYB flow's pin is the business premises) — the
   // server validates it against the workflow either way.

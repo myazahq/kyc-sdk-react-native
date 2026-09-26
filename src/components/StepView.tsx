@@ -11,6 +11,7 @@ import { LivenessStep } from '../screens/LivenessStep';
 import { SubmittedStep } from '../screens/SubmittedStep';
 import { QuestionnaireStep } from '../screens/QuestionnaireStep';
 import { ContactVerificationStep } from '../screens/ContactVerificationStep';
+import { SupportingDocumentsStep } from '../screens/SupportingDocumentsStep';
 import { ProofOfAddressStep } from '../screens/ProofOfAddressStep';
 import {
   AddressEntranceStep,
@@ -84,6 +85,8 @@ function stepScreen(step: KYCStep, onClose: () => void): React.ReactElement {
       return <ContactVerificationStep key="contact-phone" channel="phone" />;
     case 'proof-of-address':
       return <ProofOfAddressStep />;
+    case 'supporting-documents':
+      return <SupportingDocumentsStep />;
     // The address flow, in order: find it, confirm it, show it, commit it.
     // 'address-collection' is the PIN step and keeps that wire name so older
     // session progress restores cleanly.

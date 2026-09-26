@@ -109,6 +109,7 @@ export function KycFlow({
         addressIntroPending,
         addressEntranceFraming: state.addressEntranceFraming,
         poaDocumentType: state.poaDocumentType,
+        multiIdSlots: state.multiIdSlots,
       }),
     [
       currentStep,

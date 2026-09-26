@@ -126,6 +126,7 @@ export function createKycStore(
       contactChallenge: null,
       business: EMPTY_BUSINESS,
       businessApplication: EMPTY_BUSINESS_APPLICATION,
+      supportingDocuments: [],
       applicantKeyPersonId: null,
       keyPeopleInvites: [],
       captureIntegrity: null,
@@ -420,6 +421,20 @@ export function createKycStore(
               doc,
             ],
           },
+        }));
+      },
+
+      setSupportingDocument(doc) {
+        set((s) => ({
+          // One upload per document, like the business slots: re-uploading
+          // replaces rather than appends.
+          supportingDocuments: [...s.supportingDocuments.filter((d) => d.type !== doc.type), doc],
+        }));
+      },
+
+      removeSupportingDocument(type) {
+        set((s) => ({
+          supportingDocuments: s.supportingDocuments.filter((d) => d.type !== type),
         }));
       },
 

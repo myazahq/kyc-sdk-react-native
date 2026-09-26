@@ -24,6 +24,45 @@ export type PoaDocumentType =
  *  server; read here only to word the step. */
 export type PoaNameRule = 'required' | 'optional' | 'off';
 
+/**
+ * One requested supporting document. There is no catalogue: the organisation
+ * names its own, so the SDK renders the title and guidance the workflow sent.
+ */
+export interface SupportingDocumentRequest {
+  /** The organisation's own slug — the wire `type` this upload submits as. */
+  key: string;
+  /** The title the applicant reads. A document without one is not asked for. */
+  label?: string;
+  /** Guidance under the slot: which document, and what it has to show. */
+  description?: string;
+  /** Server-side only: what the document is corroborated against. */
+  checks?: Array<'id_number' | 'name'>;
+  /**
+   * The named values the server will read off it. The SDK reads the NAMES
+   * alone, to tell the applicant what the document is being taken for; the
+   * reading itself is entirely server-side.
+   */
+  fields?: Array<{ key: string; label?: string }>;
+  required?: boolean;
+  /** Which verified IDs it is asked for, as "CC/idType". Absent = every ID. */
+  idTypes?: string[];
+  /**
+   * Offer it on every flow, whatever ID was verified, so `idTypes` decides only
+   * who MUST provide it rather than who sees the slot. Absent = the scope hides
+   * it from everybody else, which is the default.
+   */
+  alwaysAsk?: boolean;
+}
+
+export interface SupportingDocumentsConfig {
+  enabled?: boolean;
+  types?: SupportingDocumentRequest[];
+  /** Server-side only. */
+  retentionDays?: number;
+  /** Server-side only. */
+  returnedData?: string[];
+}
+
 export interface ProofOfAddressConfig {
   /** Adds the Proof of Address step (after capture, before the questionnaire). */
   enabled?: boolean;

@@ -64,6 +64,7 @@ function UploadedThumb({ previewUri, isPdf }: { previewUri: string | null; isPdf
 
 export function BusinessDocumentSlot({
   label,
+  description = null,
   required,
   fileName,
   uploading,
@@ -71,8 +72,16 @@ export function BusinessDocumentSlot({
   isPdf = false,
   onPick,
   onRemove,
+  compact = false,
 }: {
   label: string;
+  /**
+   * Guidance the organisation wrote: which document, and what it has to show.
+   * Optional because the business-documents step names a fixed catalogue the
+   * applicant already recognises; a supporting document is whatever the org
+   * called it, so this is often the only thing that makes it findable.
+   */
+  description?: string | null;
   required: boolean;
   /** Uploaded file name, when this slot already has a mediaId. */
   fileName: string | null;
@@ -83,6 +92,15 @@ export function BusinessDocumentSlot({
   /** Open the photo/file source sheet (also serves Replace). */
   onPick: () => void;
   onRemove: () => void;
+  /**
+   * The slot is the FOOTER of a card that already names the document.
+   *
+   * So it drops everything the card above it has already said — the label
+   * echo, the required star, the guidance — and its own bottom margin, and
+   * the empty state reads "Upload <document>" rather than repeating the title.
+   * Mirrors the Flutter slot's `compact`.
+   */
+  compact?: boolean;
 }): React.ReactElement {
   const { colors } = useTheme();
 
@@ -97,7 +115,7 @@ export function BusinessDocumentSlot({
           borderRadius: radius.sm,
           backgroundColor: colors.backgroundSecondary,
           padding: spacing.md,
-          marginBottom: spacing.sm + 4,
+          marginBottom: compact ? 0 : spacing.sm + 4,
         }}
       >
         <UploadedThumb previewUri={previewUri} isPdf={isPdf} />
@@ -106,9 +124,11 @@ export function BusinessDocumentSlot({
           <MyazaText variant="label" style={{ fontWeight: '600' }} numberOfLines={1}>
             {fileName}
           </MyazaText>
-          <MyazaText variant="bodySmall" color={colors.textMuted}>
-            {label}
-          </MyazaText>
+          {compact ? null : (
+            <MyazaText variant="bodySmall" color={colors.textMuted}>
+              {label}
+            </MyazaText>
+          )}
         </View>
         <Pressable onPress={onPick} hitSlop={8} accessibilityRole="button">
           <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '600' }}>
@@ -138,7 +158,7 @@ export function BusinessDocumentSlot({
         alignItems: 'center',
         borderRadius: radius.sm,
         padding: spacing.md,
-        marginBottom: spacing.sm + 4,
+        marginBottom: compact ? 0 : spacing.sm + 4,
         opacity: uploading ? 0.7 : 1,
       }}
     >
@@ -150,14 +170,23 @@ export function BusinessDocumentSlot({
       )}
       <View style={{ width: spacing.sm + 4 }} />
       <View style={{ flex: 1, minWidth: 0 }}>
-        <MyazaText variant="label" style={{ fontWeight: '600' }} numberOfLines={1}>
-          {label}
-          {required ? (
+        <MyazaText variant="label" style={{ fontWeight: '600' }} numberOfLines={2}>
+          {compact ? `Upload ${label.toLowerCase()}` : label}
+          {required && !compact ? (
             <MyazaText variant="label" color={colors.error} style={{ fontWeight: '600' }}>
               {' *'}
             </MyazaText>
           ) : null}
         </MyazaText>
+        {description && !uploading && !compact ? (
+          <MyazaText
+            variant="bodySmall"
+            color={colors.textDark}
+            style={{ marginTop: 2, opacity: 0.75 }}
+          >
+            {description}
+          </MyazaText>
+        ) : null}
         <MyazaText variant="bodySmall" color={colors.textMuted}>
           {uploading ? 'Uploading…' : UPLOAD_HINT}
         </MyazaText>

@@ -23,6 +23,7 @@ const base: StepOrderOptions = {
   hasEmailVerification: false,
   hasPhoneVerification: false,
   hasPoa: false,
+  hasSupportingDocuments: false,
   hasAddressCollection: false,
   hasQuestionnaire: false,
 };
@@ -241,6 +242,23 @@ describe('navDirection', () => {
 });
 
 describe('address-only flow', () => {
+  it('verifying by document alone never opens a map', () => {
+    // Both are honest ways to verify an address, and the workflow picks. With
+    // the pin off, pushing the map steps anyway made the flow unwalkable: the
+    // applicant was asked to drop a pin the submission would not carry.
+    const o: StepOrderOptions = {
+      ...base,
+      scope: 'address',
+      hasAddressCollection: false,
+      hasPoa: true,
+      addressFlow: { searchAvailable: true, photoMode: 'optional', streetViewOffered: true },
+    };
+    const order = buildStepOrder(o);
+    expect(order).toEqual(['consent', 'proof-of-address', 'submitted']);
+    expect(order).not.toContain('address-collection');
+    expect(order).not.toContain('address-review');
+  });
+
   it('has no identity steps at all, and navigation walks the address section', () => {
     const o: StepOrderOptions = {
       ...base,
@@ -300,7 +318,10 @@ describe('consentStep off', () => {
     expect(buildStepOrder(off({ scope: 'biometric-authentication' }))[0]).toBe('liveness');
     expect(buildStepOrder(off({ scope: 'questionnaire', hasQuestionnaire: true }))[0]).toBe('questionnaire');
     expect(buildStepOrder(off({ scope: 'contact', hasPhoneVerification: true }))[0]).toBe('phone-verification');
-    expect(buildStepOrder(off({ scope: 'address' }))[0]).toBe('address-collection');
+    // Its siblings above each pass the flag their step needs; this one was
+    // relying on the address steps being pushed unconditionally.
+    expect(buildStepOrder(off({ scope: 'address', hasAddressCollection: true }))[0]).toBe('address-collection');
+    expect(buildStepOrder(off({ scope: 'address', hasPoa: true }))[0]).toBe('proof-of-address');
   });
 
   it('is one step shorter, so progress counts what is walked', () => {

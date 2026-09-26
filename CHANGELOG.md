@@ -1,5 +1,62 @@
 # Changelog
 
+## 3.1.0
+
+### The icon set is Hugeicons, the same one the web and Flutter SDKs draw
+
+The other two SDKs moved to Hugeicons some time ago and this one did not, so
+the three agreed on names and differed on every glyph. They now draw one set.
+
+Nothing about the integration changes. The icons are internal, so no exported
+type or prop moved, and the only visible difference is the drawing itself: the
+glyphs are Hugeicons' Stroke Rounded at a 1.6 stroke rather than Lucide's at 2,
+which reads slightly lighter. If you have screenshot tests over the flow, expect
+them to need new baselines.
+
+The bundle gets SMALLER, by 1.33 MB on a minified production build, because
+Lucide's own barrel was not tree-shaking either.
+
+Two details worth knowing if you ever fork or patch this package. Icons are
+imported one module at a time (`@hugeicons/core-free-icons/Camera01Icon`) and
+must stay that way: importing from the package index instead pulls all 6,025
+icons into the bundle, measured at +8.33 MB for five icons against +7 KB the
+deep way. And the theme toggle's moon and sun are no longer filled — that
+worked because Lucide's glyph bodies take a fill, and Hugeicons' free pack is
+Stroke Rounded only, so they are stroked now, which is what the Flutter SDK has
+always done.
+
+### A brand colour now tints cards as well as the sheet
+
+`appearance.primaryColor` derives three faint washes used behind numbered
+markers, pills and selected rows. They were pre-blended against the sheet
+background, but they are drawn on several surfaces, and on a card the 10% wash
+landed within 3/255 of the card underneath it — close enough to be invisible.
+The supporting-documents step showed it most clearly: its numbered markers were
+there and could not be seen.
+
+They carry real alpha now, so each one composites against whatever it is
+actually drawn on, which is what the web SDK has always done. On a card the
+result is identical to the web SDK's; on the sheet it matches the old value to
+within 1/255. Flows that set no `primaryColor` are untouched.
+
+### Supporting documents
+
+The step is at visual parity with the web and Flutter SDKs: each requested
+document is a card naming what it is being collected for, with the fields the
+server will read off it, rather than a bare upload slot.
+
+Two fixes behind it. The consent screen now discloses the step, which it never
+did. And `supportingDocuments` reaches the SDK at all: the key was missing from
+the workflow merge, so a workflow-mounted flow never received the block and the
+whole feature was inert — no step, and nothing on consent.
+
+### The liveness ring starts and closes at the top
+
+It drew from three o'clock while its own comment said twelve. The rotation sat
+on the root `<Svg>`, which react-native-svg silently drops, so it never applied.
+It matches the Flutter SDK now.
+
+
 ## 3.0.0
 
 ### NFC is genuinely opt-in now (breaking)

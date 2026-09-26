@@ -90,6 +90,17 @@ export function restoreAttemptProgress(
   const s = store.getState();
   const d = (progress.data ?? {}) as Record<string, unknown>;
 
+  // Validate-and-drop: a snapshot written by an older build must degrade to
+  // restoring less, never to breaking the flow.
+  const restoredDocs = Array.isArray(d['supportingDocuments'])
+    ? (d['supportingDocuments'] as unknown[]).filter(
+        (doc): doc is { type: string; mediaId: string } =>
+          !!doc &&
+          typeof doc === 'object' &&
+          typeof (doc as { type?: unknown }).type === 'string' &&
+          typeof (doc as { mediaId?: unknown }).mediaId === 'string',
+      )
+    : null;
   const app = d['businessApplication'] as
     | (Partial<KycState['businessApplication']> & { keyPeople?: Array<Record<string, unknown>> })
     | undefined;
@@ -116,6 +127,7 @@ export function restoreAttemptProgress(
     ...(d['business'] && typeof d['business'] === 'object'
       ? { business: { ...s.business, ...(d['business'] as object) } }
       : {}),
+    ...(restoredDocs ? { supportingDocuments: restoredDocs } : {}),
     ...(app
       ? {
           businessApplication: {
@@ -180,6 +192,12 @@ export function progressFromState(s: ReturnType<KycStore['getState']>): Record<s
       idNumber: s.idNumber || undefined,
       business: s.business,
       businessApplication: s.businessApplication,
+      // The uploads without their preview names: a restored attempt shows the
+      // slot as uploaded, which is what the mediaId is for.
+      supportingDocuments:
+        s.supportingDocuments.length > 0
+          ? s.supportingDocuments.map((d) => ({ type: d.type, mediaId: d.mediaId }))
+          : undefined,
       contact: s.contact,
       questionnaireAnswers: s.questionnaireAnswers,
       address: s.address ?? undefined,

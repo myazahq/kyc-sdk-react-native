@@ -120,3 +120,37 @@ describe('business (KYB) flow', () => {
     expect(buildConsentModel(config).title).toBe('Verify Acme Ltd');
   });
 });
+
+describe('address scope bullets follow the evidence the flow asks for', () => {
+  const addressScope = (over: Record<string, unknown>) =>
+    ({ ...base, scope: 'address', ...over }) as MyazaKYCConfig;
+
+  it('promises no map when the flow only asks for a document', () => {
+    // The bullets were a fixed pair assuming the pin, so a proof-of-address
+    // only flow told the applicant it would put them on a map and ask for
+    // details it never collects. A consent notice may not promise a step the
+    // flow does not run.
+    const list = labels(addressScope({ proofOfAddress: { enabled: true } }));
+    expect(list).toContain('Upload a proof of address document');
+    expect(list.join(' ')).not.toContain('map');
+    expect(list.join(' ')).not.toContain('only you can know');
+  });
+
+  it('promises the map when the flow collects a pin', () => {
+    const list = labels(addressScope({ addressCollection: { enabled: true } }));
+    expect(list).toContain('Pin your home address on a map');
+    expect(list).toContain('Confirm the details only you can know');
+    expect(list).not.toContain('Upload a proof of address document');
+  });
+
+  it('promises both when the flow asks for both', () => {
+    const list = labels(
+      addressScope({ addressCollection: { enabled: true }, proofOfAddress: { enabled: true } }),
+    );
+    expect(list).toContain('Pin your home address on a map');
+    expect(list).toContain('Upload a proof of address document');
+    // The map bullet is not repeated by the generic post-capture push.
+    expect(list.filter((l) => l.includes('map'))).toHaveLength(1);
+  });
+});
+

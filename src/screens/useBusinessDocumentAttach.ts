@@ -14,19 +14,30 @@ import { loadDocumentPicker } from '../services/documentPicker';
 // the refusal names the file that was chosen (images 5 MB, PDFs 15 MB).
 // ---------------------------------------------------------------------------
 
-export type AttachBusinessDocument = (
-  slot: ResolvedBusinessDocumentType,
+/**
+ * The minimum a slot must carry for this hook: it reads the label for error
+ * copy and hands the slot straight back to the caller's uploader. Generalised
+ * so the supporting-documents step shares this picker rather than owning a
+ * second copy of three file sources and their size/MIME rules.
+ */
+export interface AttachableSlot {
+  key: string;
+  label: string;
+}
+
+export type AttachBusinessDocument<S extends AttachableSlot = ResolvedBusinessDocumentType> = (
+  slot: S,
   uri: string,
   mimeType: string | undefined,
   name: string,
 ) => Promise<void>;
 
-type Pick = (slot: ResolvedBusinessDocumentType) => Promise<void>;
+type Pick<S extends AttachableSlot> = (slot: S) => Promise<void>;
 
-export function useBusinessDocumentAttach(
-  attach: AttachBusinessDocument,
+export function useBusinessDocumentAttach<S extends AttachableSlot = ResolvedBusinessDocumentType>(
+  attach: AttachBusinessDocument<S>,
   setError: (message: string) => void,
-): { takePhoto: Pick; choosePhoto: Pick; chooseFile: Pick } {
+): { takePhoto: Pick<S>; choosePhoto: Pick<S>; chooseFile: Pick<S> } {
   const tooLarge = useCallback(
     (mime: string | undefined, size: number | undefined): boolean => {
       const message = uploadSizeError(mime, size);
@@ -36,7 +47,7 @@ export function useBusinessDocumentAttach(
     [setError],
   );
 
-  const takePhoto = useCallback<Pick>(
+  const takePhoto = useCallback<Pick<S>>(
     async (slot) => {
       const permission = await ImagePicker.requestCameraPermissionsAsync();
       if (!permission.granted) {
@@ -53,7 +64,7 @@ export function useBusinessDocumentAttach(
     [attach, setError, tooLarge],
   );
 
-  const choosePhoto = useCallback<Pick>(
+  const choosePhoto = useCallback<Pick<S>>(
     async (slot) => {
       const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 });
       const asset = result.canceled ? undefined : result.assets[0];
@@ -63,7 +74,7 @@ export function useBusinessDocumentAttach(
     [attach, tooLarge],
   );
 
-  const chooseFile = useCallback<Pick>(
+  const chooseFile = useCallback<Pick<S>>(
     async (slot) => {
       const picker = loadDocumentPicker();
       if (!picker) {

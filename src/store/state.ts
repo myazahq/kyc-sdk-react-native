@@ -402,6 +402,24 @@ export interface KycState {
   business: BusinessState;
   /** The rest of the KYB application: people, documents, applicant role. */
   businessApplication: BusinessApplicationState;
+
+  /**
+   * Supporting documents the person uploaded — artefacts the org holds on
+   * file, not the identity evidence this verification is decided on.
+   * `fileName` is display only and never rides the wire or session progress.
+   */
+  supportingDocuments: Array<{
+    type: string;
+    mediaId: string;
+    fileName?: string;
+    /**
+     * Local URI of the picked image, for the card's thumbnail. Display only,
+     * like `fileName`: it never rides the wire or session progress, so a
+     * restored attempt shows the slot uploaded without a preview.
+     */
+    previewUri?: string;
+    isPdf?: boolean;
+  }>;
   /**
    * Set by a KYB submission that requires applicant verification — the
    * KeyPerson id the applicant's own individual check links back to.
@@ -500,6 +518,14 @@ export interface KycState {
   setUboUnidentifiable: (checked: boolean) => void;
   setBusinessDocument: (doc: BusinessDocumentUpload) => void;
   removeBusinessDocument: (type: string) => void;
+  setSupportingDocument: (doc: {
+    type: string;
+    mediaId: string;
+    fileName?: string;
+    previewUri?: string;
+    isPdf?: boolean;
+  }) => void;
+  removeSupportingDocument: (type: string) => void;
   setApplicant: (role: ApplicantRole, name: string, keyPersonIndex?: number | null) => void;
   setCaptureIntegrity: (integrity: CaptureIntegrity) => void;
   setMrzScan: (scan: MrzScan) => void;

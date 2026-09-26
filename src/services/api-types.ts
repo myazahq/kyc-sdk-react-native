@@ -24,6 +24,9 @@ export type MediaUploadType =
   // downloaded statement, and company paperwork is almost always a scan.
   | 'proof_of_address'
   | 'business_document'
+  // Artefacts held on file, named by the organisation — not the
+  // identity evidence the verification is decided on. Images + PDF.
+  | 'supporting_document'
   // Address Intelligence door / premises photo (image only).
   | 'address_photo';
 

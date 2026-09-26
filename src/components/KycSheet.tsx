@@ -212,7 +212,6 @@ export function KycSheet({
                   <GlassIconButton
                     icon={mode === "dark" ? "sun" : "moon"}
                     onPress={toggle}
-                    solid
                     plain={showClose}
                     accessibilityLabel="Toggle theme"
                   />

@@ -111,4 +111,30 @@ describe('purity', () => {
     expect(props).toEqual({ country: 'NG', appearance: { logo: 'x' } });
     expect(flow).toEqual({ country: 'GH', appearance: { primaryColor: '#000' } });
   });
+
+  // A multi-region flow declares its ID offering inside countries[]; keeping
+  // the consumer's prop there narrows every country the flow offers.
+  it('a multi-region flow drops the consumer idTypes prop', () => {
+    const merged = mergeWorkflowConfig(
+      { countries: [{ country: 'NG' }, { country: 'GH' }] },
+      { country: 'NG', idTypes: ['bvn', 'nin', 'passport'] },
+    );
+    expect(merged.idTypes).toBeUndefined();
+  });
+
+  it("a flow's own top-level idTypes still wins on a multi-region flow", () => {
+    const merged = mergeWorkflowConfig(
+      { countries: [{ country: 'NG' }], idTypes: ['passport'] },
+      { country: 'NG', idTypes: ['bvn', 'nin'] },
+    );
+    expect(merged.idTypes).toEqual(['passport']);
+  });
+
+  it('a single-country flow keeps the consumer idTypes prop, as before', () => {
+    const merged = mergeWorkflowConfig(
+      { country: 'NG' },
+      { country: 'NG', idTypes: ['bvn', 'nin', 'passport'] },
+    );
+    expect(merged.idTypes).toEqual(['bvn', 'nin', 'passport']);
+  });
 });

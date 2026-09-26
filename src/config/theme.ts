@@ -161,6 +161,22 @@ function toHex({ r, g, b }: Rgb): string {
 }
 
 /** Alpha-blends `fg` over `bg` at opacity `alpha` (0–1). */
+/**
+ * `color` at `alpha`, as an 8-digit hex React Native composites itself.
+ *
+ * Falls back to blending against `fallbackBg` when the colour is not hex (an
+ * `rgb()` or a named colour), which is the old behaviour rather than a crash.
+ */
+function withAlpha(color: string, alpha: number, fallbackBg: string): string {
+  const parsed = parseHex(color);
+  if (!parsed) return alphaBlend(color, fallbackBg, alpha);
+  const byte = Math.round(Math.min(Math.max(alpha, 0), 1) * 255)
+    .toString(16)
+    .padStart(2, '0');
+  const hex = (n: number) => Math.round(n).toString(16).padStart(2, '0');
+  return `#${hex(parsed.r)}${hex(parsed.g)}${hex(parsed.b)}${byte}`;
+}
+
 function alphaBlend(fg: string, bg: string, alpha: number): string {
   const f = parseHex(fg);
   const b = parseHex(bg);
@@ -197,9 +213,19 @@ export function applyAppearance(
 
   if (appearance.primaryColor) {
     next.primary = appearance.primaryColor;
-    next.primary50 = alphaBlend(appearance.primaryColor, background, 0.04);
-    next.primary100 = alphaBlend(appearance.primaryColor, background, 0.1);
-    next.primary200 = alphaBlend(appearance.primaryColor, background, 0.2);
+    // Real alpha, not a pre-blend. These tints are drawn on several different
+    // surfaces - the sheet, a card, a pill - and pre-blending has to guess ONE
+    // of them. It guessed `background`, so on a card (backgroundSecondary) the
+    // 10% tint landed within 3/255 of the card it sat on and the supporting
+    // documents step drew its numbered markers invisibly (user report
+    // 2026-09-25). Carrying the alpha lets each one composite against whatever
+    // it is actually on, which is what the web SDK's `bg-primary/10` does and
+    // why it never had this bug. On `background` the result matches the old
+    // pre-blend to within 1/255 - an alpha byte cannot hold 0.1 exactly - so
+    // nothing that was already correct moves perceptibly.
+    next.primary50 = withAlpha(appearance.primaryColor, 0.04, background);
+    next.primary100 = withAlpha(appearance.primaryColor, 0.1, background);
+    next.primary200 = withAlpha(appearance.primaryColor, 0.2, background);
   }
   if (appearance.accentColor) {
     next.primary100 = appearance.accentColor;

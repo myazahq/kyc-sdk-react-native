@@ -5,6 +5,7 @@ import { fillTokens } from '../../utils/tokens';
 import { hasEmailVerificationStep, hasPhoneVerificationStep } from '../../config/contact';
 import { hasActiveQuestionnaire } from '../../config/questionnaire';
 import { hasProofOfAddressStep } from '../../config/proofOfAddress';
+import { mayAskSupportingDocuments } from '../../config/supportingDocuments';
 import { hasAddressCollectionStep } from '../../config/addressCollection';
 import {
   hasApplicantVerification,
@@ -70,11 +71,17 @@ const SCOPE_DESCRIPTIONS: Record<string, string> = {
     'We need to re-confirm the email address and phone number on your account. This takes a minute and is secure.',
 };
 
+// The address scope's bullets are NOT a fixed pair: it verifies an address by
+// the pin, by a document, or by both, so promising a map on a flow that only
+// asks for a document is a promise the flow never keeps. Gated below on the
+// same step-order predicate the flow itself walks; the document's own bullet is
+// appended by the shared post-capture block, like every other flow's.
+const ADDRESS_PIN_BULLETS: ConsentProcessStep[] = [
+  { icon: 'map-pin-house', label: 'Pin your home address on a map' },
+  { icon: 'badge-check', label: 'Confirm the details only you can know' },
+];
+
 const SCOPE_BULLETS: Record<string, ConsentProcessStep[]> = {
-  address: [
-    { icon: 'map-pin-house', label: 'Pin your home address on a map' },
-    { icon: 'badge-check', label: 'Confirm the details only you can know' },
-  ],
   'biometric-authentication': [
     { icon: 'scan-face', label: 'Take a quick selfie with liveness checks' },
     { icon: 'badge-check', label: 'We match it against your enrolled face' },
@@ -123,7 +130,11 @@ export function buildConsentModel(config: MyazaKYCConfig): ConsentModel {
     : scope
       ? // COPY the catalogue entry: pushing below would otherwise mutate the
         // shared constant, appending one more bullet per re-render.
-        [...(SCOPE_BULLETS[scope] ?? [])]
+        scope === 'address'
+          ? hasAddressCollectionStep(config.addressCollection)
+            ? [...ADDRESS_PIN_BULLETS]
+            : []
+          : [...(SCOPE_BULLETS[scope] ?? [])]
       : [
         { icon: 'badge-check', label: 'Verify your government-issued ID' },
         { icon: 'user', label: 'Collect basic personal information' },
@@ -153,6 +164,12 @@ export function buildConsentModel(config: MyazaKYCConfig): ConsentModel {
   // Post-capture features, in the order the flow runs them. Each is gated on
   // the flow that actually asks for it, and skipped where a scope's own
   // catalogue bullet already covers the same step.
+  // `mayAsk`, NOT the step-order predicate: that one resolves against the
+  // verified IDs and consent runs before an ID is picked, so every scoped
+  // document would answer "nothing to ask for" and go undisclosed.
+  if (!isBusiness && mayAskSupportingDocuments(config.supportingDocuments)) {
+    steps.push({ icon: 'file-text', label: 'Upload supporting documents' });
+  }
   if (!isBusiness && hasProofOfAddressStep(config.proofOfAddress)) {
     steps.push({ icon: 'file-text', label: 'Upload a proof of address document' });
   }
