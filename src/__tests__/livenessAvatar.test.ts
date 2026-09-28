@@ -28,10 +28,10 @@ describe('livenessAvatarUrl', () => {
     // contract; the server validates the gesture against a closed list, so a
     // drift on either side is a 404 and a missing avatar, never an error.
     expect(livenessAvatarUrl('nod', LIVE)).toBe(
-      'https://trust.myaza.app/api/kyc/assets/liveness/nod.gif',
+      'https://trust.myaza.app/api/kyc/assets/liveness/nod-transparent.gif',
     );
     expect(livenessAvatarUrl('smile', LIVE)).toBe(
-      'https://trust.myaza.app/api/kyc/assets/liveness/smile.gif',
+      'https://trust.myaza.app/api/kyc/assets/liveness/smile-transparent.gif',
     );
   });
 
@@ -44,7 +44,7 @@ describe('livenessAvatarUrl', () => {
 
   it('honours devUrl on a development key', () => {
     expect(livenessAvatarUrl('blink', 'pk_dev_abc', 'http://192.168.1.5:3001')).toBe(
-      'http://192.168.1.5:3001/api/kyc/assets/liveness/blink.gif',
+      'http://192.168.1.5:3001/api/kyc/assets/liveness/blink-transparent.gif',
     );
   });
 
@@ -60,10 +60,10 @@ describe('primeLivenessAvatars', () => {
     primeLivenessAvatars(LIVE);
     expect(prefetch).toHaveBeenCalledTimes(4);
     expect(prefetch.mock.calls.map((c) => c[0])).toEqual([
-      'https://trust.myaza.app/api/kyc/assets/liveness/nod.gif',
-      'https://trust.myaza.app/api/kyc/assets/liveness/turn.gif',
-      'https://trust.myaza.app/api/kyc/assets/liveness/blink.gif',
-      'https://trust.myaza.app/api/kyc/assets/liveness/smile.gif',
+      'https://trust.myaza.app/api/kyc/assets/liveness/nod-transparent.gif',
+      'https://trust.myaza.app/api/kyc/assets/liveness/turn-transparent.gif',
+      'https://trust.myaza.app/api/kyc/assets/liveness/blink-transparent.gif',
+      'https://trust.myaza.app/api/kyc/assets/liveness/smile-transparent.gif',
     ]);
   });
 

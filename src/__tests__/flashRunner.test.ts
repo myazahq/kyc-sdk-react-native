@@ -100,36 +100,32 @@ describe('a spoof', () => {
     expect(result.passed).toBe(false);
   });
 
-  it('does NOT catch a replay that reflects nothing at all', async () => {
-    // Pinned deliberately, because it is the honest limit of this check: a
-    // video replayed in a dark room produces no measurable shift, which is
-    // indistinguishable from sunlight — and both soft-pass. Flash defeats
-    // replays by making the SEQUENCE unpredictable, which the server verifies
-    // against the recorded video; the gesture challenges and that server-side
-    // re-analysis are what cover this case, not this correlation.
+  it('does not pass a replay that reflects nothing at all', async () => {
+    // A replay reflects no measurable shift, which is indistinguishable from
+    // sunlight. It used to soft-pass; now it is unmeasurable, which the step
+    // retries and then hands to gesture challenges (flashOutcome.ts).
     const { deps } = liveFace({ readFaceRgb: () => [100, 100, 100] });
     const result = await runFlashSequence(deps, [RED, GREEN]);
     expect(result.inconclusive).toBe(2);
-    expect(result.passed).toBe(true);
+    expect(result.passed).toBe(false);
   });
 });
 
 describe('conditions it cannot measure', () => {
-  it('passes soft in light too bright to read a reflection', async () => {
-    // Direct sunlight swamps the screen's contribution. Failing here would lock
-    // out anyone verifying outdoors, which is worse than missing a spoof the
-    // gesture checks and the server's own re-analysis still cover.
+  it('reports light too bright to read a reflection as unmeasurable, not passed', async () => {
+    // Direct sunlight swamps the screen's contribution. The person is not
+    // failed for it: the step retries, then gestures carry the check.
     const { deps } = liveFace({ readFaceRgb: () => [250, 250, 250] });
     const result = await runFlashSequence(deps, [RED, GREEN]);
-    expect(result.passed).toBe(true);
+    expect(result.passed).toBe(false);
     expect(result.inconclusive).toBe(2);
   });
 
-  it('treats a face that left the frame as unmeasured, not failed', async () => {
+  it('treats a face that left the frame as unmeasured', async () => {
     const { deps } = liveFace({ readFaceRgb: () => null });
     const result = await runFlashSequence(deps, [RED, GREEN]);
     expect(result.inconclusive).toBe(2);
-    expect(result.passed).toBe(true);
+    expect(result.passed).toBe(false);
   });
 
   it('survives a platform that cannot sample RGB at all', async () => {

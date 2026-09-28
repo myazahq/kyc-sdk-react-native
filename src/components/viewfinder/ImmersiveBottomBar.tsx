@@ -4,6 +4,7 @@ import Svg, { Circle } from 'react-native-svg';
 
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../runtime';
+import { useText } from '../../i18n';
 import { MyazaText } from '../Typography';
 import { Icon } from '../Icon';
 import { CHROME_SCRIM, ChromeGlass } from '../glass/ChromeGlass';
@@ -59,6 +60,7 @@ export function BottomBar({
   bottomInset: number;
 }): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
   const R = 40;
   const CIRC = 2 * Math.PI * R;
 
@@ -92,7 +94,7 @@ export function BottomBar({
             <Icon name="upload" size={18} color="#FFFFFF" />
             <View style={{ width: 8 }} />
             <MyazaText variant="bodyMedium" color="#FFFFFF">
-              Upload a photo instead
+              {t('uploadDocument.camera.uploadInstead')}
             </MyazaText>
           </View>
         </Pressable>

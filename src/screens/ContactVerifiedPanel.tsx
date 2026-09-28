@@ -4,6 +4,7 @@ import { View } from 'react-native';
 import { spacing } from '../config/theme';
 import { MyazaButton } from '../components/MyazaButton';
 import { VerifiedNotice } from '../components/VerifiedNotice';
+import { useText } from '../i18n/useText';
 
 /**
  * Shown when the user returns to a contact step they already passed: the
@@ -20,6 +21,7 @@ export function ContactVerifiedPanel({
   destination?: string;
   onContinue: () => void;
 }): React.ReactElement {
+  const t = useText();
   return (
     <View>
       <VerifiedNotice
@@ -30,7 +32,7 @@ export function ContactVerifiedPanel({
         }
       />
       <View style={{ height: spacing.md }} />
-      <MyazaButton label="Continue" onPress={onContinue} />
+      <MyazaButton label={t('common.continue')} onPress={onContinue} />
     </View>
   );
 }

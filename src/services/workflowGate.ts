@@ -1,6 +1,6 @@
 import { createKYCApi } from './api';
 import { KYCApiError } from './api';
-import { resolveBaseUrl } from './resolveUrl';
+import { normalizeAppearanceUrls, normalizeBrandingUrls, resolveBaseUrl } from './resolveUrl';
 import { mergeWorkflowConfig, overlayApplicantWorkflow } from '../config/workflowMerge';
 import { KYCError } from '../types/verification';
 import type { MyazaKYCConfig, ResolvedKYCConfig } from '../types/config';
@@ -74,7 +74,8 @@ export async function resolveWorkflow(
   config: MyazaKYCConfig,
   signal?: AbortSignal,
 ): Promise<WorkflowGateResult> {
-  const api = createKYCApi(resolveBaseUrl(config.apiKey, config.devUrl), config.apiKey);
+  const baseUrl = resolveBaseUrl(config.apiKey, config.devUrl);
+  const api = createKYCApi(baseUrl, config.apiKey);
 
   // The deadline is ours, not the platform's: React Native's fetch has no
   // default request timeout, so without this a socket that is open but silent
@@ -96,12 +97,15 @@ export async function resolveWorkflow(
       // overlayApplicantWorkflow.
       config: overlayApplicantWorkflow(
         res.applicantWorkflow,
-        mergeWorkflowConfig(res.config, config as unknown as Record<string, unknown>),
+        mergeWorkflowConfig(
+          normalizeAppearanceUrls(res.config, baseUrl),
+          config as unknown as Record<string, unknown>,
+        ),
       ) as unknown as ResolvedKYCConfig,
       serverConfig: {
         status: 'ready',
         idTypes: res.idTypes,
-        branding: res.branding,
+        branding: normalizeBrandingUrls(res.branding, baseUrl),
         geoCountry: res.geoCountry,
         // The resolution route does not serve these yet, so a workflow mount
         // reads undefined and the address flow offers no search screen. That

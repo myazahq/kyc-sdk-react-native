@@ -6,6 +6,7 @@ import { useTheme } from './runtime';
 import { MyazaText } from './Typography';
 import { MyazaButton } from './MyazaButton';
 import { Icon, type IconName } from './Icon';
+import { useText } from '../i18n/useText';
 
 // Camera error states for the document-capture step. Two variants share one
 // scaffold (an 80×80 error-tinted circle + heading + message + actions):
@@ -100,9 +101,7 @@ export function CameraPermissionView({ message, onRetry, onUpload, centered = tr
 }
 
 // ── Permission primer (before the OS prompt) ─────────────────────────────────
-
-const DEFAULT_PRIMING_MESSAGE =
-  'When prompted, allow camera access to continue your verification.';
+// Its words are the `primer.camera.*` texts, so a workflow can reword them.
 
 export interface CameraPermissionPrimingViewProps {
   message?: string;
@@ -119,15 +118,16 @@ export interface CameraPermissionPrimingViewProps {
  */
 export function CameraPermissionPrimingView({ message, onGrant, centered = true }: CameraPermissionPrimingViewProps): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
   return (
     <CameraErrorScaffold
       icon="camera"
-      title="Allow camera access"
-      message={message ?? DEFAULT_PRIMING_MESSAGE}
+      title={t('primer.camera.title')}
+      message={message ?? t('primer.camera.body')}
       centered={centered}
       tint={colors.primary}
     >
-      <MyazaButton label="Grant access" onPress={onGrant} />
+      <MyazaButton label={t('primer.camera.button')} onPress={onGrant} />
     </CameraErrorScaffold>
   );
 }

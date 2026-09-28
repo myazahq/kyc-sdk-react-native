@@ -4,6 +4,7 @@ import { ActivityIndicator, Animated, View } from 'react-native';
 import { radius, spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
 import { MyazaText } from '../components/Typography';
+import { useText } from '../i18n/useText';
 import { useReduceMotion } from '../components/StaggerIn';
 
 /**
@@ -94,6 +95,9 @@ function GhostCard({
 
 export function KeyPeoplePending(): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
+  const title = t('keyPeople.pending.title');
+  const body = t('keyPeople.pending.body');
   const reduceMotion = useReduceMotion();
   const pulseValue = useRef(new Animated.Value(1)).current;
 
@@ -116,13 +120,13 @@ export function KeyPeoplePending(): React.ReactElement {
       <View
         accessible
         accessibilityLiveRegion="polite"
-        accessibilityLabel="Working out who else needs to verify. We are checking the official register for the company's directors and owners."
+        accessibilityLabel={`${title}. ${body}`}
         style={{ alignItems: 'center', marginBottom: spacing.md }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <ActivityIndicator size="small" color={colors.primary} />
           <MyazaText variant="bodyMedium" style={{ fontWeight: '600', marginLeft: spacing.sm }}>
-            Working out who else needs to verify
+            {title}
           </MyazaText>
         </View>
         {/* Naming the authority is the reassurance: the pause is the official
@@ -132,7 +136,7 @@ export function KeyPeoplePending(): React.ReactElement {
           color={colors.textMuted}
           style={{ textAlign: 'center', marginTop: spacing.xs }}
         >
-          We are checking the official register for the company's directors and owners.
+          {body}
         </MyazaText>
       </View>
 

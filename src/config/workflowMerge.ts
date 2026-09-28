@@ -29,10 +29,15 @@ export const WORKFLOW_KEYS = [
   'enableLiveness',
   'livenessMode',
   'flashSequenceLength',
+  // The light theme and full brightness while the liveness camera is on
+  // (lib/bright-screen).
+  'livenessBrightScreen',
   'biometric',
   'deviceIntelligence',
   'keyPeopleLinkRecovery',
   'consentStep',
+  // Unposed front-camera frames taken during document capture (lib/silentCapture).
+  'silentCapture',
   'requireMobileDevice',
   'voiceGuidance',
   'showThemeToggle',
@@ -41,6 +46,8 @@ export const WORKFLOW_KEYS = [
   'appearance',
   'consent',
   'success',
+  // Custom copy by language then key (see i18n/). Replaced wholesale, like consent.
+  'texts',
   'emailVerification',
   'phoneVerification',
   'questionnaire',
@@ -128,6 +135,7 @@ const APPLICANT_LEG_KEYS = [
   'enableLiveness',
   'livenessMode',
   'flashSequenceLength',
+  'livenessBrightScreen',
   'nfc',
 ] as const;
 

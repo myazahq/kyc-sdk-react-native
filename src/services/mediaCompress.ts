@@ -7,29 +7,37 @@ import {
   SELFIE_IMAGE_QUALITY,
   VIDEO_COMPRESS_BITRATE,
   VIDEO_COMPRESS_MAX_SIZE,
+  VIDEO_COMPRESS_FALLBACK_SIZE,
+  VIDEO_COMPRESS_FALLBACK_BITRATE,
 } from '../config/captureSettings';
 import { cardCropRect, type CropRect } from './cardCrop';
 
 export type { CropRect } from './cardCrop';
 
 /**
- * Transcodes a recorded clip down to a small evidence video (best-effort).
- * VisionCamera v5 records at the document camera's high-res 4K session format on
- * iOS and ignores the bitrate/resolution hints, so the raw file is far too large;
- * this shrinks it (mirrors the Flutter SDK's video_compress). On failure it returns
- * the original URI — the caller's size guard then drops it if still over the cap.
+ * Transcodes a recorded clip down to a small evidence video. VisionCamera v5
+ * records at the document camera's high-res 4K session format on iOS and
+ * ignores the bitrate/resolution hints, so the raw file is far too large; this
+ * shrinks it (mirrors the Flutter SDK's video_compress).
+ *
+ * A failed transcode is retried once at a smaller size. If that fails too it
+ * answers null: the raw 4K file is never uploaded, because it cannot fit the
+ * 5 MB ceiling and used to be dropped there without anyone being told.
  */
-export async function compressVideo(uri: string): Promise<string> {
-  try {
-    const out = await Video.compress(uri, {
-      compressionMethod: 'manual',
-      maxSize: VIDEO_COMPRESS_MAX_SIZE,
-      bitrate: VIDEO_COMPRESS_BITRATE,
-    });
-    return out.startsWith('file://') ? out : `file://${out}`;
-  } catch {
-    return uri;
+export async function compressVideo(uri: string): Promise<string | null> {
+  const attempts = [
+    { maxSize: VIDEO_COMPRESS_MAX_SIZE, bitrate: VIDEO_COMPRESS_BITRATE },
+    { maxSize: VIDEO_COMPRESS_FALLBACK_SIZE, bitrate: VIDEO_COMPRESS_FALLBACK_BITRATE },
+  ];
+  for (const { maxSize, bitrate } of attempts) {
+    try {
+      const out = await Video.compress(uri, { compressionMethod: 'manual', maxSize, bitrate });
+      return out.startsWith('file://') ? out : `file://${out}`;
+    } catch {
+      /* try the next, smaller setting */
+    }
   }
+  return null;
 }
 
 // Post-capture still-image compression — the RN mirror of the Flutter SDK's

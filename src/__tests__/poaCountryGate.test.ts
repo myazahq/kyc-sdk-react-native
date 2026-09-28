@@ -24,6 +24,6 @@ describe('poaCountryDeclared', () => {
   it('the PoA step gates Continue on it', () => {
     const src = readFileSync(join(__dirname, '../screens/ProofOfAddressStep.tsx'), 'utf8');
     expect(src).toContain('poaCountryDeclared(');
-    expect(src).toMatch(/label="Continue"[\s\S]{0,120}countryDeclared/);
+    expect(src).toMatch(/label=\{t\('common\.continue'\)\}[\s\S]{0,120}countryDeclared/);
   });
 });

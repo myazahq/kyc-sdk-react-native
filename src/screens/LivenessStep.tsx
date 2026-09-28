@@ -18,6 +18,7 @@ import { isSelfieBlurry, measureSelfieSharpness } from '../lib/selfie-sharpness'
 import { KYCError } from '../types/verification';
 import { useStore } from 'zustand';
 import { useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
+import { useText } from '../i18n/useText';
 import { MyazaText } from '../components/Typography';
 import { MyazaButton } from '../components/MyazaButton';
 import { MyazaPulseLoader } from '../components/MyazaPulseLoader';
@@ -33,7 +34,7 @@ import { useToast } from '../components/toast';
 import { CameraPermissionView, CameraUnavailableView, CameraPermissionPrimingView } from '../components/CameraPermissionView';
 import { useFaceModelReady } from '../liveness/useModelReady';
 import { ReadyPrimer } from '../components/ReadyPrimer';
-import { READY_LIVENESS } from '../components/readyPrimerContent';
+import { READY_LIVENESS, READY_LIVENESS_PASSIVE } from '../components/readyPrimerContent';
 import { LivenessAvatar } from './LivenessAvatar';
 import { livenessLayout } from '../lib/livenessLayout';
 import { detectFaceOnFrame } from '../liveness/visionCameraFaceDetector';
@@ -42,6 +43,8 @@ import { DEFAULT_LIVENESS_CONFIG } from '../liveness/types';
 import { livenessProgress } from '../lib/captureRing';
 import { useFlashSequence } from './useFlashSequence';
 import { useFlashHole } from './useFlashHole';
+import { useLivenessCameraOn } from './useLivenessCameraOn';
+import { livenessCameraOnScreen } from '../lib/bright-screen';
 import {
   FRESH_FACE_TIMEOUT_MS,
   INSTRUCTION_HEIGHT,
@@ -76,9 +79,7 @@ import type { LivenessFaceData } from '../liveness/types';
 // challenge passes, the SDK auto-captures a selfie + a short liveness video and
 // uploads both eagerly (with retry) on the review screen — same as Flutter.
 //
-// Title/description ("Face Verification" / "Follow the on-screen instructions")
-// live in the SHEET HEADER (KycFlow); this body is the camera + guidance.
-//
+// Title/description live in the SHEET HEADER; this body is camera + guidance.
 // Anti-spoofing: the selfie is AUTO-captured (never user-triggered) so a static
 // image can't pass; challenges are randomized; lighting/single-face gates block
 // auto-capture in poor conditions. (Brightness is gated server-side too; the
@@ -89,6 +90,7 @@ export function LivenessStep(): React.ReactElement {
   const { colors } = useTheme();
   const toast = useToast();
   const config = useKycConfig();
+  const t = useText();
   const api = useKyc((s) => s.api);
   const setMediaId = useKyc((s) => s.setMediaId);
   const setCaptureIntegrity = useKyc((s) => s.setCaptureIntegrity);
@@ -206,10 +208,10 @@ export function LivenessStep(): React.ReactElement {
   const captureRef = useRef<() => void>(() => {});
   const liveness = useLiveness({
     voiceGuidance: config.voiceGuidance,
-    // Silent until the primer is dismissed and the camera is actually up. The
-    // machine is constructed behind the primer, so without this it talks to a
-    // user who has not started yet.
+    // Silent until the primer is dismissed and the camera is actually up: the
+    // machine is built behind the primer and would talk to nobody.
     announce: ready && !showPrimer,
+    t,
     onReadyToCapture: () => captureRef.current(),
     config: {
       ...DEFAULT_LIVENESS_CONFIG,
@@ -270,9 +272,10 @@ export function LivenessStep(): React.ReactElement {
       // and its flash result with it.
       setCaptureIntegrity({
         liveness: buildLivenessIntegrity(
-          config.livenessMode ?? 'gestures',
+          liveness.effectiveMode,
           liveness.faceGlitches,
           liveness.flashResult,
+          liveness.challenges,
         ),
       });
       liveness.markComplete();
@@ -281,7 +284,7 @@ export function LivenessStep(): React.ReactElement {
       // keep it so the review-screen retry can re-upload it.
       const videoPath = await videoRecorder.stop();
       videoPathRef.current = videoPath;
-      void uploadSelfieAndVideo(compressed, videoPath);
+      void uploadSelfieAndVideo(compressed, videoPath, videoPath ? null : videoRecorder.failure());
     } catch {
       liveness.reset();
     }
@@ -363,6 +366,21 @@ export function LivenessStep(): React.ReactElement {
     ready: (!!selfieUri || !!selfieIdRef.current) && !holdingForClose && !uploadError,
     onAdvance: nextStep,
   });
+  // The live camera is what this render shows: past the "I'm ready" primer,
+  // the permission primer and the model, not failed, not yet on the review.
+  const cameraOnScreen = livenessCameraOnScreen({
+    hasDevice: !!device,
+    permission: perm,
+    ready,
+    modelState,
+    phase: liveness.phase,
+    onReview: !!(selfieIdRef.current || (selfieUri && !holdingForClose)),
+  });
+  // Tells the sheet root the camera is on, so it lights the face from the
+  // screen (components/BrightScreen: the light theme and full brightness).
+  // Latched from the camera to the end of the step (the review stays lit);
+  // the primers before it keep the organisation's normal theme.
+  useLivenessCameraOn(cameraOnScreen);
   // A plain JS function the worklet hands the per-frame result to. It is wrapped
   // with `runOnJS(...)` INSIDE the worklet (the canonical react-native-worklets
   // pattern) rather than pre-wrapped — pre-wrapping produced a "non-worklet
@@ -407,6 +425,7 @@ export function LivenessStep(): React.ReactElement {
     sequenceLength: config.flashSequenceLength,
     readFaceRgb: () => faceRgbRef.current,
     onComplete: (result) => livenessRef.current.completeFlash(result),
+    attempt: liveness.flashAttempt,
   });
 
   // Published to the sheet root rather than drawn in this step: an overlay here
@@ -496,7 +515,9 @@ export function LivenessStep(): React.ReactElement {
   // of the user, not about access. Opening the camera unannounced is what makes
   // people fumble the first attempt.
   if (!ready) {
-    return <ReadyPrimer content={READY_LIVENESS} onReady={() => setReady(true)} />;
+    // Passive Liveness asks for no prompts, so its description says so.
+    const primer = config.livenessMode === 'passive' ? READY_LIVENESS_PASSIVE : READY_LIVENESS;
+    return <ReadyPrimer content={primer} onReady={() => setReady(true)} />;
   }
   if (showPrimer) {
     return <CameraPermissionPrimingView onGrant={() => setPerm('requesting')} />;
@@ -558,7 +579,7 @@ export function LivenessStep(): React.ReactElement {
         ? `${colors.primary}33`
         : colors.gray300;
 
-  const guidance = resolveGuidance(liveness);
+  const guidance = resolveGuidance(liveness, t);
   const instrColor = isCamLoading
     ? colors.textMuted
     : guidance.tone === 'error'
@@ -677,8 +698,8 @@ export function LivenessStep(): React.ReactElement {
       {/* Numbered progress dots with connectors */}
       <ProgressDots total={liveness.totalCount} completed={liveness.completedCount} active={phase === 'challenge' || phase === 'positioning' || phase === 'flash'} />
 
-      {/* Gesture demo avatar */}
-      {liveness.activeChallenge ? (
+      {/* Gesture demo avatar (the passive hold has no gesture to demonstrate) */}
+      {liveness.activeChallenge && liveness.activeChallenge !== 'hold' ? (
         <LivenessAvatar challenge={liveness.activeChallenge} size={layout.avatar} iconSize={layout.avatarIcon} />
       ) : null}
     </View>

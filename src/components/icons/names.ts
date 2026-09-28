@@ -34,6 +34,8 @@ export type IconName =
   | 'building-2'
   | 'stamp'
   | 'user'
+  | 'glasses'
+  | 'sparkles'
   | 'user-plus'
   | 'plus'
   | 'info'

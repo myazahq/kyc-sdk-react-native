@@ -16,6 +16,7 @@ import { useAddressFlow } from './use-address-flow';
 import { EntranceDropzone } from './EntranceDropzone';
 import { EntrancePlaceholder } from './EntranceFraming';
 import { FramedStreetView } from './FramedStreetView';
+import { useText } from '../../i18n/useText';
 
 /**
  * The entrance step: Street View FIRST — it opens automatically wherever
@@ -97,6 +98,7 @@ function EntrancePhoto({
 }): React.ReactElement {
   const store = useKycStore();
   const { colors } = useTheme();
+  const t = useText();
   const photoId = useKyc((s) => s.mediaIds.addressPhoto);
   const previewUri = useKyc((s) => s.addressPhotoPreview);
   const { pickPhoto, setError } = flow;
@@ -120,7 +122,7 @@ function EntrancePhoto({
     <StickyActions
       actions={
         <MyazaButton
-          label={uploaded || required ? 'Continue' : 'Continue without a photo'}
+          label={uploaded || required ? t('common.continue') : t('address.entrance.continueWithoutPhoto')}
           disabled={flow.uploading || (required && !uploaded)}
           onPress={() => flow.goNext()}
         />

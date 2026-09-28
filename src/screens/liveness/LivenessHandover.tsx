@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 
 import { useKycConfig } from '../../components/runtime';
+import { useText } from '../../i18n/useText';
 import { configScope } from '../../lib/scope';
 import { describeWaiting } from '../../lib/result-copy';
 import { waitsForResult } from '../../config/biometricOptions';
@@ -34,10 +35,14 @@ export function useSelfieAutoAdvance(opts: { enabled: boolean; ready: boolean; o
 
 export function LivenessHandover(): React.ReactElement {
   const config = useKycConfig();
-  const copy = describeWaiting({
-    scope: configScope(config),
-    waitsForResult: waitsForResult(config),
-    override: biometricCopyFor(config).waiting,
-  });
+  const t = useText();
+  const copy = describeWaiting(
+    {
+      scope: configScope(config),
+      waitsForResult: waitsForResult(config),
+      override: biometricCopyFor(config).waiting,
+    },
+    t,
+  );
   return <SubmittedWaiting title={copy.title} description={copy.description} />;
 }

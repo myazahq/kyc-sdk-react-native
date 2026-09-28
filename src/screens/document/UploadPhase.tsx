@@ -6,8 +6,8 @@ import { useTheme } from '../../components/runtime';
 import { MyazaText } from '../../components/Typography';
 import { Icon, type IconName } from '../../components/Icon';
 import { DashedBorder } from '../../components/DashedBorder';
-import type { DocumentCapturePhase } from '../../store/state';
 import { RequiredPill } from './RequiredPill';
+import { useText } from '../../i18n/useText';
 
 // ─── Document capture without the camera ──────────────────────────────────────
 //
@@ -21,39 +21,10 @@ import { RequiredPill } from './RequiredPill';
 // with the camera path: the interactive cropper, the compress, the MRZ read off
 // the front, the front preview and the review.
 
-/** The sheet header for an upload-only capture phase (see documentCaptureMeta). */
-export function documentUploadMeta(
-  phase: DocumentCapturePhase,
-  documentLabel: string,
-): { title: string; description: string } {
-  switch (phase) {
-    case 'front':
-      return {
-        title: `Upload Your ${documentLabel}`,
-        description: `Choose a clear photo of your ${documentLabel} from your device.`,
-      };
-    case 'front-preview':
-      return {
-        title: 'Front Side Added',
-        description: 'Looks good? Tap Next to add a photo of the back.',
-      };
-    case 'back':
-      return {
-        title: 'Upload Back Side',
-        description: `Now choose a photo of the back of your ${documentLabel}.`,
-      };
-    case 'review':
-    default:
-      return {
-        title: `Review Your ${documentLabel}`,
-        description: 'Tap Continue to upload and submit your document.',
-      };
-  }
-}
-
-const TIPS: ReadonlyArray<{ icon: IconName; label: string }> = [
-  { icon: 'id-card', label: 'The whole document in view, all four corners' },
-  { icon: 'sun', label: 'Sharp and evenly lit, with no glare' },
+// The web's second and third upload tips; this screen has no "lay it flat" one.
+const TIPS: ReadonlyArray<{ icon: IconName; key: string }> = [
+  { icon: 'id-card', key: 'uploadDocument.upload.tip2' },
+  { icon: 'sun', key: 'uploadDocument.upload.tip3' },
 ];
 
 export interface UploadPhaseProps {
@@ -67,6 +38,7 @@ export interface UploadPhaseProps {
 
 export function UploadPhase(p: UploadPhaseProps): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
   const subject = !p.isTwoSided ? `your ${p.documentLabel}` : p.isBack ? 'the back' : 'the front';
   const ask = `Add a photo of ${subject}`;
   const choose = () => {
@@ -141,7 +113,7 @@ export function UploadPhase(p: UploadPhaseProps): React.ReactElement {
             </MyazaText>
             <View style={{ height: spacing.xs }} />
             <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ textAlign: 'center' }}>
-              Choose a clear photo from your device. You can crop it on the next screen.
+              {t('uploadDocument.upload.hint')}
             </MyazaText>
             <View style={{ height: spacing.md }} />
             {/* Stays in the layout while busy so the card keeps its height. */}
@@ -153,7 +125,7 @@ export function UploadPhase(p: UploadPhaseProps): React.ReactElement {
               <Icon name="upload" size={16} color={colors.primary} />
               <View style={{ width: spacing.xs }} />
               <MyazaText variant="label" color={colors.primary} style={{ fontWeight: '600' }}>
-                Tap to choose a photo
+                {t('uploadDocument.upload.tapToChoose')}
               </MyazaText>
               <View style={{ width: 2 }} />
               <Icon name="chevron-right" size={16} color={colors.primary} />
@@ -164,11 +136,11 @@ export function UploadPhase(p: UploadPhaseProps): React.ReactElement {
 
       <View style={{ height: spacing.md }} />
       {TIPS.map((tip) => (
-        <View key={tip.label} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs }}>
+        <View key={tip.key} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs }}>
           <Icon name={tip.icon} size={16} color={colors.textMuted} />
           <View style={{ width: spacing.sm }} />
           <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ flexShrink: 1 }}>
-            {tip.label}
+            {t(tip.key)}
           </MyazaText>
         </View>
       ))}

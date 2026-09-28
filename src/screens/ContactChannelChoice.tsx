@@ -7,6 +7,7 @@ import { MyazaText } from '../components/Typography';
 import { Icon } from '../components/Icon';
 import { WhatsAppIcon } from '../components/WhatsAppIcon';
 import { CHANNEL_LABELS, type PhoneOtpChannel } from '../config/contact';
+import { useText } from '../i18n/useText';
 
 // ---------------------------------------------------------------------------
 // How the user wants their one-time code delivered.
@@ -52,13 +53,14 @@ export function ContactChannelChoice({
   onPick: (channel: PhoneOtpChannel) => void;
 }): React.ReactElement | null {
   const { colors } = useTheme();
+  const t = useText();
   if (offered.length < 2) return null;
 
   return (
     <View>
       <View style={{ height: spacing.md }} />
       <MyazaText variant="bodySmall" color={colors.textMuted}>
-        How should we send it?
+        {t('contact.channel.question')}
       </MyazaText>
       <View style={{ height: spacing.xs }} />
       <View style={{ flexDirection: 'row', gap: spacing.sm }}>

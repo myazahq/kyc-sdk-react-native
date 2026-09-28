@@ -23,6 +23,11 @@ export interface ReadyContent {
   body: string;
   /** What to expect. Three at most; past that nobody reads it. */
   checklist: ReadyChecklistItem[];
+  /**
+   * The catalogue entries (`primer.*`) ReadyPrimer shows in place of the
+   * English above, so a workflow's copy reaches every screen that uses this.
+   */
+  textKeys?: { title: string; body: string; checklist: string[] };
 }
 
 export const READY_DOCUMENT: ReadyContent = {
@@ -36,6 +41,11 @@ export const READY_DOCUMENT: ReadyContent = {
     { icon: 'sun', label: 'Find even lighting, avoid glare' },
     { icon: 'timer', label: 'Takes about a minute' },
   ],
+  textKeys: {
+    title: 'primer.document.title',
+    body: 'primer.document.body',
+    checklist: ['primer.document.checklist1', 'primer.document.checklist2', 'primer.document.checklist3'],
+  },
 };
 
 export const READY_LIVENESS: ReadyContent = {
@@ -46,7 +56,22 @@ export const READY_LIVENESS: ReadyContent = {
     'is present, not a photo or a recording.',
   checklist: [
     { icon: 'user', label: 'Put your face in the circle' },
-    { icon: 'sun', label: 'Find even lighting, remove sunglasses' },
-    { icon: 'timer', label: 'Takes about 10 seconds' },
+    { icon: 'glasses', label: 'Take off glasses or anything covering your face' },
+    { icon: 'sun', label: 'Choose a bright spot, with the light in front of you' },
+    { icon: 'sparkles', label: 'Keep glare and shiny reflections off your face' },
   ],
+  textKeys: {
+    title: 'primer.selfie.title',
+    body: 'primer.selfie.body',
+    checklist: ['primer.selfie.checklist1', 'primer.selfie.checklist2', 'primer.selfie.checklist4', 'primer.selfie.checklist5'],
+  },
+};
+
+/** Passive Liveness asks for no prompts, so its description says so. */
+export const READY_LIVENESS_PASSIVE: ReadyContent = {
+  ...READY_LIVENESS,
+  body:
+    "You'll hold still and look at the camera for a moment. This proves a real " +
+    'person is present, not a photo or a recording.',
+  textKeys: { ...READY_LIVENESS.textKeys!, body: 'primer.selfie.bodyPassive' },
 };

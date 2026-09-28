@@ -18,6 +18,7 @@ import { MyazaButton } from './MyazaButton';
 import { Icon } from './Icon';
 import { StepView } from './StepView';
 import { stepHeaderMeta } from './stepHeaderMeta';
+import { useText } from '../i18n/useText';
 import { countrySelectOptions } from '../store/derive';
 
 // The step router — 1:1 with the Flutter SDK's _KycFlowWidget. Computes per-step
@@ -98,6 +99,7 @@ export function KycFlow({
     !addressIntroSeen &&
     order.find(isAddressStep) === currentStep;
 
+  const t = useText();
   const meta = useMemo(
     () =>
       stepHeaderMeta(currentStep, {
@@ -110,18 +112,10 @@ export function KycFlow({
         addressEntranceFraming: state.addressEntranceFraming,
         poaDocumentType: state.poaDocumentType,
         multiIdSlots: state.multiIdSlots,
+        t,
       }),
-    [
-      currentStep,
-      config,
-      country,
-      selectedIdType,
-      documentCapturePhase,
-      contactChallenge,
-      addressIntroPending,
-      state.addressEntranceFraming,
-      state.poaDocumentType,
-    ],
+    [currentStep, config, country, selectedIdType, documentCapturePhase, contactChallenge, addressIntroPending,
+      state.addressEntranceFraming, state.poaDocumentType, t],
   );
 
   // ── Step indicator info ───────────────────────────────────────────────────

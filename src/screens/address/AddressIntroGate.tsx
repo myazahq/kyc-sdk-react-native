@@ -9,6 +9,8 @@ import { Icon } from '../../components/Icon';
 import { MilestoneTrack, type Milestone } from '../../components/MilestoneTrack';
 import { IntroDisclosures } from './IntroDisclosures';
 import type { KYCStep } from '../../types/config';
+import { useText } from '../../i18n/useText';
+import type { TextFn } from '../../i18n/types';
 
 // ---------------------------------------------------------------------------
 // The presence "how it works" screen, shown ONCE before the address flow's
@@ -26,32 +28,26 @@ import type { KYCStep } from '../../types/config';
 // background geofencing on, the "allow all the time" prompt is coming, and
 // OkHi's integration guidance is to say so ONCE, up front, beside the
 // education — not to surprise the person with it after capture.
-const CHECK_IN_CAPTION = {
-  foreground: 'Keep location on; your phone confirms it over the coming days.',
-  background:
-    'Allow location all the time when asked. Your phone then confirms it on its own, even with the app closed.',
-} as const;
-
-const milestonesFor = (background: boolean): readonly Milestone[] => [
+const milestonesFor = (background: boolean, t: TextFn): readonly Milestone[] => [
   {
     icon: 'map-pin-house',
-    stage: 'Your part',
-    title: 'Pin your address',
-    caption: 'Put the pin right on your building. Takes a minute.',
+    stage: t('address.intro.step1.stage'),
+    title: t('address.intro.step1.title'),
+    caption: t('address.intro.step1.caption'),
     state: 'active',
   },
   {
     icon: 'radar',
-    stage: 'After that',
-    title: 'Quiet check-ins',
-    caption: background ? CHECK_IN_CAPTION.background : CHECK_IN_CAPTION.foreground,
+    stage: t('address.intro.step2.stage'),
+    title: t('address.intro.step2.title'),
+    caption: t(background ? 'address.intro.step2.caption.background' : 'address.intro.step2.caption'),
     state: 'ahead',
   },
   {
     icon: 'bell-ring',
-    stage: 'Then',
-    title: 'Confirmed',
-    caption: 'You’ll be notified. That is it.',
+    stage: t('address.intro.step3.stage'),
+    title: t('address.intro.step3.title'),
+    caption: t('address.intro.step3.caption'),
     state: 'ahead',
   },
 ];
@@ -68,9 +64,11 @@ export function useAddressIntroGate(
   const config = useKycConfig();
   const store = useKycStore();
   const { colors } = useTheme();
+  const t = useText();
   const seen = useKyc((s) => s.addressIntroSeen);
   const presence = config.addressCollection?.presence?.enabled === true;
-  const background = config.addressCollection?.presence?.background === true;
+  // Background monitoring is on unless the workflow turns it off.
+  const background = config.addressCollection?.presence?.background !== false;
 
   if (step !== firstStep || !presence || seen) return null;
 
@@ -118,21 +116,20 @@ export function useAddressIntroGate(
                 textTransform: 'uppercase',
               }}
             >
-              Address verification
+              {t('address.intro.badge')}
             </MyazaText>
           </View>
           {/* Web's `text-base font-semibold`: the BODY face at 16/600, not a
               heading, so it matches the review card's address line. */}
           <MyazaText variant="body" style={{ marginTop: spacing.sm, fontWeight: '600' }}>
-            Let’s confirm your address
+            {t('address.intro.title')}
           </MyazaText>
           <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 2 }}>
-            This address will be verified over the coming days. Your part takes a minute; the rest
-            happens on its own.
+            {t('address.intro.description')}
           </MyazaText>
         </View>
 
-        <MilestoneTrack milestones={milestonesFor(background)} numbered />
+        <MilestoneTrack milestones={milestonesFor(background, t)} numbered />
       </View>
 
       <View style={{ height: spacing.md }} />
@@ -140,7 +137,7 @@ export function useAddressIntroGate(
 
       <View style={{ height: spacing.lg }} />
       <MyazaButton
-        label="Got it, let’s go"
+        label={t('address.intro.start')}
         onPress={() => store.getState().markAddressIntroSeen()}
       />
     </View>

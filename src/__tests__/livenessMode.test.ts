@@ -19,6 +19,8 @@ describe('liveness mode', () => {
     expect(modeRunsGestures('gestures')).toBe(true);
     expect(modeRunsGestures('both')).toBe(true);
     expect(modeRunsGestures('flash')).toBe(false);
+    // Passive runs no gesture, but its single hold rides the challenge machinery.
+    expect(modeRunsGestures('passive')).toBe(true);
   });
 
   it('defaults to gestures when a workflow sets no mode', () => {

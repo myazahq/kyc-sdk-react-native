@@ -4,6 +4,7 @@ import { Keyboard, Platform, ScrollView, useWindowDimensions, View } from 'react
 import { spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
 import { MyazaText } from '../../components/Typography';
+import { useText } from '../../i18n/useText';
 import { MyazaButton } from '../../components/MyazaButton';
 import { FloatingSheet } from '../../components/glass/FloatingSheet';
 import { addressFieldModes, type AddressFieldKey } from '../../lib/address-field-modes';
@@ -52,6 +53,7 @@ export function DetailsSheet({
   onClose: () => void;
 }): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
   const { height: screenHeight } = useWindowDimensions();
   const [keyboard, setKeyboard] = useState(0);
 
@@ -89,12 +91,12 @@ export function DetailsSheet({
         {/* One close control, not two: FloatingSheet already carries its own
             in the same corner, and the pair read as a mis-render. */}
         <MyazaText variant="body" style={{ fontWeight: '700' }}>
-          Edit your address
+          {t('address.details.title')}
         </MyazaText>
         <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 2 }}>
           {anyRequired
             ? 'Correct anything the map got wrong. Fields marked * are required.'
-            : 'Correct anything the map got wrong. Every field is optional, and it all helps someone find the door.'}
+            : t('address.details.hint')}
         </MyazaText>
       </View>
 
@@ -152,7 +154,7 @@ export function DetailsSheet({
           distance off the home indicator as the web drawer sits off the
           bottom of the window. */}
       <View style={{ paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.md }}>
-        <MyazaButton label="Done" onPress={onClose} />
+        <MyazaButton label={t('common.done')} onPress={onClose} />
       </View>
     </FloatingSheet>
   );

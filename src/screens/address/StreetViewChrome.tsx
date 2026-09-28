@@ -2,6 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 
 import { MyazaText } from '../../components/Typography';
+import { useText } from '../../i18n/useText';
 
 // The framing chrome over the Street View panorama: a dimmed surround, a
 // white rounded frame and the caption above it. A mirror of the web SDK's
@@ -39,6 +40,7 @@ export function StreetViewChrome({
   viewportWidth: number;
   viewportHeight: number;
 }): React.ReactElement | null {
+  const t = useText();
   if (viewportWidth <= 0 || viewportHeight <= 0) return null;
   const f = streetViewFrameRect(viewportWidth, viewportHeight);
   const right = viewportWidth - f.left - f.width;
@@ -72,7 +74,7 @@ export function StreetViewChrome({
       >
         <View style={{ borderRadius: 999, backgroundColor: 'rgba(0, 0, 0, 0.65)', paddingHorizontal: 12, paddingVertical: 6 }}>
           <MyazaText variant="bodySmall" color="#ffffff" style={{ fontWeight: '600' }}>
-            Fit your entrance in the frame
+            {t('address.entrance.framePill')}
           </MyazaText>
         </View>
       </View>

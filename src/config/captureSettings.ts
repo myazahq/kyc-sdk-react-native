@@ -49,6 +49,9 @@ export const MAX_VIDEO_DURATION_MS = 12_000; // bounds the raw 4K temp file
 /** Transcode target — longest edge (≈480p) and bitrate for the uploaded clip. */
 export const VIDEO_COMPRESS_MAX_SIZE = 640;
 export const VIDEO_COMPRESS_BITRATE = 600_000; // 600 kbps → 12s ≈ 0.9 MB
+// The second try when the first transcode fails (mediaCompress.ts).
+export const VIDEO_COMPRESS_FALLBACK_SIZE = 480;
+export const VIDEO_COMPRESS_FALLBACK_BITRATE = 400_000;
 
 /** Hard upload ceiling — any video still over this (transcode failed) is dropped. */
 export const MAX_VIDEO_BYTES = 5 * 1024 * 1024; // 5 MB

@@ -24,6 +24,7 @@ import type {
   DocumentCaptureCheckResponse,
   DocumentCaptureSide,
 } from '../services/api-types';
+import { defaultText } from '../i18n/translate';
 
 export type DocumentCaptureCheckResult = DocumentCaptureCheckResponse;
 
@@ -37,9 +38,11 @@ export interface CaptureProblem {
 /** How long Continue waits for each side's check before treating it as fine. */
 export const CAPTURE_CHECK_TIMEOUT_MS = 8000;
 
-export const CAPTURE_CHECK_TITLE = 'Check your photos';
+// The defaults of the two customisable texts the notice shows; the notice itself
+// reads them through `t()` so a workflow can reword them.
+export const CAPTURE_CHECK_TITLE = defaultText('uploadDocument.check.title');
 
-export const CAPTURE_CHECK_CONTINUE_ANYWAY = 'Continue anyway';
+export const CAPTURE_CHECK_CONTINUE_ANYWAY = defaultText('common.continueAnyway');
 
 const SIDE_ORDER: readonly DocumentCaptureSide[] = ['front', 'back'];
 

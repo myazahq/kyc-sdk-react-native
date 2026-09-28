@@ -1,4 +1,5 @@
 import type { ResubmitConfig } from '../lib/resubmit';
+import type { KYCTextsConfig } from './texts';
 // ---------------------------------------------------------------------------
 // The SDK's public configuration.
 //
@@ -76,7 +77,7 @@ export type KYCStep =
 /** How flow progress is drawn — see {@link MyazaKYCConfig.progressStyle}. */
 export type ProgressStyle = 'steps' | 'bar' | 'none';
 
-export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> {
+export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> extends KYCTextsConfig {
   /**
    * Bearer token. The key prefix is the single source of truth for the
    * environment — the SDK derives it (and the base URL) automatically:
@@ -179,7 +180,8 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> {
 
   /**
    * Which liveness method runs: randomized gestures (default), the screen-
-   * reflection flash, or both. Workflow-driven.
+   * reflection flash, both, or `'passive'` (hold still while the clip records;
+   * the server's liveness model decides). Workflow-driven.
    */
   livenessMode?: LivenessMode;
   /**
@@ -199,8 +201,27 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> {
    */
   consentStep?: boolean;
 
+  /**
+   * Silent capture: up to three unposed photos of the applicant, taken during
+   * document capture only: on the review, the front camera is opened briefly
+   * with no preview (no extra prompt, no sound, no delay), so a reviewer sees
+   * who was holding the ID. Default true; only `false` turns it off. Normally
+   * set by a workflow. See lib/silentCapture.
+   */
+  silentCapture?: boolean;
+
   /** Colours in the flash sequence (2–5, default 4). Flash modes only. */
   flashSequenceLength?: number;
+
+  /**
+   * Light the person's face from the screen while the liveness camera is on:
+   * the flow switches to the light theme (the organisation's own light
+   * colours) and raises this app's screen brightness to full, then puts both
+   * back when the camera closes. Default true; only `false` turns it off.
+   * Normally set by a workflow. The flash check's dark pause between colours
+   * applies either way. See lib/bright-screen.
+   */
+  livenessBrightScreen?: boolean;
 
   /**
    * The biometric scopes' flow options (workflow-driven, or passed here on a

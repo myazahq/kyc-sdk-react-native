@@ -5,6 +5,7 @@ import { resolveColors, type MyazaColorScheme, type ThemeMode , applyRadiusScale
 import type { KYCAppearance } from '../types/config';
 import { useMyazaFonts } from './fonts';
 import { useBrandFonts } from './brand-font';
+import { effectiveThemeMode } from '../lib/bright-screen';
 
 // ---------------------------------------------------------------------------
 // Theme context.
@@ -21,6 +22,17 @@ export interface ThemeValue {
   colors: MyazaColorScheme;
   setMode: (mode: ThemeMode) => void;
   toggle: () => void;
+  /**
+   * True while a screen has forced the mode (the liveness camera forces
+   * light, lib/bright-screen). The toggle does nothing meanwhile and the
+   * header shows it disabled.
+   */
+  forced: boolean;
+  /**
+   * Force a mode over the person's own choice, or `null` to hand it back.
+   * The person's choice is kept underneath, so the way back restores it.
+   */
+  setForcedMode: (mode: ThemeMode | null) => void;
   /** True once Space Grotesk + Karla are loaded (system font until then). */
   fontsLoaded: boolean;
   /** Org font families from `appearance`, when set. Empty object otherwise. */
@@ -45,7 +57,10 @@ export function MyazaThemeProvider({
   const [override, setOverride] = useState<ThemeMode | null>(
     configured === 'system' ? null : configured ?? 'light',
   );
-  const mode: ThemeMode = override ?? (systemScheme === 'dark' ? 'dark' : 'light');
+  // A forced mode (the liveness camera) sits ABOVE the person's choice rather
+  // than replacing it, so handing it back returns exactly what they had.
+  const [forcedMode, setForcedMode] = useState<ThemeMode | null>(null);
+  const mode: ThemeMode = effectiveThemeMode(forcedMode, override, systemScheme);
   const setMode = setOverride as (mode: ThemeMode) => void;
   const colors = useMemo(() => resolveColors(mode, appearance), [mode, appearance]);
   const fontsLoaded = useMyazaFonts();
@@ -69,11 +84,16 @@ export function MyazaThemeProvider({
       // Flip from the EFFECTIVE mode (which may be system-derived), so the
       // first toggle out of system mode lands on the opposite of what the
       // user is currently seeing.
-      toggle: () => setOverride(mode === 'dark' ? 'light' : 'dark'),
+      toggle: () => {
+        if (forcedMode) return;
+        setOverride(mode === 'dark' ? 'light' : 'dark');
+      },
+      forced: forcedMode != null,
+      setForcedMode,
       fontsLoaded,
       brandFonts,
     }),
-    [mode, colors, fontsLoaded, brandFonts],
+    [mode, colors, fontsLoaded, brandFonts, forcedMode],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

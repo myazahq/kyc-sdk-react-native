@@ -4,6 +4,7 @@ import { View } from 'react-native';
 import { spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
 import { MyazaText } from '../components/Typography';
+import { useText } from '../i18n/useText';
 import { AwaitCard } from './KeyPeopleAwaitCard';
 import { StaggerIn } from '../components/StaggerIn';
 import type { AwaitingPersonPayload } from '../services/api-types';
@@ -61,6 +62,7 @@ const KNOWN_ROLES = new Set(SECTIONS.map((s) => s.role));
 
 export function KeyPeopleAwaitList({ rows }: { rows: AwaitRow[] }): React.ReactElement | null {
   const { colors } = useTheme();
+  const t = useText();
   if (rows.length === 0) return null;
 
   // Anything whose role we have no section for still has to appear — quietly
@@ -88,9 +90,7 @@ export function KeyPeopleAwaitList({ rows }: { rows: AwaitRow[] }): React.ReactE
         color={colors.textMuted}
         style={{ textAlign: 'center', marginBottom: spacing.md }}
       >
-        {outstanding === 0
-          ? 'Everyone on this application has completed their identity check.'
-          : 'To complete the review, the people below must verify their identity with a KYC check. Anyone with an email on file has already been sent their link.'}
+        {outstanding === 0 ? t('keyPeople.await.allDone') : t('keyPeople.await.intro')}
       </MyazaText>
 
       {groups.map((group) => (
@@ -118,7 +118,7 @@ export function KeyPeopleAwaitList({ rows }: { rows: AwaitRow[] }): React.ReactE
           // Done button renders immediately after it in the parent.
           style={{ textAlign: 'center', marginTop: spacing.xs, marginBottom: spacing.lg }}
         >
-          Links are valid for 14 days.
+          {t('keyPeople.await.linkValidity')}
         </MyazaText>
       ) : null}
     </View>

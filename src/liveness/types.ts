@@ -7,7 +7,39 @@
 // SDK's MediaPipe landmarks — so the gesture thresholds match Flutter's.
 // ---------------------------------------------------------------------------
 
-export type LivenessChallenge = 'nod' | 'turn' | 'blink' | 'smile';
+import { defaultText } from '../i18n/translate';
+import type { TextFn } from '../i18n/types';
+
+export type LivenessChallenge =
+  | 'nod'
+  | 'turn'
+  | 'blink'
+  | 'smile'
+  // Passive Liveness: hold still and look at the camera. Passes on its own
+  // after a steady moment; the server's liveness model does the judging.
+  | 'hold';
+
+/** A challenge the avatar can demonstrate (the passive hold has no gesture). */
+export type GestureChallenge = Exclude<LivenessChallenge, 'hold'>;
+
+/** The catalogue key of each challenge's instruction (shown AND spoken). */
+export const CHALLENGE_TEXT_KEYS: Record<LivenessChallenge, string> = {
+  nod: 'presence.challenge.nod',
+  turn: 'presence.challenge.turn',
+  blink: 'presence.challenge.blink',
+  smile: 'presence.challenge.smile',
+  hold: 'presence.challenge.hold',
+};
+
+/** A challenge's instruction in the workflow's copy; the defaults without a `t`. */
+export function challengeInstruction(type: LivenessChallenge, t: TextFn = defaultText): string {
+  return t(CHALLENGE_TEXT_KEYS[type]);
+}
+
+/** The positioning prompt, in the workflow's copy. */
+export function placeFaceInstruction(t: TextFn = defaultText): string {
+  return t('presence.position.placeFace');
+}
 
 export interface ChallengeConfig {
   type: LivenessChallenge;
@@ -17,11 +49,22 @@ export interface ChallengeConfig {
 
 /** Default challenge pool — same instructions/timeouts as the Flutter + web SDKs. */
 export const CHALLENGE_POOL: ChallengeConfig[] = [
-  { type: 'nod', instruction: 'Kindly nod your head', timeoutSeconds: 8 },
-  { type: 'turn', instruction: 'Kindly turn your head', timeoutSeconds: 8 },
-  { type: 'blink', instruction: 'Blink your eyes', timeoutSeconds: 6 },
-  { type: 'smile', instruction: 'Smile please', timeoutSeconds: 6 },
+  { type: 'nod', instruction: challengeInstruction('nod'), timeoutSeconds: 8 },
+  { type: 'turn', instruction: challengeInstruction('turn'), timeoutSeconds: 8 },
+  { type: 'blink', instruction: challengeInstruction('blink'), timeoutSeconds: 6 },
+  { type: 'smile', instruction: challengeInstruction('smile'), timeoutSeconds: 6 },
 ];
+
+/**
+ * Passive Liveness: the ONE prompt. The face holds still in the circle for
+ * `HOLD_MS` (see holdDetector.ts); the recording and the selfie go to the
+ * server, where the liveness model decides. Never part of the gesture pool.
+ */
+export const HOLD_CHALLENGE: ChallengeConfig = {
+  type: 'hold',
+  instruction: challengeInstruction('hold'),
+  timeoutSeconds: 10,
+};
 
 // ---------------------------------------------------------------------------
 // State machine (mirrors Flutter's LivenessPhase)
@@ -50,7 +93,9 @@ export type LivenessFailureReason =
    * performed the challenges; only continuity ties that human to the one being
    * captured. Matches the web SDK's `face_swap`.
    */
-  | 'face_swap';
+  | 'face_swap'
+  /** The flash was measured and did not match the colours emitted. Matches the web SDK. */
+  | 'flash_failed';
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -65,14 +110,16 @@ export interface LivenessConfig {
    * Which liveness method runs. 'gestures' (default) is the randomised head
    * movements; 'flash' is screen reflection; 'both' runs gestures then flash,
    * because each catches what the other misses — gestures defeat a static
-   * photo, flash defeats a replayed video.
+   * photo, flash defeats a replayed video. 'passive' asks for no gesture at
+   * all: the face holds still while the clip records and the server's
+   * liveness model decides.
    */
   mode?: LivenessMode;
   /** Colours in the flash sequence (2–5, default 4). Flash modes only. */
   flashSequenceLength?: number;
 }
 
-export type LivenessMode = 'gestures' | 'flash' | 'both';
+export type LivenessMode = 'gestures' | 'flash' | 'both' | 'passive';
 
 export const DEFAULT_LIVENESS_CONFIG: LivenessConfig = {
   challengeCount: 2,

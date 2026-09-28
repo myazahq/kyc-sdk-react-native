@@ -5,6 +5,7 @@ import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
 import { Icon } from '../../components/Icon';
 import { MyazaText } from '../../components/Typography';
+import { useText } from '../../i18n/useText';
 import { MyazaButton } from '../../components/MyazaButton';
 import { StickyActions } from '../../components/StickyActions';
 import { mapSurfaceHeight } from '../../lib/map-tiles';
@@ -25,6 +26,7 @@ export function EntrancePlaceholder({
   onUse: () => void;
 }): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
   const height = mapSurfaceHeight(useWindowDimensions());
   return (
     <StickyActions
@@ -32,11 +34,11 @@ export function EntrancePlaceholder({
         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
           {!hideSkip ? (
             <View style={{ flex: 1 }}>
-              <MyazaButton label="Skip" variant="outline" onPress={onSkip} />
+              <MyazaButton label={t('common.skip')} variant="outline" onPress={onSkip} />
             </View>
           ) : null}
           <View style={{ flex: 1 }}>
-            <MyazaButton label="Use this view" onPress={onUse} />
+            <MyazaButton label={t('address.entrance.useView')} onPress={onUse} />
           </View>
         </View>
       }

@@ -3,6 +3,7 @@ import { View } from 'react-native';
 
 import { spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
+import { useText } from '../../i18n/useText';
 import { MyazaText } from '../../components/Typography';
 import { MyazaButton } from '../../components/MyazaButton';
 import { SelfiePreview } from './SelfiePreview';
@@ -37,6 +38,7 @@ export function LivenessComplete({
   onContinue: () => void;
 }): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
   const { uploading, uploadError, retryInfo, selfieIdRef, videoPathRef, uploadSelfieAndVideo } =
     upload;
   return (
@@ -61,7 +63,7 @@ export function LivenessComplete({
           <View style={{ flexDirection: 'row', gap: spacing.md }}>
             <View style={{ flex: 1 }}>
               <MyazaButton
-                label="Retake"
+                label={t('common.retake')}
                 variant="outline"
                 leadingIcon="refresh"
                 disabled={uploading}
@@ -79,7 +81,7 @@ export function LivenessComplete({
                   disabled since. Disabled-and-quiet says "not yet"; a spinner
                   says "working on your request", which would be a lie. */}
               <MyazaButton
-                label="Continue"
+                label={t('common.continue')}
                 disabled={uploading || !selfieIdRef.current}
                 onPress={onContinue}
               />
@@ -103,7 +105,9 @@ export function LivenessFailed({
         <MyazaText variant="bodyMedium" color={colors.error} style={{ textAlign: 'center', fontWeight: '500' }}>
           {reason === 'timeout'
             ? "Time's up. Let's try again."
-            : 'Face lost. Please try again.'}
+            : reason === 'flash_failed'
+              ? "We couldn't confirm the check. Let's try again."
+              : 'Face lost. Please try again.'}
         </MyazaText>
         <View style={{ alignSelf: 'stretch' }}>
           <MyazaButton label="Try Again" onPress={onRetry} />

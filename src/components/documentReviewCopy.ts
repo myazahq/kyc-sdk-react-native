@@ -8,6 +8,9 @@
 //
 // Pure, so the wording is pinned by a test without mounting React Native.
 
+import { defaultText } from '../i18n/translate';
+import type { TextFn } from '../i18n/types';
+
 export type DocumentCaptureMode = 'scan' | 'upload';
 
 export interface DocumentReviewCopy {
@@ -21,7 +24,11 @@ export interface DocumentReviewCopy {
   redoSide: (sideLabel: string) => string;
 }
 
-export function documentReviewCopy(mode: DocumentCaptureMode, twoSided: boolean): DocumentReviewCopy {
+export function documentReviewCopy(
+  mode: DocumentCaptureMode,
+  twoSided: boolean,
+  t: TextFn = defaultText,
+): DocumentReviewCopy {
   if (mode === 'upload') {
     return {
       status: twoSided ? 'Both sides added' : 'Photo added',
@@ -32,7 +39,7 @@ export function documentReviewCopy(mode: DocumentCaptureMode, twoSided: boolean)
   }
   return {
     status: twoSided ? 'Both sides captured' : 'Photo captured',
-    redo: 'Retake',
+    redo: t('common.retake'),
     redoAccessibility: (side) => `Retake ${side.toLowerCase()}`,
     redoSide: (side) => `Retake ${side.toLowerCase()}`,
   };

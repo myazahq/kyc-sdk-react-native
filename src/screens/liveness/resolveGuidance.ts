@@ -3,6 +3,9 @@ import {
   positionGuidanceText,
   type useLiveness,
 } from '../../liveness/useLiveness';
+import { placeFaceInstruction } from '../../liveness/types';
+import { defaultText } from '../../i18n/translate';
+import type { TextFn } from '../../i18n/types';
 
 // ---------------------------------------------------------------------------
 // Which single line the step shows, and in what tone.
@@ -11,11 +14,14 @@ import {
 // instruction, so "move closer" is never buried under "nod your head".
 // ---------------------------------------------------------------------------
 
-export function resolveGuidance(l: ReturnType<typeof useLiveness>): { text: string; tone: 'normal' | 'error' } {
+export function resolveGuidance(
+  l: ReturnType<typeof useLiveness>,
+  t: TextFn = defaultText,
+): { text: string; tone: 'normal' | 'error' } {
   if (l.multipleFaces) return { text: l.instruction, tone: 'error' };
   // Lighting is shown in its own banner (below), not as the main instruction.
   if (l.phase === 'positioning' && !l.faceDetected) {
-    return { text: 'Position your face in the circle', tone: 'normal' };
+    return { text: placeFaceInstruction(t), tone: 'normal' };
   }
   if (l.positionGuidance) return { text: positionGuidanceText(l.positionGuidance), tone: 'error' };
   if (l.wrongGesture) return { text: 'Wrong gesture — follow the prompt', tone: 'error' };

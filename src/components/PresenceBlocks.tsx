@@ -6,6 +6,8 @@ import { MilestoneTrack, type Milestone } from './MilestoneTrack';
 import { useReduceMotion } from './StaggerIn';
 import { radius, spacing } from '../config/theme';
 import { useTheme } from './theme-provider';
+import { useText } from '../i18n/useText';
+import type { TextFn } from '../i18n/types';
 
 // ---------------------------------------------------------------------------
 // The success screen's presence card, drawn as a LIVE PROCESS rather than a
@@ -20,32 +22,33 @@ import { useTheme } from './theme-provider';
 // was one more place for the consent wording to drift.
 // ---------------------------------------------------------------------------
 
-const MILESTONES: readonly Milestone[] = [
+const milestones = (t: TextFn): readonly Milestone[] => [
   {
     icon: 'map-pin-check',
-    stage: 'Today',
-    title: 'Check started',
-    caption: 'Your pin is saved. Keep location on.',
+    stage: t('address.presence.step1.stage'),
+    title: t('address.presence.step1.title'),
+    caption: t('address.presence.step1.caption'),
     state: 'active',
   },
   {
     icon: 'radar',
-    stage: 'Next few days',
-    title: 'Quiet check-ins',
-    caption: 'Your phone confirms it is at your address now and then.',
+    stage: t('address.presence.step2.stage'),
+    title: t('address.presence.step2.title'),
+    caption: t('address.presence.step2.caption'),
     state: 'ahead',
   },
   {
     icon: 'bell-ring',
-    stage: 'Then',
-    title: 'Confirmed',
-    caption: 'You get a notification. That is it.',
+    stage: t('address.presence.step3.stage'),
+    title: t('address.presence.step3.title'),
+    caption: t('address.presence.step3.caption'),
     state: 'ahead',
   },
 ];
 
 export function PresenceExpectations(): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
   return (
     <View
       style={{
@@ -88,19 +91,19 @@ export function PresenceExpectations(): React.ReactElement {
               textTransform: 'uppercase',
             }}
           >
-            Address check active
+            {t('address.presence.badge')}
           </MyazaText>
         </View>
         <MyazaText variant="bodyMedium" style={{ fontWeight: '600', marginTop: spacing.sm }}>
-          Your address confirms itself from here
+          {t('address.presence.title')}
         </MyazaText>
         <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 2 }}>
-          Nothing else for you to do. Carry on as normal.
+          {t('address.presence.description')}
         </MyazaText>
       </View>
 
       {/* Web's h-8 nodes here, against the primer's h-10. */}
-      <MilestoneTrack milestones={MILESTONES} nodeSize={32} />
+      <MilestoneTrack milestones={milestones(t)} nodeSize={32} />
     </View>
   );
 }

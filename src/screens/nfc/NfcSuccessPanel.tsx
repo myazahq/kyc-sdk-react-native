@@ -6,6 +6,7 @@ import { useTheme } from '../../components/runtime';
 import { MyazaText } from '../../components/Typography';
 import { MyazaButton } from '../../components/MyazaButton';
 import { Icon } from '../../components/Icon';
+import { useText } from '../../i18n/useText';
 import { useChipPortrait } from './useChipPortrait';
 import { NfcScannedSummary } from './NfcScannedSummary';
 import { parseDg1, type EmrtdReadResult } from '../../emrtd';
@@ -36,6 +37,7 @@ export function NfcSuccessPanel({
   onRescan: () => void;
 }): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
   const portraitUri = useChipPortrait(result.dg2);
   // A URI that turns out unrenderable (a corrupt slice, a format the Image
   // component rejects) must degrade to the generic mark, not an empty circle.
@@ -151,7 +153,7 @@ export function NfcSuccessPanel({
 
       <View style={{ height: spacing.lg }} />
       <View style={{ alignSelf: 'stretch' }}>
-        <MyazaButton label="Continue" onPress={onContinue} />
+        <MyazaButton label={t('common.continue')} onPress={onContinue} />
         {!result.sod ? (
           <>
             <View style={{ height: spacing.sm }} />

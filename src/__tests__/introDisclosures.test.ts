@@ -9,12 +9,35 @@ import { describeInMonorepo, readPackageFile as read } from './helpers/monorepo'
 // clipped, collapsed parent left every row expanding to an empty box. And they
 // must say the same thing everywhere: three files in three languages carry one
 // piece of copy, so it is pinned here rather than left to drift.
+//
+// The copy is customisable text now, so it lives in each SDK's i18n defaults
+// and the screens read it by key. Flutter is mid-move (its screen already reads
+// by key), so its sources are the screen AND the candidate defaults files: the
+// line must be in one of them.
 
-const DISCLOSURES = {
-  web: 'kyc-sdk-react/src/steps/address/IntroDisclosures.tsx',
-  rn: 'kyc-sdk-react-native/src/screens/address/IntroDisclosures.tsx',
-  flutter: 'kyc-sdk-flutter/lib/src/screens/address/address_intro_disclosures.dart',
+const COPY_SOURCES: Record<string, string[]> = {
+  web: ['kyc-sdk-react/src/i18n/groups/address-intro.ts'],
+  rn: ['kyc-sdk-react-native/src/i18n/defaults/address-intro.ts'],
+  flutter: [
+    'kyc-sdk-flutter/lib/src/screens/address/address_intro_disclosures.dart',
+    'kyc-sdk-flutter/lib/src/i18n/defaults_address_intro.dart',
+    'kyc-sdk-flutter/lib/src/i18n/defaults_address.dart',
+  ],
 };
+
+/** Every source that exists, joined; a candidate not written yet is skipped. */
+const readAll = (rels: string[]) =>
+  rels
+    .map((rel) => {
+      try {
+        return read(rel);
+      } catch {
+        return '';
+      }
+    })
+    .join('\n');
+
+const RN_DISCLOSURES = 'kyc-sdk-react-native/src/screens/address/IntroDisclosures.tsx';
 
 const GATES = {
   web: 'kyc-sdk-react/src/steps/address/AddressIntroGate.tsx',
@@ -38,14 +61,28 @@ const COPY = [
 ];
 
 describeInMonorepo('the disclosure copy is one text on three SDKs', () => {
-  it.each(Object.entries(DISCLOSURES))('%s carries every line', (_name, rel) => {
-    const source = flatten(read(rel));
+  it.each(Object.entries(COPY_SOURCES))('%s carries every line', (_name, rels) => {
+    const source = flatten(readAll(rels));
     for (const line of COPY) expect(source).toContain(flatten(line));
   });
 });
 
+describe('the RN disclosures read that copy by key', () => {
+  it.each([
+    'address.intro.howItWorks.title',
+    'address.intro.howItWorks.body',
+    'address.intro.howItWorks.body.background',
+    'address.intro.control.title',
+    'address.intro.control.body',
+    'address.intro.privacy.title',
+    'address.intro.privacy.body',
+  ])('%s', (key) => {
+    expect(read(RN_DISCLOSURES)).toContain(`'${key}'`);
+  });
+});
+
 describe('an open disclosure shows its body', () => {
-  const source = read(DISCLOSURES.rn);
+  const source = read(RN_DISCLOSURES);
 
   it('measures the body OUT OF FLOW', () => {
     // The regression: the body was measured as an ordinary child of its own

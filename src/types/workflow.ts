@@ -297,5 +297,5 @@ export interface MultiIdConfig {
   minPassed: number;
 }
 
-/** Gestures (default), screen-reflection flash, or both. */
-export type LivenessMode = 'gestures' | 'flash' | 'both';
+/** Gestures (default), screen-reflection flash, both, or passive (hold still). */
+export type LivenessMode = 'gestures' | 'flash' | 'both' | 'passive';

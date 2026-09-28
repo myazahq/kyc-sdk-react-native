@@ -1,4 +1,5 @@
 import type { KycState, KycStore } from './state';
+import { withoutRestoredSelfie } from '../lib/livenessResume';
 import { collectDeviceMetadata } from '../services/deviceMetadata';
 import { restoreAddress } from './address';
 import { getStepLog } from '../lib/step-log';
@@ -89,6 +90,12 @@ export function restoreAttemptProgress(
 ): void {
   const s = store.getState();
   const d = (progress.data ?? {}) as Record<string, unknown>;
+  // The liveness claim cannot be restored, so the selfie is taken again
+  // (lib/livenessResume.ts).
+  const capture = withoutRestoredSelfie({
+    step: typeof progress.step === 'string' ? progress.step : undefined,
+    mediaIds: progress.mediaIds as Record<string, string> | undefined,
+  });
 
   // Validate-and-drop: a snapshot written by an older build must degrade to
   // restoring less, never to breaking the flow.
@@ -113,10 +120,10 @@ export function restoreAttemptProgress(
     // Starting the flow again also re-resolves the workflow, so an applicant
     // caught mid-flight across a republish walks the CURRENT steps rather than
     // submitting against rules they were never shown.
-    ...(typeof progress.step === 'string' && progress.step !== 'submitted'
-      ? { currentStep: progress.step as KycState['currentStep'] }
+    ...(typeof capture.step === 'string' && capture.step !== 'submitted'
+      ? { currentStep: capture.step as KycState['currentStep'] }
       : {}),
-    ...(progress.mediaIds ? { mediaIds: { ...s.mediaIds, ...progress.mediaIds } } : {}),
+    ...(capture.mediaIds ? { mediaIds: { ...s.mediaIds, ...capture.mediaIds } } : {}),
     ...(typeof d['selectedCountry'] === 'string'
       ? { selectedCountry: d['selectedCountry'] as string }
       : {}),

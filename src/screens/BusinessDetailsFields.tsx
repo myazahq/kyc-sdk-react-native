@@ -5,6 +5,7 @@ import { MyazaInput } from '../components/MyazaInput';
 import { spacing } from '../config/theme';
 import { CompanyInfoFields } from './CompanyInfoFields';
 import { isValidContactEmail } from '../config/contact';
+import { useText } from '../i18n/useText';
 import type { BusinessState } from '../store/state';
 import type { BusinessProductDef } from '../config/business';
 import type { RegistrationHint } from '../config/registrationHint';
@@ -45,6 +46,7 @@ export function BusinessDetailsFields({
   showContactEmail: boolean;
   onChange: <K extends keyof BusinessState>(key: K, value: BusinessState[K]) => void;
 }): React.ReactElement {
+  const t = useText();
   const regNumber = business.registrationNumber;
   const contactEmail = business.contactEmail;
   const contactEmailInvalid =
@@ -52,7 +54,11 @@ export function BusinessDetailsFields({
   return (
     <View>
       <MyazaInput
-        label={productDef.inputLabel}
+        label={
+          productDef.inputLabel === 'TIN'
+            ? productDef.inputLabel
+            : t('business.details.registrationNumberLabel')
+        }
         value={regNumber}
         onChangeText={(text) => onChange('registrationNumber', text)}
         placeholder={regHint.placeholder}
@@ -72,7 +78,7 @@ export function BusinessDetailsFields({
 
       <View style={{ height: spacing.md }} />
       <MyazaInput
-        label={`Registered business name${requireName ? '' : ' (optional)'}`}
+        label={`${t('business.details.nameLabel')}${requireName ? '' : ' (optional)'}`}
         value={business.registrationName}
         onChangeText={(text) => onChange('registrationName', text)}
         placeholder="Enter the registered business name"
@@ -96,13 +102,13 @@ export function BusinessDetailsFields({
         <>
           <View style={{ height: spacing.md }} />
           <MyazaInput
-            label="Contact email for owner verification (optional)"
+            label={`${t('business.contactEmail.label')} (optional)`}
             value={contactEmail}
             onChangeText={(text) => onChange('contactEmail', text)}
             placeholder="admin@company.com"
             keyboardType="email-address"
             autoCapitalize="none"
-            helper="We'll email this address a link for your directors and owners to verify their identity."
+            helper={t('business.contactEmail.hint')}
             error={contactEmailInvalid ? 'Enter a valid email address.' : null}
           />
         </>

@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native';
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
 import { MyazaText } from '../../components/Typography';
+import { useText } from '../../i18n/useText';
 import { Icon } from '../../components/Icon';
 import { LineSkeleton } from '../../components/LineSkeleton';
 import { ADDRESS_LINE_PENDING, ADDRESS_LINE_UNAVAILABLE } from '../../lib/address-line';
@@ -40,6 +41,7 @@ export function ReviewAddressBand({
   onEdit: () => void;
 }): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
   return (
         <View
           style={{
@@ -76,7 +78,7 @@ export function ReviewAddressBand({
                   numberOfLines={1}
                   style={{ flexShrink: 1, fontSize: 11, fontWeight: '600', letterSpacing: 0.6, textTransform: 'uppercase' }}
                 >
-                  {isBusiness ? 'Pinned premises' : 'Pinned address'}
+                  {t(isBusiness ? 'address.review.badge.business' : 'address.review.badge')}
                 </MyazaText>
               </View>
 
@@ -100,9 +102,9 @@ export function ReviewAddressBand({
 
             {/* A plain link (web `text-sm text-primary`); the band's right
                 padding keeps it clear of the entrance hanging over it. */}
-            <Pressable onPress={onEdit} accessibilityRole="button" accessibilityLabel="Edit" hitSlop={8}>
+            <Pressable onPress={onEdit} accessibilityRole="button" accessibilityLabel={t('address.review.edit')} hitSlop={8}>
               <MyazaText variant="bodyMedium" color={colors.primary}>
-                Edit
+                {t('address.review.edit')}
               </MyazaText>
             </Pressable>
           </View>

@@ -20,6 +20,7 @@ import { DetailsSheet } from './DetailsSheet';
 import { detailValuesOf } from './detail-values';
 import { PinSummaryRow } from './PinSummaryRow';
 import { SkipForNow } from './SkipForNow';
+import { useText } from '../../i18n/useText';
 
 /**
  * The PIN step (wire name 'address-collection', kept so older session progress
@@ -36,6 +37,7 @@ import { SkipForNow } from './SkipForNow';
 export function AddressPinStep(): React.ReactElement {
   const store = useKycStore();
   const { colors } = useTheme();
+  const t = useText();
   const viewport = useWindowDimensions();
   const flow = useAddressFlow();
   // The framed Google picker when the platform serves one; the OSM picker
@@ -97,7 +99,7 @@ export function AddressPinStep(): React.ReactElement {
         actions={
           <>
             <MyazaButton
-              label="Continue"
+              label={t('common.continue')}
               loading={flow.confirming}
               disabled={!flow.pin}
               onPress={handleContinue}

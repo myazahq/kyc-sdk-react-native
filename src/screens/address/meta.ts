@@ -1,4 +1,6 @@
 import type { KYCStep } from '../../types/config';
+import { defaultText } from '../../i18n/translate';
+import type { TextFn } from '../../i18n/types';
 
 // ---------------------------------------------------------------------------
 // The sheet header's title and description for each address step.
@@ -14,31 +16,31 @@ export function addressStepMeta(
   isBusiness: boolean,
   /** The entrance step is framing street imagery, which describes THAT, not a camera. */
   opts: { framing?: boolean } = {},
+  t: TextFn = defaultText,
 ): { title: string; description: string } {
   switch (step) {
     case 'address-search':
       return {
-        title: 'Find your address',
-        description: 'Search it, use your current location, or place a pin on the map.',
+        title: t('address.search.title'),
+        description: t('address.search.description'),
       };
     case 'address-entrance':
       return {
-        title: 'Show the entrance',
+        title: t('address.entrance.title'),
         description: opts.framing
-          ? 'Frame your entrance in the street imagery. No camera needed.'
-          : 'A picture of the gate or front door makes the address findable.',
+          ? t('address.entrance.description.framing')
+          : t('address.entrance.description.photo'),
       };
     case 'address-review':
       return {
-        title: isBusiness ? 'Confirm the premises' : 'Confirm your address',
-        description: 'Check everything is right before you continue.',
+        title: isBusiness ? t('address.review.title.business') : t('address.review.title'),
+        description: t('address.review.description'),
       };
     case 'address-collection':
     default:
       return {
-        title: isBusiness ? 'Is the pin on the premises?' : 'Is the pin on your building?',
-        description:
-          'Drag the map until the pin sits exactly on it. You can add details for whoever needs to find it.',
+        title: isBusiness ? t('address.pin.title.business') : t('address.pin.title'),
+        description: t('address.pin.description'),
       };
   }
 }

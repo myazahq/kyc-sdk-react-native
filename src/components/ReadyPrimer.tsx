@@ -7,6 +7,7 @@ import { MyazaText } from './Typography';
 import { MyazaButton } from './MyazaButton';
 import { Icon } from './Icon';
 import type { ReadyContent } from './readyPrimerContent';
+import { useText } from '../i18n/useText';
 
 // ---------------------------------------------------------------------------
 // "Here's what happens next" — shown once before a capture step opens the
@@ -27,13 +28,21 @@ import type { ReadyContent } from './readyPrimerContent';
 export function ReadyPrimer({
   content,
   onReady,
-  buttonLabel = "I'm ready",
+  buttonLabel,
 }: {
   content: ReadyContent;
   onReady: () => void;
   buttonLabel?: string;
 }): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
+  const keys = content.textKeys;
+  const title = keys ? t(keys.title) : content.title;
+  const body = keys ? t(keys.body) : content.body;
+  const checklist = content.checklist.map((row, i) => {
+    const key = keys?.checklist[i];
+    return key ? { ...row, label: t(key) } : row;
+  });
 
   return (
     // TOP-ALIGNED, like the web and Flutter. The sheet body guarantees the
@@ -74,11 +83,11 @@ export function ReadyPrimer({
 
         <View style={{ height: spacing.md }} />
         <MyazaText variant="heading3" style={{ textAlign: 'center' }}>
-          {content.title}
+          {title}
         </MyazaText>
         <View style={{ height: 6 }} />
         <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ textAlign: 'center' }}>
-          {content.body}
+          {body}
         </MyazaText>
       </View>
 
@@ -86,8 +95,8 @@ export function ReadyPrimer({
 
       {/* Expectations — the same row idiom as the consent screen's
           "during this process we will" list. */}
-      {content.checklist.map((item) => (
-        <View key={item.label} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+      {checklist.map((item, i) => (
+        <View key={i} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
           <View
             style={{
               width: 36,
@@ -109,7 +118,7 @@ export function ReadyPrimer({
 
       <View style={{ height: 8 }} />
       {/* One primary action. MyazaButton already clears the 44pt minimum. */}
-      <MyazaButton label={buttonLabel} onPress={onReady} />
+      <MyazaButton label={buttonLabel ?? t('primer.readyButton')} onPress={onReady} />
     </ScrollView>
   );
 }

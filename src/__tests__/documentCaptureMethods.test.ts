@@ -130,6 +130,6 @@ describe('the review names what the applicant actually did', () => {
 
   it('labels the front preview Replace in upload-only mode and Retake when scanning', () => {
     const step = readFileSync(join(__dirname, '..', 'screens', 'DocumentCaptureStep.tsx'), 'utf8');
-    expect(step).toMatch(/label=\{camera \? 'Retake' : 'Replace'\}/);
+    expect(step).toMatch(/label=\{camera \? t\('common\.retake'\) : 'Replace'\}/);
   });
 });

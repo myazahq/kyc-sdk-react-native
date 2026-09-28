@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, LayoutChangeEvent, Modal, PanResponder, Platform, Pressable, StatusBar, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, LayoutChangeEvent, Modal, PanResponder, Platform, Pressable, StatusBar, StyleSheet, View } from 'react-native';
 import Svg, { Line, Rect } from 'react-native-svg';
 
 import { headerSurface, spacing } from '../config/theme';
@@ -8,7 +8,7 @@ import { MyazaText } from './Typography';
 import { MyazaButton } from './MyazaButton';
 import { Icon } from './Icon';
 import { useTheme } from './runtime';
-import { Image } from 'react-native';
+import { useText } from '../i18n/useText';
 
 // Interactive ID-card cropper — a 1:1 RN port of the Flutter SDK's
 // _DocumentCropperScreen. Shown after picking a document photo from the gallery:
@@ -101,6 +101,7 @@ export function DocumentCropper({ uri, onCancel, onConfirm }: DocumentCropperPro
   const [crop, setCrop] = useState<Rectangle | null>(null);
   const [processing, setProcessing] = useState(false);
   const { colors, mode } = useTheme();
+  const t = useText();
 
   // Pan state held in refs so the PanResponder callbacks stay stable.
   const handleRef = useRef<Handle>('none');
@@ -114,9 +115,7 @@ export function DocumentCropper({ uri, onCancel, onConfirm }: DocumentCropperPro
       .then(({ width, height }) => {
         if (alive) setNatural({ w: width, h: height });
       })
-      .catch(() => {
-        /* fall through — confirm is gated on `natural` */
-      });
+      .catch(() => undefined); // fall through: confirm is gated on `natural`
     return () => {
       alive = false;
     };
@@ -283,7 +282,7 @@ export function DocumentCropper({ uri, onCancel, onConfirm }: DocumentCropperPro
         {/* Action bar */}
         <View style={[styles.actionBar, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
           {/* The flow's own button: primary from the workflow, its loading state while the crop runs. */}
-          <MyazaButton label="Crop & Use" leadingIcon="check" onPress={confirm} disabled={!crop} loading={processing} />
+          <MyazaButton label={t('uploadDocument.crop.confirm')} leadingIcon="check" onPress={confirm} disabled={!crop} loading={processing} />
         </View>
       </View>
     </Modal>

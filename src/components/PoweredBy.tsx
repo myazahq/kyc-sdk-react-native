@@ -4,8 +4,10 @@ import { Linking, Pressable, View } from 'react-native';
 import { PRODUCT_URL, brandMarkColor } from '../config/brand';
 import { spacing } from '../config/theme';
 import { MyazaWordmark } from './MyazaWordmark';
-import { useTheme } from './runtime';
+import { useKyc, useTheme } from './runtime';
 import { MyazaText } from './Typography';
+import { CustomAttributionMark } from './CustomAttributionMark';
+import { resolveTrustAttribution } from '../lib/trust-attribution';
 
 /**
  * Vendor attribution, pinned below the step body on every screen.
@@ -24,9 +26,21 @@ import { MyazaText } from './Typography';
  *
  * Kept on the camera screens too: a trust mark that disappears exactly where
  * biometrics are captured would vanish where it matters most.
+ *
+ * Two modes, chosen per workflow and resolved SERVER-side
+ * (`branding.trustAttribution`): this lockup (the default, and what an older
+ * server that sends nothing means), or the organisation's own logo with no
+ * Myaza mark or link at all (CustomAttributionMark). The consent notice then
+ * names Myaza Trust instead (screens/consent/legal.ts).
  */
 export function PoweredBy({ bottomInset = 0 }: { bottomInset?: number }): React.ReactElement {
-  const { colors } = useTheme();
+  const { colors, mode } = useTheme();
+  // Resolved SERVER-side from the published workflow: the Myaza Trust lockup,
+  // or the org's own logo in its place (lib/trust-attribution).
+  const attribution = resolveTrustAttribution(
+    useKyc((s) => s.serverConfig.branding?.trustAttribution),
+    mode === 'dark',
+  );
   // ONE Myaza tone for the whole mark — label, wordmark lettering, rule and
   // TRUST — picked against the background it will actually sit on rather than
   // taken from the org's palette. `colors.background` already reflects an org
@@ -49,9 +63,10 @@ export function PoweredBy({ bottomInset = 0 }: { bottomInset?: number }): React.
           not a destination, so it does not carry the tap. */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, opacity: 0.9 }}>
         {/* Small and muted on purpose — "Powered by" is connective tissue, not
-            the message. The BRAND carries the weight. */}
+            the message. The BRAND carries the weight. With the org's own logo
+            it reads "Protected by", the web SDK's label for that mode. */}
         <MyazaText variant="body" color={markColor} style={{ flexShrink: 1, fontSize: 12 }}>
-          Powered by
+          {attribution.mode === 'custom' ? 'Protected by' : 'Powered by'}
         </MyazaText>
 
         {/* The lockup, spaced TIGHTER than the gap before it so it reads as one
@@ -61,33 +76,42 @@ export function PoweredBy({ bottomInset = 0 }: { bottomInset?: number }): React.
 
             openURL can reject (no browser / a locked-down device). The mark
             itself is the point, so a failed open is swallowed. */}
-        <Pressable
-          onPress={() => {
-            void Linking.openURL(PRODUCT_URL).catch(() => undefined);
-          }}
-          accessibilityRole="link"
-          accessibilityLabel="Myaza Trust"
-          hitSlop={8}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
-        >
-          <MyazaWordmark height={24} wordmark={markColor} />
+        {attribution.mode === 'custom' ? (
+          <CustomAttributionMark
+            logo={attribution.logo}
+            companyName={attribution.companyName}
+            markColor={markColor}
+          />
+        ) : (
 
-          <View style={{ width: 1, height: 20, backgroundColor: markColor, opacity: 0.35 }} />
-
-          {/* ~half the wordmark's height — the ratio the dashboard lockup uses. */}
-          {/* Pinned to the brand face rather than inheriting: this word is part
-              of the MARK, and the font an org sets in their workflow would
-              otherwise redraw someone else's logo in the customer's typeface.
-              Matches the web's BRAND_FONT_STACK on the same element. */}
-          <MyazaText
-            brandMark
-            variant="body"
-            color={markColor}
-            style={{ flexShrink: 1, fontSize: 12, fontWeight: '600', letterSpacing: 1.68 }}
+          <Pressable
+            onPress={() => {
+              void Linking.openURL(PRODUCT_URL).catch(() => undefined);
+            }}
+            accessibilityRole="link"
+            accessibilityLabel="Myaza Trust"
+            hitSlop={8}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
           >
-            TRUST
-          </MyazaText>
-        </Pressable>
+            <MyazaWordmark height={24} wordmark={markColor} />
+
+            <View style={{ width: 1, height: 20, backgroundColor: markColor, opacity: 0.35 }} />
+
+            {/* ~half the wordmark's height — the ratio the dashboard lockup uses. */}
+            {/* Pinned to the brand face rather than inheriting: this word is part
+                of the MARK, and the font an org sets in their workflow would
+                otherwise redraw someone else's logo in the customer's typeface.
+                Matches the web's BRAND_FONT_STACK on the same element. */}
+            <MyazaText
+              brandMark
+              variant="body"
+              color={markColor}
+              style={{ flexShrink: 1, fontSize: 12, fontWeight: '600', letterSpacing: 1.68 }}
+            >
+              TRUST
+            </MyazaText>
+          </Pressable>
+        )}
       </View>
     </View>
   );

@@ -1,14 +1,15 @@
 import React from 'react';
-import { Linking, Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { radius, spacing } from '../config/theme';
-import { PRIVACY_URL, TERMS_URL } from '../config/brand';
 import { useKyc, useKycConfig, useTheme } from '../components/runtime';
 import { MyazaText } from '../components/Typography';
 import { MyazaButton } from '../components/MyazaButton';
 import { Icon } from '../components/Icon';
 import { buildConsentModel } from './consent/model';
+import { ConsentLegalNotice } from './consent/ConsentLegalNotice';
+import { useText } from '../i18n/useText';
 import { resubmitNote } from '../lib/resubmit';
 
 // Consent / welcome screen — 1:1 with the web SDK's ConsentStep and the
@@ -24,9 +25,10 @@ export function ConsentStep(): React.ReactElement {
   const { colors } = useTheme();
   const config = useKycConfig();
   const nextStep = useKyc((s) => s.nextStep);
+  const t = useText();
 
   const { isBusiness, title, description, steps, capturesFace, recordsVideo } =
-    buildConsentModel(config);
+    buildConsentModel(config, t);
 
   // A reviewer sent this applicant back. Say so, and say why — the note is the
   // only thing on screen that explains a flow which has silently lost most of
@@ -104,7 +106,7 @@ export function ConsentStep(): React.ReactElement {
       {/* Process steps card */}
       <View style={{ backgroundColor: colors.backgroundSecondary, borderRadius: radius.lg, padding: spacing.md + 4 }}>
         <MyazaText variant="bodySmall" color={colors.textMuted} style={{ fontWeight: '600', letterSpacing: 0.5 }}>
-          DURING THIS PROCESS WE WILL
+          {t('welcome.process.heading')}
         </MyazaText>
         <View style={{ height: spacing.md }} />
         {steps.map((step, i) => (
@@ -131,42 +133,11 @@ export function ConsentStep(): React.ReactElement {
 
       <View style={{ height: spacing.lg }} />
 
-      {/* Consent checkbox */}
-      {/* Consent is given by ACTING now, so the notice sits immediately above
-          the button it describes — adjacency is what makes it informed.
-          The biometric sentence is DERIVED: claiming facial recognition on a
-          flow with no selfie step would be false, and recording video without
-          saying so is the failure that actually matters. */}
-      <MyazaText variant="bodySmall" style={{ lineHeight: 18 }}>
-        By tapping Continue, you agree to the{' '}
-        <MyazaText
-          variant="bodySmall"
-          color={colors.textDark}
-          style={{ fontWeight: '500', textDecorationLine: 'underline' }}
-          onPress={() => void Linking.openURL(TERMS_URL).catch(() => undefined)}
-        >
-          End User Terms
-        </MyazaText>{' '}
-        and{' '}
-        <MyazaText
-          variant="bodySmall"
-          color={colors.textDark}
-          style={{ fontWeight: '500', textDecorationLine: 'underline' }}
-          onPress={() => void Linking.openURL(PRIVACY_URL).catch(() => undefined)}
-        >
-          Privacy Policy
-        </MyazaText>
-        , and consent to your {isBusiness ? 'business and personal data' : 'personal data'} being
-        processed to verify your identity.
-        {capturesFace
-          ? ' This includes facial recognition and recording this session.'
-          : recordsVideo
-            ? ' This includes recording this session.'
-            : ''}
-      </MyazaText>
+      {/* The legal notice, directly above the button it describes. */}
+      <ConsentLegalNotice isBusiness={isBusiness} capturesFace={capturesFace} recordsVideo={recordsVideo} />
 
       <View style={{ height: spacing.lg }} />
-      <MyazaButton label="Continue" onPress={nextStep} />
+      <MyazaButton label={t('common.continue')} onPress={nextStep} />
       <View style={{ height: spacing.sm }} />
 
       {/* Footer */}
@@ -176,7 +147,7 @@ export function ConsentStep(): React.ReactElement {
         {/* flexShrink so a wide brand font wraps this instead of clipping it —
             a Text in a row without it overflows rather than wrapping. */}
         <MyazaText variant="bodySmall" style={{ flexShrink: 1 }}>
-          Your data is encrypted and securely processed
+          {t('welcome.secureNote')}
         </MyazaText>
       </View>
     </View>

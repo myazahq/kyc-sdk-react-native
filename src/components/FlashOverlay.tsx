@@ -7,6 +7,7 @@ import { holePath, type FlashHole } from './flashHoleGeometry';
 import { useKycStore } from './runtime';
 import { MyazaText } from './Typography';
 import { spacing } from '../config/theme';
+import { flashOverlayPaint } from '../lib/bright-screen';
 
 export type { FlashHole } from './flashHoleGeometry';
 
@@ -40,6 +41,14 @@ export type { FlashHole } from './flashHoleGeometry';
 // way. If measurement fails the overlay paints solid — the user loses sight of
 // their own framing for about a second, which is worth far less than failing
 // the check outright. Flutter takes the same fallback.
+//
+// BETWEEN colours it paints BLACK, not nothing. The check compares each colour
+// with the neutral moment before it and assumes the colour adds light; with the
+// light theme behind (the liveness camera forces it, BrightScreen) that neutral
+// moment would be a white screen, brighter than most colours. The black keeps
+// the baseline dark whatever sits underneath (lib/bright-screen's
+// flashOverlayPaint). Only while the sequence runs: `flashPaint` is null the
+// rest of the time.
 // ---------------------------------------------------------------------------
 
 /**
@@ -55,7 +64,8 @@ export function FlashOverlay(): React.ReactElement | null {
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
 
   if (!paint) return null;
-  const { color, hole } = paint;
+  const { hole } = paint;
+  const { fill, text } = flashOverlayPaint(paint.color);
 
   return (
     <View
@@ -70,8 +80,8 @@ export function FlashOverlay(): React.ReactElement | null {
       // absolute overlay that has none.
       style={[StyleSheet.absoluteFill, { zIndex: 100, elevation: 100 }]}
     >
-      {color && size ? (
-        <Panels color={color} hole={hole} width={size.width} height={size.height} />
+      {size ? (
+        <Panels color={fill} textColor={text} hole={hole} width={size.width} height={size.height} />
       ) : null}
     </View>
   );
@@ -91,11 +101,13 @@ export function FlashOverlay(): React.ReactElement | null {
  */
 function Panels({
   color,
+  textColor,
   hole,
   width,
   height,
 }: {
   color: string;
+  textColor: string;
   hole: FlashHole | null;
   width: number;
   height: number;
@@ -118,7 +130,7 @@ function Panels({
         )}
       </Svg>
 
-      <HoldStill hole={hole} width={width} height={height} />
+      <HoldStill hole={hole} width={width} height={height} color={textColor} />
     </>
   );
 }
@@ -137,18 +149,19 @@ function HoldStill({
   hole,
   width,
   height,
+  color,
 }: {
   hole: FlashHole | null;
   width: number;
   height: number;
+  /** Dark on the colours, light on the black pause (flashOverlayPaint). */
+  color: string;
 }): React.ReactElement {
   const belowHole = hole ? hole.y + hole.size + spacing.xl : 0;
   const top = Math.min(Math.max(belowHole, height * 0.78), height - spacing.xl * 2);
   return (
     <View style={{ position: 'absolute', top, left: 0, width, alignItems: 'center' }}>
-      {/* Dark text: every palette colour is high-luminance, so white would be
-          unreadable on cyan and green. */}
-      <MyazaText variant="heading3" color="rgba(0,0,0,0.8)" style={{ textAlign: 'center' }}>
+      <MyazaText variant="heading3" color={color} style={{ textAlign: 'center' }}>
         Hold still
       </MyazaText>
     </View>

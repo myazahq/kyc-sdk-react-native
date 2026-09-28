@@ -3,9 +3,11 @@ import type {
   LivenessConfig,
   LivenessFaceData,
   LivenessFailureReason,
+  LivenessMode,
   LivenessPhase,
 } from './types';
 import type { FlashResult } from './flashDetector';
+import type { TextFn } from '../i18n/types';
 
 // ---------------------------------------------------------------------------
 // The liveness machine's vocabulary: its UI state, its options, its guidance
@@ -69,6 +71,8 @@ export interface UseLivenessOptions {
    * Defaults true so a consumer that never sets it behaves as before.
    */
   announce?: boolean;
+  /** The workflow's copy for the challenge and positioning prompts (shown AND spoken). */
+  t?: TextFn;
 }
 
 export interface UseLivenessReturn extends LivenessUiState {
@@ -93,6 +97,15 @@ export interface UseLivenessReturn extends LivenessUiState {
   shouldFlash: boolean;
   /** Called by the screen when the flash sequence finishes. */
   completeFlash: (result: FlashResult) => void;
+  /** Bumped when an unmeasurable flash is retried: the screen runs a fresh sequence. */
+  flashAttempt: number;
+  /** The liveness method that actually ran ('both' when flash fell back to gestures). */
+  effectiveMode: LivenessMode;
+  /**
+   * The prompts this run used, in order (e.g. ['turn', 'blink', 'flash']),
+   * the gestures a flash-only run fell back to included. Rides the claim.
+   */
+  challenges: string[];
   /** The flash verdict, once run — carried into the submission as context. */
   flashResult: FlashResult | null;
   /** How many face discontinuities the continuity guard saw this session. */

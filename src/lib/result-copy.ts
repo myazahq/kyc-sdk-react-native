@@ -1,11 +1,15 @@
 import type { VerificationOutcome } from './result-wait';
 import type { BiometricCopyText } from '../config/biometricOptions';
+import { defaultText } from '../i18n/translate';
+import type { TextFn } from '../i18n/types';
 
 // ─── What the terminal screens say ──────────────────────────────────────────
 //
 // Pure so it is testable without React. The server's own reason wins on a
 // decline or an error when it sent one: it is written for the applicant.
-// UK English, no em dashes (user-facing copy rule).
+// UK English, no em dashes (user-facing copy rule). The words come from the
+// text catalogue (i18n/defaults/result.ts) through `t`, and the org's dedicated
+// biometric.copy fields ride as the legacy value, so they still win.
 
 export type ResultTone = 'success' | 'error' | 'info';
 
@@ -28,38 +32,55 @@ export interface WaitingCopy {
  * waiting for the same thing. `override` is the org's own words for the
  * screen (lib/biometric-copy.ts), field by field over the default.
  */
-export function describeWaiting(opts: {
-  scope: string | null;
-  waitsForResult: boolean;
-  retry?: { attempt: number; total: number } | null;
-  override?: BiometricCopyText | null;
-}): WaitingCopy {
-  const base = withOverride(waitingCopyFor(opts.scope, opts.waitsForResult), opts.override);
+export function describeWaiting(
+  opts: {
+    scope: string | null;
+    waitsForResult: boolean;
+    retry?: { attempt: number; total: number } | null;
+    override?: BiometricCopyText | null;
+  },
+  t: TextFn = defaultText,
+): WaitingCopy {
+  const keys = waitingKeysFor(opts.scope, opts.waitsForResult);
+  const title = t(keys.title, undefined, opts.override?.title);
   if (opts.retry) {
-    return { title: base.title, description: `Connection issue, retrying (${opts.retry.attempt}/${opts.retry.total}).` };
+    return { title, description: `Connection issue, retrying (${opts.retry.attempt}/${opts.retry.total}).` };
   }
-  return base;
+  return { title, description: t(keys.description, undefined, opts.override?.description) };
 }
 
-function waitingCopyFor(scope: string | null, waitsForResult: boolean): WaitingCopy {
-  if (scope === 'biometric-authentication') {
-    return waitsForResult
-      ? { title: "Checking it's you", description: 'Matching your selfie against the photo on record. This usually takes a few seconds.' }
-      : { title: 'Sending your face check', description: 'This only takes a moment.' };
-  }
-  if (scope === 'biometric-enrollment') {
-    return { title: 'Saving your selfie', description: 'It becomes the reference for your future face checks.' };
-  }
-  return { title: 'Submitting your verification', description: 'Please wait a moment.' };
+/** A screen's two catalogue keys, spelt out so every key reads as a literal. */
+interface ScreenKeys {
+  title: string;
+  description: string;
 }
 
-/** The org's own words for a screen, over the default, field by field. */
-function withOverride<T extends { title: string; description: string }>(base: T, override?: BiometricCopyText | null): T {
-  if (!override) return base;
+const WAITING_KEYS: Record<'checking' | 'sending' | 'saving' | 'submitting', ScreenKeys> = {
+  checking: { title: 'result.faceCheck.checking.title', description: 'result.faceCheck.checking.description' },
+  sending: { title: 'result.faceCheck.sending.title', description: 'result.faceCheck.sending.description' },
+  saving: { title: 'result.faceEnrolment.saving.title', description: 'result.faceEnrolment.saving.description' },
+  submitting: { title: 'result.submitting.title', description: 'result.submitting.description' },
+};
+
+function waitingKeysFor(scope: string | null, waitsForResult: boolean): ScreenKeys {
+  if (scope === 'biometric-authentication') return waitsForResult ? WAITING_KEYS.checking : WAITING_KEYS.sending;
+  if (scope === 'biometric-enrollment') return WAITING_KEYS.saving;
+  return WAITING_KEYS.submitting;
+}
+
+const OUTCOME_KEYS: Record<'verified' | 'declined' | 'inReview' | 'submitted' | 'timeout', ScreenKeys> = {
+  verified: { title: 'result.faceCheck.verified.title', description: 'result.faceCheck.verified.description' },
+  declined: { title: 'result.faceCheck.declined.title', description: 'result.faceCheck.declined.description' },
+  inReview: { title: 'result.faceCheck.inReview.title', description: 'result.faceCheck.inReview.description' },
+  submitted: { title: 'result.faceCheck.submitted.title', description: 'result.faceCheck.submitted.description' },
+  timeout: { title: 'result.faceCheck.timeout.title', description: 'result.faceCheck.timeout.description' },
+};
+
+/** A title and description from the catalogue, the org's words (if any) over each. */
+function screen(t: TextFn, keys: ScreenKeys, override?: BiometricCopyText | null): WaitingCopy {
   return {
-    ...base,
-    ...(override.title ? { title: override.title } : {}),
-    ...(override.description ? { description: override.description } : {}),
+    title: t(keys.title, undefined, override?.title),
+    description: t(keys.description, undefined, override?.description),
   };
 }
 
@@ -67,39 +88,25 @@ function withOverride<T extends { title: string; description: string }>(base: T,
  *  decline or an error when it sent one; it is written for the applicant.
  *  `copy` is the org's own words for the two verdict screens: on a decline
  *  its description wins even over the server's reason, since the org chose
- *  to say that. */
+ *  to say that (as does the workflow's own text for that description). */
 export function describeOutcome(
   outcome: VerificationOutcome,
   copy?: { verified?: BiometricCopyText | null; declined?: BiometricCopyText | null },
+  t: TextFn = defaultText,
 ): ResultCopy {
-  if (outcome.kind === 'timeout') {
-    return {
-      tone: 'info',
-      title: 'Still checking',
-      description: "This is taking longer than usual. You'll be notified as soon as it's done.",
-    };
-  }
+  if (outcome.kind === 'timeout') return { tone: 'info', ...screen(t, OUTCOME_KEYS.timeout) };
   switch (outcome.status) {
     case 'approved':
-      return withOverride(
-        { tone: 'success', title: "You're verified", description: 'Your face matched the photo on record.' },
-        copy?.verified,
-      );
-    case 'declined':
-      return withOverride(
-        {
-          tone: 'error',
-          title: "We couldn't confirm it's you",
-          description: outcome.reason ?? "Your face didn't match the photo on record.",
-        },
-        copy?.declined,
-      );
+      return { tone: 'success', ...screen(t, OUTCOME_KEYS.verified, copy?.verified) };
+    case 'declined': {
+      const words = screen(t, OUTCOME_KEYS.declined, copy?.declined);
+      const orgChose =
+        Boolean(copy?.declined?.description) ||
+        words.description !== defaultText(OUTCOME_KEYS.declined.description);
+      return { tone: 'error', title: words.title, description: orgChose ? words.description : (outcome.reason ?? words.description) };
+    }
     case 'in_review':
-      return {
-        tone: 'info',
-        title: 'Under review',
-        description: "A reviewer will take a look. You'll be notified of the outcome.",
-      };
+      return { tone: 'info', ...screen(t, OUTCOME_KEYS.inReview) };
     case 'error':
       return {
         tone: 'error',
@@ -107,10 +114,6 @@ export function describeOutcome(
         description: outcome.reason ?? "We couldn't complete your check. Please try again in a moment.",
       };
     default:
-      return {
-        tone: 'info',
-        title: 'Check submitted',
-        description: "You'll be notified of the result.",
-      };
+      return { tone: 'info', ...screen(t, OUTCOME_KEYS.submitted) };
   }
 }

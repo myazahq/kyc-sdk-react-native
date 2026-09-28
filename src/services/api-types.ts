@@ -28,7 +28,9 @@ export type MediaUploadType =
   // identity evidence the verification is decided on. Images + PDF.
   | 'supporting_document'
   // Address Intelligence door / premises photo (image only).
-  | 'address_photo';
+  | 'address_photo'
+  // An unposed front-camera frame from document capture (JPEG; lib/silentCapture).
+  | 'silent_capture';
 
 /**
  * A file to upload, in React Native's multipart shape. `uri` points at a
@@ -161,6 +163,7 @@ export interface SdkConfigBranding {
   logo?: string;
   companyName?: string;
   primaryColor?: string;
+  trustAttribution?: import('../lib/trust-attribution').SdkTrustAttribution; // absent = Myaza
 }
 
 export interface SdkConfigResponse {

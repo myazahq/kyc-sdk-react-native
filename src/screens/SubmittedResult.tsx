@@ -3,6 +3,7 @@ import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
 import { useKycConfig, useKycStore, useTheme } from '../components/runtime';
+import { useText } from '../i18n/useText';
 import { MyazaText } from '../components/Typography';
 import { MyazaButton } from '../components/MyazaButton';
 import { Icon } from '../components/Icon';
@@ -38,6 +39,7 @@ export function SubmittedResult({
 }): React.ReactElement {
   const { colors } = useTheme();
   const config = useKycConfig();
+  const t = useText();
   const store = useKycStore();
   const [outcome, setOutcome] = useState<VerificationOutcome | null>(null);
 
@@ -69,11 +71,11 @@ export function SubmittedResult({
   // The org's own words for these screens, tokens filled (null = the defaults).
   const words = biometricCopyFor(config);
   if (!outcome) {
-    const copy = describeWaiting({ scope: configScope(config), waitsForResult: true, retry, override: words.waiting });
+    const copy = describeWaiting({ scope: configScope(config), waitsForResult: true, retry, override: words.waiting }, t);
     return <SubmittedWaiting title={copy.title} description={copy.description} retrying={retry != null} />;
   }
 
-  const copy = describeOutcome(outcome, words);
+  const copy = describeOutcome(outcome, words, t);
   const palette =
     copy.tone === 'success'
       ? { bg: colors.successBg, fg: colors.success, icon: 'check' as const }
@@ -107,7 +109,7 @@ export function SubmittedResult({
       </View>
       {showDone ? (
         <StaggerIn delayMs={600}>
-          <MyazaButton label="Done" onPress={onClose} />
+          <MyazaButton label={t('common.done')} onPress={onClose} />
         </StaggerIn>
       ) : (
         <View />

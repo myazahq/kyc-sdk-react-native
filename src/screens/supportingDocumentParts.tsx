@@ -5,6 +5,7 @@ import { radius, spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
 import { MyazaText } from '../components/Typography';
 import { Icon } from '../components/Icon';
+import { useText } from '../i18n/useText';
 
 // ---------------------------------------------------------------------------
 // The pieces of a supporting-document card.
@@ -55,6 +56,7 @@ export function DocumentMarker({
 /** Required or optional, in a word as well as a colour. */
 export function DocumentStatePill({ required }: { required: boolean }): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
   return (
     <View
       style={{
@@ -69,7 +71,7 @@ export function DocumentStatePill({ required }: { required: boolean }): React.Re
         color={required ? colors.error : colors.textSecondary}
         style={{ fontWeight: '600' }}
       >
-        {required ? 'Required' : 'Optional'}
+        {t(required ? 'supportingDocuments.card.required' : 'supportingDocuments.card.optional')}
       </MyazaText>
     </View>
   );
@@ -78,6 +80,7 @@ export function DocumentStatePill({ required }: { required: boolean }): React.Re
 /** What the server will take off this document, named as the author named it. */
 export function DocumentReads({ reads }: { reads: readonly string[] }): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
   return (
     <View
       style={{
@@ -89,9 +92,9 @@ export function DocumentReads({ reads }: { reads: readonly string[] }): React.Re
       <MyazaText
         variant="bodySmall"
         color={colors.textSecondary}
-        style={{ fontWeight: '600', letterSpacing: 0.5 }}
+        style={{ fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase' }}
       >
-        WHAT WE READ FROM IT
+        {t('supportingDocuments.card.reads')}
       </MyazaText>
       <View
         style={{

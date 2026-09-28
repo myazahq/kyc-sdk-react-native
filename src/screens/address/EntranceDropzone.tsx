@@ -7,6 +7,7 @@ import { DashedBorder } from '../../components/DashedBorder';
 import { Icon } from '../../components/Icon';
 import { OverlayPill, pillSurface } from './EntrancePills';
 import { MyazaText } from '../../components/Typography';
+import { useText } from '../../i18n/useText';
 
 const FRAME_HEIGHT = 300;
 
@@ -35,6 +36,7 @@ export function EntranceDropzone({
   onRemove: () => void;
 }): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
 
   if (uploaded && !uploading) {
     return (
@@ -113,7 +115,7 @@ export function EntranceDropzone({
       onPress={uploading ? undefined : onPick}
       disabled={uploading}
       accessibilityRole="button"
-      accessibilityLabel="Take or upload a photo"
+      accessibilityLabel={t('address.photo.cta')}
       style={{
         height: FRAME_HEIGHT,
         alignItems: 'center',
@@ -145,7 +147,7 @@ export function EntranceDropzone({
       </View>
       <View style={{ height: spacing.md }} />
       <MyazaText variant="body" style={{ fontWeight: '600' }}>
-        {uploading ? 'Uploading photo…' : 'Take or upload a photo'}
+        {uploading ? 'Uploading photo…' : t('address.photo.cta')}
       </MyazaText>
       {uploading ? null : (
         <>
@@ -155,7 +157,7 @@ export function EntranceDropzone({
             style={{ marginTop: spacing.xs, textAlign: 'center' }}
           >
             {required
-              ? 'The gate, front door or the building itself.'
+              ? t('address.photo.hint')
               : 'The gate, front door or the building itself. Optional.'}
           </MyazaText>
           <View

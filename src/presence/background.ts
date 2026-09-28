@@ -45,6 +45,7 @@ export { PRESENCE_GEOFENCE_TASK };
 interface TaskManagerLike {
   defineTask(name: string, fn: (body: { data: unknown; error: unknown }) => void): void;
   isTaskRegisteredAsync(name: string): Promise<boolean>;
+  isTaskDefined?(name: string): boolean;
 }
 
 function taskManager(): TaskManagerLike | null {
@@ -109,11 +110,26 @@ export function registerBackgroundPresence(): boolean {
   return true;
 }
 
+/** Whether registerBackgroundPresence() ran at the app's root, so fence events have a handler. */
+export function backgroundPresenceRegistered(): boolean {
+  const tm = taskManager();
+  if (!tm) return false;
+  // Older expo-task-manager builds without isTaskDefined: assume defined, as before.
+  if (typeof tm.isTaskDefined !== 'function') return true;
+  try {
+    return tm.isTaskDefined(PRESENCE_GEOFENCE_TASK);
+  } catch {
+    return false;
+  }
+}
+
 export interface EnableBackgroundResult {
   enabled: boolean;
   reason:
     | 'enabled'
     | 'module_missing'
+    /** registerBackgroundPresence() was never called at the app's root. */
+    | 'not_registered'
     | 'no_pin'
     | 'foreground_denied'
     | 'background_denied'
@@ -132,6 +148,9 @@ export async function enableBackgroundPresence(options: {
 }): Promise<EnableBackgroundResult> {
   const tm = taskManager();
   if (!tm) return { enabled: false, reason: 'module_missing' };
+  // A fence with no task defined fires into nothing, and asking for the
+  // "always" permission for it would cost the person a prompt for no benefit.
+  if (!backgroundPresenceRegistered()) return { enabled: false, reason: 'not_registered' };
   const pin = loadPresencePin(options.externalUserId);
   if (!pin) return { enabled: false, reason: 'no_pin' };
 

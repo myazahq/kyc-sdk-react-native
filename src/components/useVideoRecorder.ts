@@ -23,6 +23,11 @@ export interface VideoRecorderHandle {
   stop: () => Promise<string | null>;
   /** True while a recording is in progress. */
   isRecording: () => boolean;
+  /**
+   * Why the last recording produced no file, once stop() has answered null:
+   * it never started, or it started and produced nothing.
+   */
+  failure: () => 'recorder_start_failed' | 'recording_empty' | null;
 }
 
 export function useVideoRecorder(videoOutput: CameraVideoOutput, enabled: boolean): VideoRecorderHandle {
@@ -33,11 +38,14 @@ export function useVideoRecorder(videoOutput: CameraVideoOutput, enabled: boolea
   const resolveFinishedRef = useRef<((p: string | null) => void) | null>(null);
   const stoppingRef = useRef(false);
   const autoStopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Whether the recorder ever went live this take (for failure()).
+  const startedRef = useRef(false);
 
   const start = useCallback(() => {
     if (recordingRef.current || !enabled) return;
     recordingRef.current = true;
     stoppingRef.current = false;
+    startedRef.current = false;
     pathRef.current = null;
     finishedRef.current = new Promise<string | null>((resolve) => {
       resolveFinishedRef.current = resolve;
@@ -62,6 +70,7 @@ export function useVideoRecorder(videoOutput: CameraVideoOutput, enabled: boolea
           const recorder = await videoOutput.createRecorder({});
           await recorder.startRecording(onFinished, onError);
           recorderRef.current = recorder;
+          startedRef.current = true;
           // Hard length cap — stop the recording (path arrives via onFinished); a
           // later stop() will just await the already-resolved path.
           autoStopRef.current = setTimeout(() => {
@@ -118,5 +127,10 @@ export function useVideoRecorder(videoOutput: CameraVideoOutput, enabled: boolea
 
   const isRecording = useCallback(() => recordingRef.current, []);
 
-  return { start, stop, isRecording };
+  const failure = useCallback(() => {
+    if (pathRef.current) return null;
+    return startedRef.current ? ('recording_empty' as const) : ('recorder_start_failed' as const);
+  }, []);
+
+  return { start, stop, isRecording, failure };
 }

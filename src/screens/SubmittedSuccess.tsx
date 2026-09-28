@@ -3,6 +3,7 @@ import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
 import { useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
+import { useText } from '../i18n/useText';
 import { MyazaText } from '../components/Typography';
 import { MyazaButton } from '../components/MyazaButton';
 import { Icon } from '../components/Icon';
@@ -21,7 +22,6 @@ import { Badge } from './SubmittedBadge';
 // people still owing a check, and Done. `showDone` is the biometric scopes'
 // `doneButton` option: off when the host app closes the flow itself.
 
-const DEFAULT_SUCCESS_TITLE = 'Verification Submitted!';
 // The default description depends on WHAT was submitted. A KYB applicant told
 // "your identity verification has been submitted" is being told about the wrong
 // thing: they submitted a company, and an address-only applicant submitted a
@@ -33,16 +33,11 @@ const SCOPE_DESCRIPTIONS: Record<string, string> = {
   questionnaire: "Your answers have been submitted. You'll be notified of the result.",
   contact: "Your contact verification has been submitted. You'll be notified of the result.",
 };
-const defaultSuccessDescription = (isBusiness: boolean, scope: string | null): string => {
-  if (scope && SCOPE_DESCRIPTIONS[scope]) return SCOPE_DESCRIPTIONS[scope]!;
-  return isBusiness
-    ? "Your business verification has been submitted for review. You'll be notified of the result."
-    : "Your identity verification has been submitted for review. You'll be notified of the result.";
-};
 
 export function SubmittedSuccess({ showDone, onClose }: { showDone: boolean; onClose: () => void }): React.ReactElement {
   const { colors } = useTheme();
   const config = useKycConfig();
+  const t = useText();
   const store = useKycStore();
   // The people list comes from the SERVER once registry discovery settles —
   // the submit-time invites are a first draft the register can contradict
@@ -51,10 +46,15 @@ export function SubmittedSuccess({ showDone, onClose }: { showDone: boolean; onC
   const settled = useAwaitingPeople(store.getState().api, sessionId, true);
   const [keepLinksOpen, setKeepLinksOpen] = useState(false);
 
-  const title = config.success?.title ? fillTokens(config.success.title, config.userData) : DEFAULT_SUCCESS_TITLE;
-  const description = config.success?.description
-    ? fillTokens(config.success.description, config.userData)
-    : defaultSuccessDescription(config.subjectType === 'business', configScope(config));
+  // The org's `success.*` fields ride as the legacy value, so they still win.
+  const legacy = config.success?.description;
+  const scopeDefault = SCOPE_DESCRIPTIONS[configScope(config) ?? ''];
+  const title = t('result.success.title', undefined, config.success?.title);
+  const description = scopeDefault
+    ? (legacy ? fillTokens(legacy, config.userData) : scopeDefault)
+    : config.subjectType === 'business'
+      ? t('result.success.description.business', undefined, legacy)
+      : t('result.success.description.individual', undefined, legacy);
   // KYB: whether a people list is COMING (the submit minted invites). The list
   // itself renders from the server's reconciled view, never from this draft.
   const invitesExpected = store.getState().keyPeopleInvites.length > 0;
@@ -106,7 +106,7 @@ export function SubmittedSuccess({ showDone, onClose }: { showDone: boolean; onC
       </View>
       {showDone ? (
         <StaggerIn delayMs={600}>
-          <MyazaButton label="Done" onPress={() => (offerRecovery ? setKeepLinksOpen(true) : onClose())} />
+          <MyazaButton label={t('common.done')} onPress={() => (offerRecovery ? setKeepLinksOpen(true) : onClose())} />
         </StaggerIn>
       ) : (
         <View />

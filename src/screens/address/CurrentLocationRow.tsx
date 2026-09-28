@@ -5,6 +5,7 @@ import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
 import { Icon } from '../../components/Icon';
 import { MyazaText } from '../../components/Typography';
+import { useText } from '../../i18n/useText';
 
 /**
  * "Use my current location" as a proper row, not a button pretending to be two:
@@ -25,11 +26,12 @@ export function CurrentLocationRow({
   onPress: () => void;
 }): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel="Use my current location"
+      accessibilityLabel={t('address.currentLocation.title')}
       style={({ pressed }) => ({
         flexDirection: 'row',
         alignItems: 'center',
@@ -64,10 +66,10 @@ export function CurrentLocationRow({
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <MyazaText variant="bodyMedium" style={{ fontWeight: '600' }}>
-          Use my current location
+          {t('address.currentLocation.title')}
         </MyazaText>
         <MyazaText variant="bodySmall" color={colors.textSecondary} numberOfLines={1}>
-          {hint ?? (locating ? 'Finding your location…' : 'Lands the pin right where you are')}
+          {hint ?? (locating ? 'Finding your location…' : t('address.currentLocation.hint'))}
         </MyazaText>
       </View>
       <Icon name="chevron-right" size={16} color={colors.textSecondary} />
@@ -92,6 +94,7 @@ export function LocateChip({
   onPress: () => void;
 }): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
   return (
     <View
       pointerEvents="box-none"
@@ -127,7 +130,7 @@ export function LocateChip({
           <Icon name="locate" size={16} color={colors.primary} />
         )}
         <MyazaText variant="bodySmall" style={{ fontWeight: '600' }}>
-          {locating ? 'Finding you…' : 'Use my location'}
+          {locating ? 'Finding you…' : t('address.locate.button')}
         </MyazaText>
       </Pressable>
     </View>

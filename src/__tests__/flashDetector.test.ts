@@ -149,16 +149,16 @@ describe('the whole sequence', () => {
     expect(result.passed).toBe(false);
   });
 
-  it('passes SOFT when nothing was measurable at all', () => {
-    // Direct sunlight. Failing here would lock out anyone verifying outdoors,
-    // which is a worse error than missing a spoof — the gesture checks are the
-    // backstop, and the server re-scores the video regardless.
+  it('does NOT pass when nothing was measurable at all', () => {
+    // Direct sunlight, or a phone screen held up to the camera: both drown the
+    // reflection. Nobody is locked out, though: the step retries once and then
+    // lets gestures carry the check (flashOutcome.ts).
     const result = evaluateFlashSequence(generateFlashSequence(3), [
       sample({ inconclusive: true, matched: false }),
       sample({ inconclusive: true, matched: false }),
       sample({ inconclusive: true, matched: false }),
     ]);
-    expect(result.passed).toBe(true);
+    expect(result.passed).toBe(false);
     expect(result.inconclusive).toBe(3);
   });
 

@@ -6,6 +6,7 @@ import { useTheme } from '../components/runtime';
 import { MyazaText } from '../components/Typography';
 import { MyazaInput } from '../components/MyazaInput';
 import { PhoneNumberInput } from '../components/PhoneNumberInput';
+import { useText } from '../i18n/useText';
 
 /**
  * "Where should we send it": an email field, or the dial-code phone input that
@@ -32,10 +33,11 @@ export function ContactDestinationField({
   error: string | null;
   disabled?: boolean;
 }): React.ReactElement {
+  const t = useText();
   if (isEmail) {
     return (
       <MyazaInput
-        label="Email address"
+        label={t('contact.email.label')}
         value={email}
         onChangeText={onEmailChange}
         placeholder="you@example.com"
@@ -51,7 +53,7 @@ export function ContactDestinationField({
   return (
     <View>
       <MyazaText variant="label" style={{ marginBottom: spacing.xs }}>
-        Phone number
+        {t('contact.phone.label')}
       </MyazaText>
       <PhoneNumberInput
         defaultCountry={defaultCountry}

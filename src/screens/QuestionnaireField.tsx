@@ -1,7 +1,7 @@
 import React from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
-import { radius, spacing } from '../config/theme';
+import { spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
 import { MyazaText } from '../components/Typography';
 import { MyazaDateField } from '../components/MyazaDateField';
@@ -9,6 +9,8 @@ import { MyazaInput } from '../components/MyazaInput';
 import { MyazaSelect } from '../components/MyazaSelect';
 import { OptionRow } from '../components/OptionRow';
 import { MoneyField as QuestionnaireMoneyField } from './QuestionnaireMoneyField';
+import { QuestionnaireBooleanField } from './QuestionnaireBooleanField';
+import { useText } from '../i18n/useText';
 import { currencyKeyFor } from '../config/questionnaire';
 import type { QuestionnaireAnswerValue, QuestionnaireField as FieldDef } from '../types/workflow';
 
@@ -51,6 +53,7 @@ export function QuestionnaireFieldView({
   onDetailChange?: (detail: string | undefined) => void;
 }): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
 
   const isPlainInput = field.type === 'text' || field.type === 'number';
 
@@ -106,21 +109,7 @@ export function QuestionnaireFieldView({
         />
       ) : null}
 
-      {field.type === 'boolean' ? (
-        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-          {[true, false].map((option) => (
-            <View key={String(option)} style={{ flex: 1 }}>
-              <BooleanChoice
-                label={option ? 'Yes' : 'No'}
-                selected={value === option}
-                // Re-tapping the chosen answer clears it — the only way to
-                // un-answer an optional yes/no.
-                onPress={() => onChange(value === option ? undefined : option)}
-              />
-            </View>
-          ))}
-        </View>
-      ) : null}
+      {field.type === 'boolean' ? <QuestionnaireBooleanField value={value} onChange={onChange} /> : null}
 
       {field.type === 'select' ? (
         <MyazaSelect<string>
@@ -162,7 +151,7 @@ export function QuestionnaireFieldView({
       {detailOption ? (
         <View style={{ marginTop: spacing.sm }}>
           <MyazaInput
-            label={detailOption.detailLabel || 'Please specify'}
+            label={detailOption.detailLabel || t('questionnaire.detailLabel')}
             value={detailValue ?? ''}
             maxLength={200}
             placeholder={
@@ -180,44 +169,6 @@ export function QuestionnaireFieldView({
         </MyazaText>
       ) : null}
     </View>
-  );
-}
-
-/** A centred Yes / No card — no radio mark; the label IS the choice. */
-function BooleanChoice({
-  label,
-  selected,
-  onPress,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}): React.ReactElement {
-  const { colors } = useTheme();
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="radio"
-      accessibilityState={{ checked: selected }}
-      accessibilityLabel={label}
-      style={{
-        height: 48,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: radius.md,
-        borderWidth: selected ? 1.5 : 1,
-        borderColor: selected ? colors.primary : colors.border,
-        backgroundColor: selected ? colors.primary50 : 'transparent',
-      }}
-    >
-      <MyazaText
-        variant="body"
-        color={selected ? colors.primary : undefined}
-        style={{ fontWeight: '600' }}
-      >
-        {label}
-      </MyazaText>
-    </Pressable>
   );
 }
 

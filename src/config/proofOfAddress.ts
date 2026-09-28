@@ -8,14 +8,17 @@
 // server is going to make anyway.
 // ---------------------------------------------------------------------------
 
+import { defaultText } from '../i18n/translate';
+import type { TextFn } from '../i18n/types';
 import type { PoaDocumentType, PoaNameRule, ProofOfAddressConfig } from '../types/workflow';
 
-export const POA_TYPE_LABELS: Record<PoaDocumentType, string> = {
-  utility_bill: 'Utility bill',
-  bank_statement: 'Bank statement',
-  tenancy_agreement: 'Tenancy agreement',
-  government_document: 'Government-issued document',
-  other: 'Other document',
+/** Each kind's customisable text key. */
+export const POA_TYPE_TEXT_KEYS: Record<PoaDocumentType, string> = {
+  utility_bill: 'proofOfAddress.kind.utilityBill',
+  bank_statement: 'proofOfAddress.kind.bankStatement',
+  tenancy_agreement: 'proofOfAddress.kind.tenancyAgreement',
+  government_document: 'proofOfAddress.kind.governmentDocument',
+  other: 'proofOfAddress.kind.other',
 };
 
 const ALL_POA_TYPES: PoaDocumentType[] = [
@@ -94,10 +97,12 @@ export function poaCountryAccepted(
  * letter"), which is the difference between a user knowing what to upload and
  * guessing.
  */
-export function poaTypeLabel(type: PoaDocumentType, poa: ProofOfAddressConfig | undefined): string {
-  const custom = poa?.otherLabel?.trim();
-  if (type === 'other' && custom) return custom;
-  return POA_TYPE_LABELS[type];
+export function poaTypeLabel(
+  type: PoaDocumentType,
+  poa: ProofOfAddressConfig | undefined,
+  t: TextFn = defaultText,
+): string {
+  return t(POA_TYPE_TEXT_KEYS[type], undefined, type === 'other' ? poa?.otherLabel : null);
 }
 
 export function poaMaxAgeDays(poa: ProofOfAddressConfig | undefined): number {

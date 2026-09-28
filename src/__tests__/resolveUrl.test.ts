@@ -1,4 +1,4 @@
-import { detectEnvironment, resolveBaseUrl, normalizeDevAssetUrl } from '../services/resolveUrl';
+import { detectEnvironment, resolveBaseUrl, normalizeAppearanceUrls, normalizeDevAssetUrl } from '../services/resolveUrl';
 
 describe('detectEnvironment', () => {
   it('maps each prefix (pk_ and sk_) to its environment', () => {
@@ -60,5 +60,54 @@ describe('normalizeDevAssetUrl', () => {
 
   it('passes through undefined', () => {
     expect(normalizeDevAssetUrl(undefined, 'http://10.0.2.2:3001')).toBeUndefined();
+  });
+});
+
+// Regression (2026-09-28): over a USB tunnel, or after the Mac rejoined a
+// network, the server's branding images carried a LAN host the phone could not
+// reach, and only localhost-family hosts were rewritten.
+describe('server branding images in local development', () => {
+  const base = 'http://localhost:3001';
+
+  it('moves a branding URL on any host onto the dev base', () => {
+    expect(normalizeDevAssetUrl('http://172.20.10.3:3001/api/kyc/branding/logo/abc', base)).toBe(
+      'http://localhost:3001/api/kyc/branding/logo/abc',
+    );
+  });
+
+  it('leaves another host\'s non-branding image alone', () => {
+    expect(normalizeDevAssetUrl('http://172.20.10.3:3001/uploads/x.png', base)).toBe('http://172.20.10.3:3001/uploads/x.png');
+  });
+
+  it('never rewrites against a production (https) base', () => {
+    expect(normalizeDevAssetUrl('http://172.20.10.3:3001/api/kyc/branding/logo/abc', 'https://trust.myaza.app')).toBe(
+      'http://172.20.10.3:3001/api/kyc/branding/logo/abc',
+    );
+  });
+
+  it('rewrites a workflow\'s logo and its dark theme logo, and nothing else', () => {
+    const out = normalizeAppearanceUrls(
+      {
+        country: 'NG',
+        appearance: {
+          theme: 'dark',
+          logo: 'http://172.20.10.3:3001/api/kyc/branding/logo/wf',
+          dark: { logo: 'http://172.20.10.3:3001/api/kyc/branding/logo/wf-dark' },
+        },
+      },
+      base,
+    );
+    expect(out).toEqual({
+      country: 'NG',
+      appearance: {
+        theme: 'dark',
+        logo: 'http://localhost:3001/api/kyc/branding/logo/wf',
+        dark: { logo: 'http://localhost:3001/api/kyc/branding/logo/wf-dark' },
+      },
+    });
+  });
+
+  it('passes a config without appearance through', () => {
+    expect(normalizeAppearanceUrls({ country: 'NG' }, base)).toEqual({ country: 'NG' });
   });
 });

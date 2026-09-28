@@ -23,7 +23,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
-  CHALLENGE_POOL,
+  CHALLENGE_POOL, challengeInstruction, placeFaceInstruction,
   DEFAULT_LIVENESS_CONFIG,
   FACE_TOO_CLOSE_RATIO,
   FACE_TOO_FAR_RATIO,
@@ -41,14 +41,21 @@ import {
   eyeAverageOpenProbability,
   pushHistory,
 } from './gestureDetector';
-import { ChallengeTracker, modeRunsGestures, pickChallenges } from './challengeManager';
+import {
+  ChallengeTracker,
+  livenessPrompts,
+  modeRunsGestures,
+  pickChallenges,
+  pickFallbackGestures,
+} from './challengeManager';
+import { HoldTimer, faceCentred } from './holdDetector';
 import { FlashReadyGate } from './flashReadyGate';
 import { FaceContinuityGuard } from './faceContinuity';
 import type { FlashResult } from './flashDetector';
 import { useFlashPhase } from './useFlashPhase';
+import { flashOutcome, flashUnmeasurable, FLASH_RETRY_GUIDANCE } from './flashOutcome';
 
-// State shape, options, guidance strings and phase predicates live in
-// ./livenessState — re-exported here so existing imports keep working.
+// State shape, options and guidance live in ./livenessState, re-exported here.
 export {
   positionGuidanceText,
   lightingGuidanceText,
@@ -77,6 +84,8 @@ import {
 
 export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
   const { config, voiceGuidance, onReadyToCapture, announce = true } = opts;
+  const tRef = useRef(opts.t);
+  tRef.current = opts.t;
 
   // Resolve the challenge set once per session (and on reset).
   const trackerRef = useRef<ChallengeTracker | null>(null);
@@ -111,6 +120,8 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
   // Gesture history windows (nod pitch, avg eye-open) + per-challenge guards.
   const xHistoryRef = useRef<number[]>([]);
   const earHistoryRef = useRef<number[]>([]);
+  // Passive Liveness: times the steady, centred face the hold prompt asks for.
+  const holdRef = useRef<HoldTimer>(new HoldTimer());
   const processingRef = useRef(false); // true between pass and next-challenge start
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const passTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -118,7 +129,7 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
 
   const [state, setState] = useState<LivenessUiState>(() => ({
     phase: 'positioning',
-    instruction: 'Position your face in the circle',
+    instruction: placeFaceInstruction(tRef.current),
     activeChallenge: null,
     timeoutRemaining: 0,
     completedCount: 0,
@@ -166,6 +177,11 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
   );
 
   const flash = useFlashPhase(config?.mode, setState);
+  // The retry of an unmeasurable flash, and whether a flash-only check fell
+  // back to gestures (flashOutcome.ts). Refs: read inside the flash callback.
+  const flashRetriesRef = useRef(0);
+  const [flashAttempt, setFlashAttempt] = useState(0);
+  const [fellBack, setFellBack] = useState(false);
 
   // Speak whatever the screen is currently instructing.
   //
@@ -175,9 +191,8 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
   // exactly where it was missing: a user holding a phone at arm's length during
   // a flash sequence is not reading the screen.
   //
-  // Keyed on the instruction rather than the phase so a challenge-to-challenge
-  // change is announced too. The speaker de-dupes consecutive identical phrases,
-  // so this cannot stutter over a re-render. Multi-face and lighting prompts are
+  // Keyed on the instruction so a challenge-to-challenge change is announced
+  // too; the speaker de-dupes repeats. Multi-face and lighting prompts are
   // spoken by their own handlers and take priority, so they are skipped here.
   useEffect(() => {
     if (!announce || !state.instruction || state.multipleFaces) return;
@@ -215,18 +230,19 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
     }
     xHistoryRef.current = [];
     earHistoryRef.current = [];
+    holdRef.current.reset();
     processingRef.current = false;
     const timeout = config?.timeoutPerChallenge ?? current.config.timeoutSeconds;
     setState((s) => ({
       ...s,
       phase: 'challenge',
-      instruction: current.config.instruction,
+      instruction: challengeInstruction(current.config.type, tRef.current),
       activeChallenge: current.config.type,
       timeoutRemaining: timeout,
       positionGuidance: null,
       wrongGesture: false,
     }));
-    speak(current.config.instruction);
+    speak(challengeInstruction(current.config.type, tRef.current));
     startTimer(timeout);
   }, [cancelTimer, config, speak, startTimer]);
 
@@ -250,6 +266,53 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
       startNextChallenge();
     }, CHALLENGE_PASSED_MS);
   }, [cancelTimer, speak, startNextChallenge]);
+
+  // ── Flash result → pass / retry / gesture fallback / fail (flashOutcome.ts) ──
+  const completeFlash = useCallback(
+    (result: FlashResult) => {
+      if (stateRef.current.phase !== 'flash') return;
+      const outcome = flashOutcome(
+        { passed: result.passed, inconclusive: flashUnmeasurable(result) },
+        config?.mode ?? 'gestures',
+        flashRetriesRef.current,
+      );
+      if (outcome === 'retry') {
+        // Unmeasurable: ask them out of bright light, then a fresh sequence.
+        flashRetriesRef.current += 1;
+        setState((s) => (s.phase === 'flash' ? { ...s, instruction: FLASH_RETRY_GUIDANCE } : s));
+        speak(FLASH_RETRY_GUIDANCE);
+        passTimeoutRef.current = setTimeout(() => {
+          if (stateRef.current.phase === 'flash') setFlashAttempt((a) => a + 1);
+        }, 1500);
+        return;
+      }
+      if (outcome === 'fallback_gestures') {
+        // Still unmeasurable on a flash-only check: prove liveness with
+        // gestures rather than pass on a flash nobody could measure.
+        flash.settle(result);
+        setFellBack(true);
+        const tracker = trackerRef.current!;
+        tracker.append(pickFallbackGestures(config ?? {}));
+        setState((s) => ({ ...s, totalCount: tracker.totalCount }));
+        startNextChallenge();
+        return;
+      }
+      if (outcome === 'fail') {
+        flash.settle(result);
+        cancelTimer();
+        setState((s) => ({
+          ...s,
+          phase: 'failed',
+          failureReason: 'flash_failed',
+          activeChallenge: null,
+          positionGuidance: null,
+        }));
+        return;
+      }
+      flash.complete(result);
+    },
+    [cancelTimer, config, flash, speak, startNextChallenge],
+  );
 
   // ── Position check (every frame; mirrors Flutter _checkFacePosition) ────────
   const checkPosition = useCallback((ratio: number) => {
@@ -302,12 +365,13 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
       flashGateRef.current?.reset();
       xHistoryRef.current = [];
       earHistoryRef.current = [];
+      holdRef.current.reset();
       processingRef.current = false;
       integrityBrokenRef.current = false;
       setState((s) => ({
         ...s,
         phase: 'positioning',
-        instruction: 'Position your face in the circle',
+        instruction: placeFaceInstruction(tRef.current),
         activeChallenge: null,
         completedCount: 0,
         positionGuidance: null,
@@ -350,6 +414,7 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
           // made a second face during the flash have no effect at all.
           integrityBrokenRef.current = true;
         }
+        holdRef.current.reset(); // the hold restarts once a single face is back
         if (!stateRef.current.multipleFaces) {
           cancelTimer();
           setState((s) => ({
@@ -373,7 +438,7 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
             earHistoryRef.current = [];
             processingRef.current = false;
             const timeout = config?.timeoutPerChallenge ?? current.config.timeoutSeconds;
-            setState((s) => ({ ...s, instruction: current.config.instruction }));
+            setState((s) => ({ ...s, instruction: challengeInstruction(current.config.type, tRef.current) }));
             startTimer(timeout);
           }
         }
@@ -425,6 +490,7 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
           // Gesture detection is unreliable at the wrong distance — also tell the
           // user to move closer/further (deduped by the speaker), matching Flutter
           // which speaks position guidance whenever it changes, in any phase.
+          holdRef.current.reset(); // the hold restarts once the face is back
           speak(positionGuidanceText(s.positionGuidance));
           return;
         }
@@ -437,6 +503,13 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
           // can't complete the instant lighting recovers.
           xHistoryRef.current = [];
           earHistoryRef.current = [];
+          holdRef.current.reset();
+          return;
+        }
+        // Passive Liveness: the hold passes on its own after a steady moment
+        // of a centred face; there is no gesture to read.
+        if (trackerRef.current!.current?.config.type === 'hold') {
+          if (holdRef.current.update(faceCentred(data), Date.now())) onChallengePassed();
           return;
         }
         // Update history windows.
@@ -447,7 +520,7 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
     },
     // checkGesture is defined below and stable via refs
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cancelTimer, checkPosition, config, onFaceIntegrityBroken, speak, startNextChallenge, startTimer],
+    [cancelTimer, checkPosition, config, onChallengePassed, onFaceIntegrityBroken, speak, startNextChallenge, startTimer],
   );
 
   // checkGesture reads the current challenge + histories from refs.
@@ -456,6 +529,7 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
       const current = trackerRef.current!.current;
       if (!current) return;
       const type = current.config.type;
+      if (type === 'hold') return; // timed in onFace, not detected here
       // The iOS Vision pitch is a landmark proxy that gets contaminated when the
       // head turns (turning shifts the nose-vs-eyeline geometry and reads as a
       // nod). Reject nod while the head is meaningfully turned so a turn can't
@@ -516,6 +590,7 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
 
   const onNoFace = useCallback(() => {
     continuityRef.current.reportNoFace();
+    holdRef.current.reset(); // a hold needs an unbroken face
     if (!stateRef.current.faceDetected) return;
     if (isTerminal(stateRef.current.phase)) return;
     setState((s) => ({ ...s, faceDetected: false, positionGuidance: null, multipleFaces: false }));
@@ -548,6 +623,7 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
           if (current) {
             xHistoryRef.current = [];
             earHistoryRef.current = [];
+            holdRef.current.reset();
             startTimer(config?.timeoutPerChallenge ?? current.config.timeoutSeconds);
           }
         }
@@ -579,6 +655,7 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
     trackerRef.current = new ChallengeTracker(pickChallenges(config));
     xHistoryRef.current = [];
     earHistoryRef.current = [];
+    holdRef.current.reset();
     processingRef.current = false;
     readyFiredRef.current = false;
     speakerRef.current?.reset();
@@ -590,9 +667,11 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
     // A retry runs the whole check again, INCLUDING a fresh colour sequence —
     // reusing the previous one would hand an attacker the answer.
     flash.reset();
+    flashRetriesRef.current = 0;
+    setFellBack(false);
     setState({
       phase: 'positioning',
-      instruction: 'Position your face in the circle',
+      instruction: placeFaceInstruction(tRef.current),
       activeChallenge: null,
       timeoutRemaining: 0,
       completedCount: 0,
@@ -649,7 +728,17 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
       reset,
       shouldCapture: state.phase === 'capturing',
       shouldFlash: state.phase === 'flash',
-      completeFlash: flash.complete,
+      completeFlash,
+      flashAttempt,
+      // A flash-only check that fell back to gestures ran both.
+      effectiveMode: fellBack ? 'both' : (config?.mode ?? 'gestures'),
+      // The prompts that ran, in order, for the claim: the server's
+      // shape-from-movement verdict depends on whether a turn was asked for.
+      challenges: livenessPrompts(
+        config?.mode ?? 'gestures',
+        trackerRef.current!.all.map((e) => e.config.type),
+        fellBack,
+      ),
       flashResult: flash.result(),
       faceGlitches: flash.glitches(),
       // The flash IS a step, so it gets a dot. Without this the indicator
@@ -666,7 +755,7 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
       isCompromised: () => integrityBrokenRef.current,
       reportIntegrityFailure,
     }),
-    [state, onFace, onNoFace, awaitFreshFace, setLighting, markComplete, reset, reportIntegrityFailure, flash],
+    [state, onFace, onNoFace, awaitFreshFace, setLighting, markComplete, reset, reportIntegrityFailure, flash, completeFlash, flashAttempt, fellBack, config?.mode],
   );
 }
 

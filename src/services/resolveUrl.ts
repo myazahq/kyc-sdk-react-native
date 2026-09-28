@@ -94,6 +94,64 @@ export function normalizeDevAssetUrl(url: string | undefined, baseUrl: string): 
   if (!url) return url;
   // Only ever rewrite for a local (http) dev base — never production CDNs.
   if (!baseUrl.startsWith('http://')) return url;
-  if (!LOCAL_HOST_RE.test(url)) return url;
-  return url.replace(LOCAL_HOST_RE, baseUrl.replace(/\/+$/, ''));
+  const base = baseUrl.replace(/\/+$/, '');
+  if (LOCAL_HOST_RE.test(url)) return url.replace(LOCAL_HOST_RE, base);
+  // The server's own branding images, whatever host its PUBLIC_SERVER_URL
+  // names: a LAN address the phone cannot reach over a USB tunnel, or one
+  // that changed when the Mac rejoined a network. They are served by the
+  // SAME server the SDK talks to, so moving them onto its base makes them
+  // load (the Flutter SDK's rebaseServerAssets does the same).
+  const path = serverBrandingPath(url);
+  return path ? `${base}${path}` : url;
+}
+
+const SERVER_BRANDING_PATH = '/api/kyc/branding/';
+
+/** The path and query of a server branding URL, or null for any other URL. */
+function serverBrandingPath(url: string): string | null {
+  const match = /^https?:\/\/[^/]+(\/[^#]*)/i.exec(url);
+  const rest = match?.[1];
+  return rest && rest.startsWith(SERVER_BRANDING_PATH) ? rest : null;
+}
+
+/**
+ * A workflow's own logos (`appearance.logo` and the dark theme's) made
+ * reachable in local development, as {@link normalizeBrandingUrls} does for
+ * the organisation's branding. Workflow responses never went through either.
+ */
+export function normalizeAppearanceUrls<C>(config: C, baseUrl: string): C {
+  const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
+  const appearance = isRecord(config) ? config.appearance : undefined;
+  if (!isRecord(appearance)) return config;
+  const next: Record<string, unknown> = { ...appearance };
+  if (typeof appearance.logo === 'string') next.logo = normalizeDevAssetUrl(appearance.logo, baseUrl);
+  const dark = appearance.dark;
+  if (isRecord(dark) && typeof dark.logo === 'string') {
+    next.dark = { ...dark, logo: normalizeDevAssetUrl(dark.logo, baseUrl) };
+  }
+  return { ...config, appearance: next };
+}
+
+/**
+ * The branding's asset URLs made reachable in local development (see
+ * normalizeDevAssetUrl): the org logo and a custom footer attribution's logos.
+ */
+export function normalizeBrandingUrls<
+  B extends { logo?: string; trustAttribution?: { mode: string; logo?: string; logoDark?: string } },
+>(branding: B | undefined, baseUrl: string): B | undefined {
+  if (!branding) return branding;
+  const attribution = branding.trustAttribution;
+  return {
+    ...branding,
+    logo: normalizeDevAssetUrl(branding.logo, baseUrl),
+    ...(attribution?.mode === 'custom'
+      ? {
+          trustAttribution: {
+            ...attribution,
+            logo: normalizeDevAssetUrl(attribution.logo, baseUrl),
+            logoDark: normalizeDevAssetUrl(attribution.logoDark, baseUrl),
+          },
+        }
+      : {}),
+  };
 }

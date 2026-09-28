@@ -8,6 +8,7 @@ import { MyazaText } from '../../components/Typography';
 import { LineReveal, LineSkeleton } from '../../components/LineSkeleton';
 import { ADDRESS_LINE_PENDING, ADDRESS_LINE_UNAVAILABLE } from '../../lib/address-line';
 import { detailCount } from './DetailsSheet';
+import { useText } from '../../i18n/useText';
 
 /**
  * What the pin currently says, and the way into the details sheet.
@@ -33,6 +34,7 @@ export function PinSummaryRow({
   onPress: () => void;
 }): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
   const count = detailCount(values);
   // Three states, and none of them is a coordinate pair: no pin at all, a pin
   // whose address is still being read (a skeleton line at the text's own
@@ -73,7 +75,7 @@ export function PinSummaryRow({
         <MyazaText variant="bodySmall" color={colors.textSecondary} numberOfLines={1}>
           {count > 0
             ? `${count} detail${count === 1 ? '' : 's'} added`
-            : 'A house number and directions help someone find it'}
+            : t('address.pin.detailsHint')}
         </MyazaText>
       </View>
 
@@ -81,7 +83,7 @@ export function PinSummaryRow({
         onPress={disabled ? undefined : onPress}
         disabled={disabled}
         accessibilityRole="button"
-        accessibilityLabel="Edit details"
+        accessibilityLabel={t('address.pin.editDetails')}
         style={({ pressed }) => ({
           flexDirection: 'row',
           alignItems: 'center',
@@ -97,7 +99,7 @@ export function PinSummaryRow({
       >
         <Icon name="pencil-line" size={14} color={colors.primary} />
         <MyazaText variant="bodyMedium" color={colors.primary} style={{ fontWeight: '600' }}>
-          Edit details
+          {t('address.pin.editDetails')}
         </MyazaText>
       </Pressable>
     </View>

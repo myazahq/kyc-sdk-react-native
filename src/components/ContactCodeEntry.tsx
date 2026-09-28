@@ -6,6 +6,7 @@ import { useTheme } from './runtime';
 import { MyazaText } from './Typography';
 import { MyazaInput } from './MyazaInput';
 import type { OtpInputStyle } from '../types/workflow';
+import { useText } from '../i18n/useText';
 
 // ---------------------------------------------------------------------------
 // The OTP code field.
@@ -37,6 +38,7 @@ export function ContactCodeEntry({
   /** Fires with the full code once the last slot fills (auto-submit). */
   onComplete?: (code: string) => void;
 }): React.ReactElement {
+  const t = useText();
   const handle = (raw: string): void => {
     const next = raw.replace(/\D/g, '').slice(0, codeLength);
     onChange(next);
@@ -46,7 +48,7 @@ export function ContactCodeEntry({
   if (style === 'text') {
     return (
       <MyazaInput
-        label="Verification code"
+        label={t('contact.code.label')}
         value={code}
         onChangeText={handle}
         placeholder={'0'.repeat(codeLength)}

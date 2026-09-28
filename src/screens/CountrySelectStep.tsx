@@ -23,11 +23,6 @@ import { countrySelectOptions } from '../store/derive';
  * picker pins its search box and therefore needs a non-scrolling body. */
 export const COUNTRY_SEARCH_THRESHOLD = 5;
 
-export const countrySelectMeta = {
-  title: 'Where was your ID issued?',
-  description: 'Choose the country that issued your identity document.',
-};
-
 export function CountrySelectStep(): React.ReactElement {
   const config = useKycConfig();
   const store = useKycStore();

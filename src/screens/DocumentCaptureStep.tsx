@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Image, Platform, Pressable, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 
-import { radius, spacing } from '../config/theme';
+import { spacing } from '../config/theme';
 import { ID_TYPES, documentGuideAspect, getScanSides } from '../config/idTypes';
 import { withRetry } from '../services/retry';
 import { mapToKycError, safeReportError } from '../services/errors';
@@ -26,8 +26,12 @@ import { DocumentReview } from '../components/DocumentReview';
 import { scanMrzFromImage } from '../mrz/textRecognizer';
 import { Icon } from '../components/Icon';
 import { useDocumentCamera, type DocumentCamera } from './document/useDocumentCamera';
-import { UploadPhase, documentUploadMeta } from './document/UploadPhase';
+import { UploadPhase } from './document/UploadPhase';
 import { CaptureCheckNotice } from './document/CaptureCheckNotice';
+import { DocImage } from './document/DocImage';
+import { SilentFrontCapture } from './document/SilentFrontCapture';
+import { silentCaptureEnabled } from '../lib/silentCapture';
+import { useText } from '../i18n/useText';
 import { isBusinessFlow } from '../config/business';
 import { captureCheckProblems, runCaptureChecks, type CaptureProblem } from '../lib/documentCaptureCheck';
 import type { DocumentCaptureCheckRequest, DocumentCaptureSide } from '../services/api';
@@ -48,42 +52,8 @@ import type { DocumentCaptureCheckRequest, DocumentCaptureSide } from '../servic
 // as no problem.
 //
 // The per-phase title/description live in the SHEET HEADER (KycFlow reads the
-// synced `documentCapturePhase` from the store and calls `documentCaptureMeta`),
+// synced `documentCapturePhase` from the store and calls `documentCaptureMeta` in components/stepHeaderCopy),
 // not in the body — mirroring Flutter's header `docReviewPhase` sync.
-
-/** The header title/description for a document-capture phase. Used by KycFlow. */
-export function documentCaptureMeta(
-  phase: DocumentCapturePhase,
-  documentLabel: string,
-  mode: 'scan' | 'upload' = 'scan',
-): { title: string; description: string } {
-  // An upload-only workflow asks for a photo, so it cannot say "scan".
-  if (mode === 'upload') return documentUploadMeta(phase, documentLabel);
-  // Copy matches the Flutter SDK's document-capture header meta exactly.
-  switch (phase) {
-    case 'front':
-      return {
-        title: `Capture Your ${documentLabel}`,
-        description: `Photograph your ${documentLabel} — position it within the frame and hold steady.`,
-      };
-    case 'front-preview':
-      return {
-        title: 'Front Side Captured',
-        description: 'Looks good? Tap Next to flip the card and scan the back side.',
-      };
-    case 'back':
-      return {
-        title: 'Scan Back Side',
-        description: `Now place the BACK of your ${documentLabel} within the frame.`,
-      };
-    case 'review':
-    default:
-      return {
-        title: `Review Your ${documentLabel}`,
-        description: 'Tap Continue to upload and submit your document.',
-      };
-  }
-}
 
 /** Bound on how long Continue waits for the supplementary document video. */
 const DOC_VIDEO_WAIT_MS = 8000;
@@ -124,6 +94,7 @@ function DocumentCapture({
   allowUpload: boolean;
 }): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
   const toast = useToast();
   const config = useKycConfig();
   const selectedIdType = useKyc((s) => s.selectedIdType);
@@ -139,7 +110,7 @@ function DocumentCapture({
   const sessionId = useKyc((s) => s.sessionId);
 
   const documentLabel =
-    (selectedIdType && Object.values(ID_TYPES).flat().find((t) => t.key === selectedIdType)?.label) || 'Document';
+    (selectedIdType && Object.values(ID_TYPES).flat().find((d) => d.key === selectedIdType)?.label) || 'Document';
   const scanSides = selectedIdType ? getScanSides(selectedIdType) : 'front_only';
   const isTwoSided = scanSides === 'front_and_back';
 
@@ -176,7 +147,6 @@ function DocumentCapture({
   useEffect(() => {
     setDocumentCapturePhase(phase);
   }, [phase, setDocumentCapturePhase]);
-
 
   // ── Camera permission + availability ───────────────────────────────────────
   // Owned by `useDocumentCamera` (called by ScanningDocumentCapture), so
@@ -300,6 +270,7 @@ function DocumentCapture({
         try {
           // Transcode the raw 4K recording down to a small evidence clip first.
           const small = await compressVideo(videoPath);
+          if (!small) return; // could not be shrunk below the ceiling: skip it
           const id = await withRetry(() => api.upload({ uri: small, type: 'video/mp4' }, type, MAX_VIDEO_BYTES));
           setMediaId(mediaKey, id);
         } catch {
@@ -469,7 +440,7 @@ function DocumentCapture({
         <>
           {cropper}
           <CameraPermissionPrimingView
-            message="When prompted, allow camera access to photograph your document."
+            message={t('primer.camera.bodyDocument')}
             onGrant={camera.requestAccess}
           />
         </>
@@ -514,7 +485,6 @@ function DocumentCapture({
     );
   }
 
-
   // ── Front preview (two-sided) ──────────────────────────────────────────────
   if (phase === 'front-preview') {
     return (
@@ -524,7 +494,7 @@ function DocumentCapture({
         <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.md }}>
           <View style={{ flex: 1 }}>
             <MyazaButton
-              label={camera ? 'Retake' : 'Replace'}
+              label={camera ? t('common.retake') : 'Replace'}
               variant="outline"
               leadingIcon="refresh"
               onPress={() => retake('front')}
@@ -539,8 +509,16 @@ function DocumentCapture({
   }
 
   // ── Review ─────────────────────────────────────────────────────────────────
+  // Silent capture (lib/silentCapture): the rear camera is closed and the
+  // person is looking at their photo, so one unposed front-camera frame is
+  // taken, headless. Keyed on the captures, so a retake's review takes its own.
+  const silentFront =
+    camera && camera.perm === 'granted' && silentCaptureEnabled(config) ? (
+      <SilentFrontCapture key={`${frontUri ?? ''}|${backUri ?? ''}`} />
+    ) : null;
   return (
     <>
+      {silentFront}
       <View style={{ marginBottom: spacing.md }}>{requiredPill(null)}</View>
       <DocumentReview
       mode={camera ? 'scan' : 'upload'}
@@ -584,46 +562,11 @@ function DocumentCapture({
               onContinueAnyway={advance}
             />
           ) : (
-            <MyazaButton label="Continue" onPress={handleContinue} loading={uploading} />
+            <MyazaButton label={t('common.continue')} onPress={handleContinue} loading={uploading} />
           )}
         </>
       }
       />
     </>
-  );
-}
-
-function DocImage({ uri, label, uploading }: { uri: string; label?: string; uploading?: boolean }): React.ReactElement {
-  const { colors } = useTheme();
-  return (
-    <View>
-      {label ? (
-        <MyazaText variant="bodySmall" color={colors.textMuted} style={{ textAlign: 'center', marginBottom: spacing.xs }}>
-          {label}
-        </MyazaText>
-      ) : null}
-      <View style={{ borderRadius: radius.md, overflow: 'hidden', borderWidth: 1, borderColor: colors.border }}>
-        <Image source={{ uri }} style={{ width: '100%', aspectRatio: 1.586 }} resizeMode="cover" />
-        {/* Standard upload loader — a dark scrim + the pulse-ring/spinner loader
-            rendered INSIDE the preview frame, mirroring the web/Flutter SDKs (and
-            the liveness selfie review). */}
-        {uploading ? (
-          <View
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'rgba(0,0,0,0.45)',
-            }}
-          >
-            <MyazaPulseLoader size={64} />
-          </View>
-        ) : null}
-      </View>
-    </View>
   );
 }

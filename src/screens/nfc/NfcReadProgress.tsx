@@ -6,6 +6,7 @@ import { useTheme } from '../../components/runtime';
 import { MyazaText } from '../../components/Typography';
 import { Icon } from '../../components/Icon';
 import { NFC_STAGE_ORDER, nfcStageLabel, type NfcReadStage } from '../../emrtd';
+import { useText } from '../../i18n/useText';
 
 // ---------------------------------------------------------------------------
 // NFC read progress.
@@ -35,6 +36,7 @@ const STEPS: NfcReadStage[] = [
 
 export function NfcReadProgress({ stage }: { stage: NfcReadStage }): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
 
   // Waiting is the state users misread as "nothing is happening", so it says
   // what the phone is doing rather than leaving a silent spinner.
@@ -44,7 +46,7 @@ export function NfcReadProgress({ stage }: { stage: NfcReadStage }): React.React
         <ActivityIndicator size="small" color={colors.primary} />
         <View style={{ width: 8 }} />
         <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '600' }}>
-          {nfcStageLabel('waiting')}
+          {t('nfc.waiting')}
         </MyazaText>
       </View>
     );

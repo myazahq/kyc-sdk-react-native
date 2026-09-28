@@ -7,6 +7,7 @@ import { MyazaText } from '../../components/Typography';
 import { Icon } from '../../components/Icon';
 import { CameraViewfinder } from '../../components/CameraViewfinder';
 import { RequiredPill } from './RequiredPill';
+import { useText } from '../../i18n/useText';
 import type { MrzScan } from '../../mrz/parse';
 
 export interface CameraPhaseProps {
@@ -45,6 +46,7 @@ export interface CameraPhaseProps {
  */
 export function CameraPhase(p: CameraPhaseProps): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
 
   const viewfinder = (extra: {
     fill?: boolean;
@@ -119,7 +121,7 @@ export function CameraPhase(p: CameraPhaseProps): React.ReactElement {
           <Icon name="credit-card" size={14} color={colors.primary} />
           <View style={{ width: 4 }} />
           <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '500' }}>
-            Flip the card over and scan the other side
+            {t('uploadDocument.flipBanner')}
           </MyazaText>
         </View>
       ) : null}
@@ -134,11 +136,11 @@ export function CameraPhase(p: CameraPhaseProps): React.ReactElement {
           {p.allowUpload ? (
             <Pressable onPress={p.onUpload} style={{ marginTop: spacing.sm }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                <MyazaText variant="bodySmall">Having trouble? </MyazaText>
+                <MyazaText variant="bodySmall">{`${t('uploadDocument.camera.havingTrouble')} `}</MyazaText>
                 <Icon name="upload" size={14} color={colors.primary} />
                 <View style={{ width: 4 }} />
                 <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '700' }}>
-                  Upload a photo instead
+                  {t('uploadDocument.camera.uploadInstead')}
                 </MyazaText>
               </View>
             </Pressable>

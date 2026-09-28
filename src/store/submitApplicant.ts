@@ -15,6 +15,7 @@ import { generateRequestId } from '../utils/uuid';
 import { splitFullName } from '../config/keyPeople';
 import { effectiveCountry } from './derive';
 import { nfcPayload } from './submit';
+import { silentCaptureSubmission } from '../lib/silentCapture';
 import type { ClientFingerprint } from '../services/fingerprint';
 import type { VerifyRequest } from '../services/api';
 import type { KycState } from './state';
@@ -42,6 +43,8 @@ export function buildApplicantVerifyRequest(
     firstName || lastName
       ? { ...(firstName ? { firstName } : {}), ...(lastName ? { lastName } : {}) }
       : undefined;
+  // The applicant's own silent frames: the business submission carries none.
+  const silent = silentCaptureSubmission(state.silentFrames);
 
   return {
     // The applicant's own leg country — their country-select choice (or the
@@ -52,7 +55,7 @@ export function buildApplicantVerifyRequest(
     ...(state.idNumber?.trim() ? { idNumber: state.idNumber } : {}),
     ...(state.config.applicantWorkflowId ? { workflowId: state.config.applicantWorkflowId } : {}),
     ...(userData ? { userData } : {}),
-    mediaIds: state.mediaIds,
+    mediaIds: { ...state.mediaIds, ...silent?.mediaIds },
     // The chip read, when the leg ran the NFC step (an overlaid applicant
     // workflow can enable it). Built by the SHARED builder, not a second copy
     // of the block: a hand-rolled twin drifts silently, and the applicant's
@@ -67,6 +70,9 @@ export function buildApplicantVerifyRequest(
       device: {
         ...(collectDeviceMetadata() as unknown as Record<string, unknown>),
         ...(fingerprint ? { fingerprint } : {}),
+        // The applicant's liveness claim, as on the individual submission.
+        ...(state.captureIntegrity ? { integrity: state.captureIntegrity } : {}),
+        ...(silent ? { silentCapture: silent.device } : {}),
       },
       // The link back to the application — written last so nothing clobbers it.
       userId: applicantKeyPersonId,

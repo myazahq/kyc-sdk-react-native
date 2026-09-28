@@ -5,6 +5,7 @@ import { spacing } from '../config/theme';
 import { useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
 import { MyazaText } from '../components/Typography';
 import { MyazaButton } from '../components/MyazaButton';
+import { useText } from '../i18n/useText';
 import { MediaSourceSheet } from '../components/MediaSourceSheet';
 import { BusinessDocumentSlot } from './BusinessDocumentSlot';
 import { withRetry } from '../services/retry';
@@ -28,14 +29,9 @@ import { useBusinessDocumentAttach } from './useBusinessDocumentAttach';
 // pickers themselves live in useBusinessDocumentAttach.
 // ---------------------------------------------------------------------------
 
-export const businessDocumentsMeta = {
-  title: 'Business documents',
-  description:
-    'Upload the supporting documents for your business. Each one must clearly show the registered business name and registration number. Required documents are marked with *.',
-};
-
 export function BusinessDocumentsStep(): React.ReactElement {
   const config = useKycConfig();
+  const t = useText();
   const store = useKycStore();
   const { colors } = useTheme();
   const uploaded = useKyc((s) => s.businessApplication.documents);
@@ -112,7 +108,7 @@ export function BusinessDocumentsStep(): React.ReactElement {
 
       <View style={{ height: spacing.xs }} />
       <MyazaButton
-        label="Continue"
+        label={t('common.continue')}
         onPress={handleContinue}
         disabled={missing.length > 0 || busySlot !== null}
       />

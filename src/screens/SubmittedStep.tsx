@@ -4,6 +4,7 @@ import { mapToKycError, safeReportError } from '../services/errors';
 import { contactStepFor, expiredContactChannels } from '../lib/contact-recovery';
 import { KYCError, type KYCSubmission } from '../types/verification';
 import { useKyc, useKycConfig, useKycStore } from '../components/runtime';
+import { useText } from '../i18n/useText';
 import { configScope } from '../lib/scope';
 import { describeWaiting } from '../lib/result-copy';
 import { biometricCopyFor } from '../lib/biometric-copy';
@@ -13,6 +14,7 @@ import { SubmittedWaiting } from './SubmittedWaiting';
 import { SubmittedResult } from './SubmittedResult';
 import { SubmittedSuccess } from './SubmittedSuccess';
 import { SubmittedError } from './SubmittedError';
+import { autoReportPresence } from '../presence/auto-report';
 
 // Terminal step — 1:1 with the Flutter SDK's SubmittedScreen. Calls submitAsync
 // on mount and renders one of: the waiting screen, the success screen, the
@@ -25,6 +27,7 @@ type Phase = 'submitting' | 'success' | 'error';
 
 export function SubmittedStep({ onClose }: { onClose: () => void }): React.ReactElement {
   const config = useKycConfig();
+  const t = useText();
   const store = useKycStore();
   const existingResult = useKyc((s) => s.submissionResult);
 
@@ -62,6 +65,9 @@ export function SubmittedStep({ onClose }: { onClose: () => void }): React.React
         submittedAt: new Date().toISOString(),
       };
       config.onSubmit?.(submission);
+      // The SDK's own first presence report (presence/auto-report.ts):
+      // fire-and-forget, so presence never waits on the host app's code.
+      void autoReportPresence(config);
       setPhase('success');
     } catch (err) {
       // A refusal over stale contact proofs is recoverable in-flow: clear the
@@ -132,12 +138,10 @@ export function SubmittedStep({ onClose }: { onClose: () => void }): React.React
   }
 
   if (phase === 'submitting') {
-    const copy = describeWaiting({
-      scope: configScope(config),
-      waitsForResult: false,
-      retry,
-      override: biometricCopyFor(config).waiting,
-    });
+    const copy = describeWaiting(
+      { scope: configScope(config), waitsForResult: false, retry, override: biometricCopyFor(config).waiting },
+      t,
+    );
     return <SubmittedWaiting title={copy.title} description={copy.description} retrying={retry != null} />;
   }
 

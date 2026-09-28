@@ -2,6 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 
 import { MyazaText } from '../components/Typography';
+import { useText } from '../i18n/useText';
 import { useTheme } from '../components/runtime';
 import { spacing } from '../config/theme';
 import { BusinessPickedCard } from './BusinessPickedCard';
@@ -24,6 +25,7 @@ export function BusinessPickedSection({
   onChange: () => void;
 }): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
   return (
     <>
       <BusinessPickedCard
@@ -38,7 +40,7 @@ export function BusinessPickedSection({
           organisation. "Continue" alone made a paid outbound call look like
           moving to the next page. */}
       <MyazaText variant="bodySmall" color={colors.textSecondary}>
-        Continue checks this business against the official register and brings back its details.
+        {t('business.details.checkNote')}
       </MyazaText>
       {isSandbox ? (
         <>

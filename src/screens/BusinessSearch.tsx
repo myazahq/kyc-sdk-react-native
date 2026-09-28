@@ -6,6 +6,7 @@ import { MyazaButton } from '../components/MyazaButton';
 import { MyazaInput } from '../components/MyazaInput';
 import { MyazaSelect } from '../components/MyazaSelect';
 import { MyazaText } from '../components/Typography';
+import { useText } from '../i18n/useText';
 import { Icon } from '../components/Icon';
 import { BusinessSearchResults } from './BusinessSearchResults';
 import { useKyc, useKycStore, useTheme } from '../components/runtime';
@@ -42,6 +43,7 @@ export function BusinessSearch({
 }): React.ReactElement {
   const store = useKycStore();
   const { colors } = useTheme();
+  const t = useText();
   const region = useKyc((s) => s.business.subdivisionCode);
   const [query, setQuery] = useState('');
   // Narrows what came back; it never replaces the search. Matches the name AND
@@ -186,12 +188,8 @@ export function BusinessSearch({
         }}
       >
         <Icon name="pencil" size={14} color={colors.textSecondary} />
-        <MyazaText
-          variant="bodyMedium"
-          color={colors.textSecondary}
-          style={{ fontWeight: '500' }}
-        >
-          Enter the details myself
+        <MyazaText variant="bodyMedium" color={colors.textSecondary} style={{ fontWeight: '500' }}>
+          {t('business.search.manualEntry')}
         </MyazaText>
       </Pressable>
     </View>

@@ -4,7 +4,6 @@ import { View } from 'react-native';
 import { spacing } from '../config/theme';
 import { useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
 import { MyazaText } from '../components/Typography';
-import { MyazaButton } from '../components/MyazaButton';
 import { MyazaPulseLoader } from '../components/MyazaPulseLoader';
 import { Icon } from '../components/Icon';
 import { cancelChipRead, nfcUnavailableReason, readPassportChip, type EmrtdReadResult } from '../emrtd';
@@ -15,6 +14,7 @@ import { successHaptic } from '../services/haptics';
 import { NfcSuccessPanel } from './nfc/NfcSuccessPanel';
 import { NfcMrzPrompt } from './nfc/NfcMrzPrompt';
 import { NfcReadBody } from './nfc/NfcReadBody';
+import { NfcReadActions } from './nfc/NfcReadActions';
 import type { NfcReadStage } from '../emrtd';
 import type { MrzScan } from '../mrz/parse';
 
@@ -34,11 +34,6 @@ import type { MrzScan } from '../mrz/parse';
 // its cryptographic checks fails the verification, because that is proof of
 // tampering rather than absence of proof.
 // ---------------------------------------------------------------------------
-
-export const nfcMeta = {
-  title: 'Scan Document Chip',
-  description: 'Hold your document to the back of your phone.',
-};
 
 type Phase = 'idle' | 'reading' | 'done' | 'failed';
 
@@ -246,7 +241,6 @@ export function NfcStep(): React.ReactElement {
     );
   }
 
-
   // The live MRZ scan lives in its own file (200-line rule).
   if (!mrz) {
     return (
@@ -271,35 +265,13 @@ export function NfcStep(): React.ReactElement {
       ) : null}
 
       <View style={{ height: spacing.lg }} />
-      <View style={{ alignSelf: 'stretch' }}>
-        {/* No "Scan chip" button: the read starts on arrival (like Flutter),
-            so a button naming an action already underway only invites a tap
-            that restarts it. The retry appears only once there is something to
-            retry. */}
-        {phase === 'failed' ? (
-          <MyazaButton label="Try scanning the chip again" onPress={() => void read()} />
-        ) : null}
-        {/* Attempt-first: hidden until a failed read (or the reveal timer)
-            earns it — see SKIP_REVEAL_MS. Opt-IN, matching Flutter
-            (`allowSkip: json['allowSkip'] ?? false`): an absent flag shows no
-            skip, because that is what the server sends unless an org turns it
-            on. Once revealed it stays tappable even mid-read while the reader
-            is still WAITING for a tag — that wait can be endless on Android,
-            and leaving cancels the session (the unmount cleanup) — but not
-            once a chip is actually transferring, where a tap would rip up a
-            read that is about to succeed. */}
-        {allowSkip && skipRevealed ? (
-          <>
-            {phase === 'failed' ? <View style={{ height: spacing.sm }} /> : null}
-            <MyazaButton
-              label="Continue without the chip"
-              variant="ghost"
-              disabled={phase === 'reading' && stage !== 'waiting'}
-              onPress={advance}
-            />
-          </>
-        ) : null}
-      </View>
+      <NfcReadActions
+        phase={phase}
+        stage={stage}
+        showSkip={allowSkip && skipRevealed}
+        onRetry={() => void read()}
+        onSkip={advance}
+      />
     </View>
   );
 }

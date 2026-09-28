@@ -4,6 +4,7 @@ import { Pressable } from 'react-native';
 import { spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
 import { MyazaText } from '../../components/Typography';
+import { useText } from '../../i18n/useText';
 
 /**
  * The address flow's escape, on the search / pin / review steps.
@@ -23,12 +24,13 @@ export function SkipForNow({
   onPress: () => void;
 }): React.ReactElement | null {
   const { colors } = useTheme();
+  const t = useText();
   if (requirePin === true) return null;
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel="Skip for now"
+      accessibilityLabel={t('address.skip')}
       style={{ alignItems: 'center', marginTop: spacing.md, paddingVertical: spacing.sm }}
     >
       <MyazaText
@@ -36,7 +38,7 @@ export function SkipForNow({
         color={colors.textSecondary}
         style={{ textDecorationLine: 'underline' }}
       >
-        Skip for now
+        {t('address.skip')}
       </MyazaText>
     </Pressable>
   );

@@ -7,6 +7,7 @@ import { MyazaButton } from '../components/MyazaButton';
 import { currencyKeyFor, otherKeyFor, validateQuestionnaire } from '../config/questionnaire';
 import { QuestionnaireFieldView } from './QuestionnaireField';
 import type { QuestionnaireAnswerValue } from '../types/workflow';
+import { useText } from '../i18n/useText';
 
 // ---------------------------------------------------------------------------
 // Extra-info questionnaire — compliance declarations asked after capture and
@@ -20,21 +21,9 @@ import type { QuestionnaireAnswerValue } from '../types/workflow';
 // matching every other step.
 // ---------------------------------------------------------------------------
 
-/** Header title/description for the questionnaire step. Used by KycFlow. */
-export function questionnaireMeta(
-  title: string | undefined,
-  description: string | undefined,
-): { title: string; description: string } {
-  return {
-    title: title ?? 'A few more questions',
-    description:
-      description ??
-      'This information is required for compliance and helps keep your account safe.',
-  };
-}
-
 export function QuestionnaireStep(): React.ReactElement {
   const config = useKycConfig();
+  const t = useText();
   const store = useKycStore();
   const answers = useKyc((s) => s.questionnaireAnswers);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -72,7 +61,7 @@ export function QuestionnaireStep(): React.ReactElement {
       ))}
 
       <View style={{ height: spacing.sm }} />
-      <MyazaButton label="Continue" onPress={handleContinue} />
+      <MyazaButton label={t('common.continue')} onPress={handleContinue} />
     </View>
   );
 }

@@ -47,6 +47,11 @@ export interface VerifyRequest {
     proofOfAddress?: string;
     /** Address Intelligence door photo (individual flows only). */
     addressPhoto?: string;
+    /** Silent capture frames, numbered by capture order from 1 with no gaps
+     *  (`silentCapture1`..`silentCapture3`; lib/silentCapture). */
+    silentCapture1?: string;
+    silentCapture2?: string;
+    silentCapture3?: string;
   };
   /** Which kind of document the user said they uploaded as proof of address. */
   proofOfAddressType?: string;

@@ -4,6 +4,7 @@ import { View } from 'react-native';
 import { spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
 import { MyazaText } from '../components/Typography';
+import { useText } from '../i18n/useText';
 import { MyazaInput } from '../components/MyazaInput';
 import { MyazaDateField } from '../components/MyazaDateField';
 import { PhoneNumberInput } from '../components/PhoneNumberInput';
@@ -58,14 +59,15 @@ export function CompanyInfoFields({
   onChange: (field: CompanyInfoField, value: string) => void;
 }): React.ReactElement | null {
   const { colors } = useTheme();
+  const t = useText();
   const visible = FIELD_DEFS.filter((f) => modes[f.key] !== 'off');
   if (visible.length === 0) return null;
 
   return (
     <View>
-      <MyazaText variant="label">Company information</MyazaText>
+      <MyazaText variant="label">{t('business.companyInfo.title')}</MyazaText>
       <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 2 }}>
-        We verify these details against the official registry record.
+        {t('business.companyInfo.description')}
       </MyazaText>
       {visible.map((f) => {
         const required = modes[f.key] === 'required';

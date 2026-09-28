@@ -5,6 +5,7 @@ import { spacing } from '../../config/theme';
 import { MyazaText } from '../../components/Typography';
 import { MyazaButton } from '../../components/MyazaButton';
 import { MrzScanView } from '../MrzScanView';
+import { useText } from '../../i18n/useText';
 import type { MrzScan } from '../../mrz/parse';
 
 /**
@@ -23,6 +24,7 @@ export function NfcMrzPrompt({
   /** Null hides the escape hatch (the flow set `allowSkip: false`). */
   onSkip: (() => void) | null;
 }): React.ReactElement {
+  const t = useText();
   return (
     <View>
       <MyazaText variant="bodyMedium">
@@ -33,7 +35,7 @@ export function NfcMrzPrompt({
       <MrzScanView onScanned={onScanned} />
       <View style={{ height: spacing.md }} />
       {onSkip ? (
-        <MyazaButton label="Continue without the chip" variant="ghost" onPress={onSkip} />
+        <MyazaButton label={t('nfc.skip')} variant="ghost" onPress={onSkip} />
       ) : null}
     </View>
   );

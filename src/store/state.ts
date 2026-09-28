@@ -18,10 +18,11 @@ import type { ContactChallenge } from '../config/contact';
 import type { QuestionnaireAnswerValue } from '../types/workflow';
 import type { KeyPersonEntry } from '../config/keyPeople';
 import type { ServerConfigState } from './serverConfig';
-import type { CaptureIntegrity } from '../liveness/integritySignals';
+import type { CaptureIntegrity, LivenessVideoReport } from '../liveness/integritySignals';
 import type { MrzScan } from '../mrz/parse';
 import type { EmrtdReadResult } from '../emrtd';
 import type { SelfieUploadState } from '../lib/selfie-upload-wait';
+import type { SilentCaptureFrame, SilentCaptureMoment } from '../lib/silentCapture';
 
 export interface KYCMediaIds {
   /** Proof-of-address document (image or PDF). */
@@ -388,6 +389,14 @@ export interface KycState {
    */
   flashPaint: { color: string | null; hole: FlashHole | null } | null;
   /**
+   * The liveness camera is on screen. Published by the liveness step and read
+   * at the sheet root (components/BrightScreen), which lights the screen for
+   * it: the light theme and full brightness (lib/bright-screen). A store slot
+   * for the same reason as `flashPaint`: the step cannot reach the sheet, and
+   * the sheet must outlive the step to put everything back.
+   */
+  livenessCameraOn: boolean;
+  /**
    * Which way the user last moved through the flow.
    *
    * A step that SKIPS ITSELF (no NFC radio, a disabled feature) must skip the
@@ -433,6 +442,9 @@ export interface KycState {
    * video against the sequence claimed here.
    */
   captureIntegrity: CaptureIntegrity | null;
+  /** Silent capture: the unposed frames taken so far, in capture order (see
+   *  lib/silentCapture). Kept across retakes; the cap is enforced here. */
+  silentFrames: SilentCaptureFrame[];
   /**
    * The MRZ read off the document photo. It is the KEY that unlocks the chip —
    * possession of the document is the access control — and it is also what the
@@ -496,6 +508,10 @@ export interface KycState {
   clearSelfie: () => void;
   /** The upload hook's progress report (see `selfieUpload`). */
   setSelfieUpload: (upload: SelfieUploadState) => void;
+  /** Reserve the next silent frame; its slot token, or null at the cap. */
+  reserveSilentFrame: (moment: SilentCaptureMoment) => { index: number; capturedAt: string } | null;
+  /** Record a silent frame's upload (its mediaId, or null when it failed). */
+  settleSilentFrame: (index: number, capturedAt: string, mediaId: string | null) => void;
   setDocumentMediaId: (mediaId: string, side: 'front' | 'back') => void;
   setQuestionnaireAnswer: (key: string, value: QuestionnaireAnswerValue | undefined) => void;
   setContactVerified: (channel: 'email' | 'phone', destination: string, token: string) => void;
@@ -528,6 +544,8 @@ export interface KycState {
   removeSupportingDocument: (type: string) => void;
   setApplicant: (role: ApplicantRole, name: string, keyPersonIndex?: number | null) => void;
   setCaptureIntegrity: (integrity: CaptureIntegrity) => void;
+  /** Whether the liveness recording reached the server; merged into the claim. */
+  setLivenessVideoReport: (report: LivenessVideoReport) => void;
   setMrzScan: (scan: MrzScan) => void;
   setChipData: (data: EmrtdReadResult) => void;
   setProofOfAddress: (mediaId: string, docType: PoaDocumentType, fileName: string) => void;
@@ -551,6 +569,7 @@ export interface KycState {
   setContactChallenge: (challenge: ContactChallenge | null) => void;
   setImmersiveCapture: (immersive: boolean) => void;
   setFlashPaint: (paint: { color: string | null; hole: FlashHole | null } | null) => void;
+  setLivenessCameraOn: (on: boolean) => void;
   nextStep: () => void;
   previousStep: () => void;
   goToStep: (step: KYCStep) => void;

@@ -9,6 +9,7 @@ import { useEffectiveCountry, useKyc, useKycConfig } from '../components/runtime
 import { MyazaText } from '../components/Typography';
 import { MyazaInput } from '../components/MyazaInput';
 import { MyazaButton } from '../components/MyazaButton';
+import { useText } from '../i18n/useText';
 
 // Number-only ID entry (BVN / NIN / vNIN) — 1:1 with the Flutter SDK's
 // IdInputScreen. Client-side format validation only; no OCR pre-fill. The step
@@ -24,6 +25,7 @@ function hintFor(def: { label: string; inputLabel?: string; digits?: number } | 
 
 export function IdInputStep(): React.ReactElement {
   const config = useKycConfig();
+  const t = useText();
   const country = useEffectiveCountry();
   const selectedIdType = useKyc((s) => s.selectedIdType);
   const storedIdNumber = useKyc((s) => s.idNumber);
@@ -36,7 +38,7 @@ export function IdInputStep(): React.ReactElement {
   const [value, setValue] = useState(storedIdNumber ?? '');
   const [error, setError] = useState<string | null>(null);
 
-  const def = useMemo(() => Object.values(ID_TYPES).flat().find((t) => t.key === selectedIdType) ?? null, [selectedIdType]);
+  const def = useMemo(() => Object.values(ID_TYPES).flat().find((d) => d.key === selectedIdType) ?? null, [selectedIdType]);
   const isDigits = def?.digits !== undefined;
 
   const valid = useMemo(() => {
@@ -83,7 +85,7 @@ export function IdInputStep(): React.ReactElement {
         autoFocus
       />
       <View style={{ height: spacing.xl }} />
-      <MyazaButton label="Continue" onPress={valid ? handleContinue : undefined} disabled={!valid} />
+      <MyazaButton label={t('common.continue')} onPress={valid ? handleContinue : undefined} disabled={!valid} />
     </View>
   );
 }

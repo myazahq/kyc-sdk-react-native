@@ -7,6 +7,7 @@
 import {
   CHALLENGE_POOL,
   DEFAULT_LIVENESS_CONFIG,
+  HOLD_CHALLENGE,
   type ChallengeConfig,
   type LivenessChallenge,
   type LivenessConfig,
@@ -34,8 +35,9 @@ function shuffle<T>(arr: readonly T[]): T[] {
  * Whether the workflow's liveness mode runs gesture challenges at all.
  *
  * `flash` means the screen-reflection sequence IS the check, so gestures are
- * skipped entirely — only `both` runs gestures and then flash. Kept in step
- * with the Flutter SDK's `runsGestures` and the web SDK.
+ * skipped entirely — only `both` runs gestures and then flash. `passive`
+ * counts as running prompts: its single hold rides the same challenge
+ * machinery. Kept in step with the Flutter SDK's `runsGestures` and the web SDK.
  */
 export function modeRunsGestures(mode: LivenessMode | undefined): boolean {
   return mode !== 'flash';
@@ -58,6 +60,8 @@ export function modeRunsGestures(mode: LivenessMode | undefined): boolean {
 export function pickChallenges(config: Partial<LivenessConfig> = {}): ChallengeConfig[] {
   const merged = { ...DEFAULT_LIVENESS_CONFIG, ...config };
   if (!modeRunsGestures(merged.mode)) return [];
+  // Passive: no gestures and no flash. Hold still while the clip records.
+  if (merged.mode === 'passive') return [{ ...HOLD_CHALLENGE }];
 
   let pool = CHALLENGE_POOL;
   if (merged.challengePool && merged.challengePool.length > 0) {
@@ -68,11 +72,19 @@ export function pickChallenges(config: Partial<LivenessConfig> = {}): ChallengeC
   const count = Math.min(merged.challengeCount, pool.length);
   const shuffled = shuffle(pool);
 
-  // Greedily pick challenges that aren't similar to already-picked ones.
+  // A head TURN is always one of the prompts (wherever it falls in the random
+  // order), because the server's shape-from-movement test needs one: a turn
+  // swings the nose across the face, which a flat picture cannot do. The rest
+  // stay random. Matches the web SDK's challenge-manager.
   const picked: ChallengeConfig[] = [];
+  const turn = shuffled.find((c) => c.type === 'turn');
+  if (turn && count > 0) picked.push({ ...turn, timeoutSeconds: merged.timeoutPerChallenge });
+
+  // Greedily pick challenges that aren't similar to already-picked ones.
   for (const candidate of shuffled) {
     if (picked.length >= count) break;
-    if (!picked.some((p) => areSimilar(p.type, candidate.type))) {
+    const duplicate = picked.some((p) => p.type === candidate.type);
+    if (!duplicate && !picked.some((p) => areSimilar(p.type, candidate.type))) {
       picked.push({ ...candidate, timeoutSeconds: merged.timeoutPerChallenge });
     }
   }
@@ -87,7 +99,31 @@ export function pickChallenges(config: Partial<LivenessConfig> = {}): ChallengeC
     }
   }
 
-  return picked;
+  // The turn went first to guarantee it; shuffle so its position stays random.
+  return shuffle(picked);
+}
+
+/**
+ * The prompts a run asks for, in order: what the liveness claim reports as
+ * `challenges`. The flash is a phase of its own here rather than a tracker
+ * entry, so it is added from the mode: last in `both` (it runs after the
+ * gestures), alone in `flash`, and FIRST when a flash-only check fell back to
+ * gestures (the fallback ran after it).
+ */
+export function livenessPrompts(
+  mode: LivenessMode | undefined,
+  challengeTypes: readonly LivenessChallenge[],
+  fellBack = false,
+): string[] {
+  if (fellBack) return ['flash', ...challengeTypes];
+  if (mode === 'flash') return ['flash'];
+  if (mode === 'both') return [...challengeTypes, 'flash'];
+  return [...challengeTypes];
+}
+
+/** Gesture challenges to run when a flash-only check could not be measured. */
+export function pickFallbackGestures(config: Partial<LivenessConfig> = {}): ChallengeConfig[] {
+  return pickChallenges({ ...config, mode: 'gestures' });
 }
 
 // ---------------------------------------------------------------------------
@@ -131,6 +167,14 @@ export class ChallengeTracker {
 
   get totalCount(): number {
     return this.entries.length;
+  }
+
+  /** Add challenges after the current ones (the gesture fallback for a flash). */
+  append(challenges: ChallengeConfig[]): void {
+    const wasDone = this._currentIndex >= this.entries.length;
+    for (const config of challenges) this.entries.push({ config, progress: 'pending' });
+    const first = this.entries[this._currentIndex];
+    if (wasDone && first) first.progress = 'active';
   }
 
   markCurrentPassed(): void {

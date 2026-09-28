@@ -36,7 +36,12 @@ export interface SelfieUpload {
    * can re-upload it. The recorder itself lives in useVideoRecorder.
    */
   videoPathRef: React.MutableRefObject<string | null>;
-  uploadSelfieAndVideo: (selfie: string, videoPath: string | null) => Promise<void>;
+  /** `recorderFailure`: why the recorder produced no file, when it did not. */
+  uploadSelfieAndVideo: (
+    selfie: string,
+    videoPath: string | null,
+    recorderFailure?: 'recorder_start_failed' | 'recording_empty' | null,
+  ) => Promise<void>;
 }
 
 export function useSelfieUpload(): SelfieUpload {
@@ -49,6 +54,7 @@ export function useSelfieUpload(): SelfieUpload {
   // the upload lands (the biometric scopes hide the review), so the submitted
   // step waits on THIS rather than on this hook's local state.
   const setSelfieUpload = useKyc((s) => s.setSelfieUpload);
+  const setLivenessVideoReport = useKyc((s) => s.setLivenessVideoReport);
   const storedPreview = useKyc((s) => s.selfiePreviewUri);
   const storedSelfieId = useKyc((s) => s.mediaIds.selfie);
 
@@ -70,7 +76,11 @@ export function useSelfieUpload(): SelfieUpload {
   const videoPathRef = useRef<string | null>(null);
 
   const uploadSelfieAndVideo = useCallback(
-    async (selfie: string, videoPath: string | null) => {
+    async (
+      selfie: string,
+      videoPath: string | null,
+      recorderFailure?: 'recorder_start_failed' | 'recording_empty' | null,
+    ) => {
       setUploading(true);
       setUploadError(null);
       setRetryInfo(null);
@@ -83,19 +93,29 @@ export function useSelfieUpload(): SelfieUpload {
         );
         selfieIdRef.current = selfieId;
         setMediaId('selfie', selfieId);
-        // Liveness video is best-effort — a failure here must not block the user.
+        // Liveness video is best-effort — a failure here must not block the
+        // user. What happened to it IS reported: the server records a missing
+        // recording as a finding, and the cause is what makes it actionable.
         if (videoPath) {
-          try {
-            // Transcode the raw recording down to a small evidence clip first.
-            const small = await compressVideo(videoPath);
-            const videoId = await withRetry(
-              () => api.upload({ uri: small, type: 'video/mp4' }, 'liveness_video', MAX_VIDEO_BYTES),
-              { onRetry },
-            );
-            setMediaId('livenessVideo', videoId);
-          } catch {
-            /* keep the selfie, drop the video (incl. if it exceeded the 5MB cap) */
+          const small = await compressVideo(videoPath);
+          if (!small) {
+            setLivenessVideoReport({ recorded: false, failure: 'compression_failed' });
+          } else {
+            try {
+              const videoId = await withRetry(
+                () => api.upload({ uri: small, type: 'video/mp4' }, 'liveness_video', MAX_VIDEO_BYTES),
+                { onRetry },
+              );
+              setMediaId('livenessVideo', videoId);
+              setLivenessVideoReport({ recorded: true });
+            } catch {
+              setLivenessVideoReport({ recorded: false, failure: 'upload_failed' });
+            }
           }
+        } else if (recorderFailure !== undefined) {
+          // The first upload after a capture (a re-upload leaves the report the
+          // capture already made).
+          setLivenessVideoReport({ recorded: false, failure: recorderFailure ?? 'recording_missing' });
         }
         setRetryInfo(null);
         setUploading(false);
@@ -110,7 +130,7 @@ export function useSelfieUpload(): SelfieUpload {
         safeReportError(config.onError, kycError);
       }
     },
-    [api, setMediaId, setSelfieUpload, config.onError, toast],
+    [api, setMediaId, setSelfieUpload, setLivenessVideoReport, config.onError, toast],
   );
 
   return {

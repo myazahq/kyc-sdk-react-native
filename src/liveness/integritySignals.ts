@@ -1,4 +1,5 @@
 import type { FlashResult } from './flashDetector';
+import { flashUnmeasurable } from './flashOutcome';
 import type { LivenessMode } from './types';
 
 // ---------------------------------------------------------------------------
@@ -16,6 +17,11 @@ import type { LivenessMode } from './types';
 
 export interface LivenessIntegrity {
   mode: LivenessMode;
+  /**
+   * The prompts this run used, in order (e.g. ['turn', 'blink']). The server's
+   * shape-from-movement verdict depends on whether a turn was asked for.
+   */
+  challenges?: string[];
   /** How many consecutive-frame discontinuities the continuity guard saw. */
   faceGlitches: number;
   flash?: {
@@ -29,17 +35,36 @@ export interface LivenessIntegrity {
   };
 }
 
+/**
+ * Why the liveness recording is missing. Stable and add-only, shared with the
+ * web and Flutter SDKs; the server stores it on `Verification.livenessCapture`.
+ */
+export type LivenessVideoFailure =
+  | 'recorder_unsupported'
+  | 'recorder_start_failed'
+  | 'recording_empty'
+  | 'compression_failed'
+  | 'upload_failed'
+  | 'recording_missing';
+
+export interface LivenessVideoReport {
+  recorded: boolean;
+  failure?: LivenessVideoFailure;
+}
+
 export interface CaptureIntegrity {
-  liveness: LivenessIntegrity;
+  liveness: LivenessIntegrity & { video?: LivenessVideoReport };
 }
 
 export function buildLivenessIntegrity(
   mode: LivenessMode,
   faceGlitches: number,
   flash: FlashResult | null,
+  challenges?: readonly string[],
 ): LivenessIntegrity {
   return {
     mode,
+    ...(challenges ? { challenges: [...challenges] } : {}),
     faceGlitches,
     ...(flash
       ? {
@@ -51,7 +76,10 @@ export function buildLivenessIntegrity(
             // Collapsed to a boolean for the wire: the server only needs to
             // know whether the run was unmeasurable, not how many individual
             // flashes were drowned.
-            inconclusive: flash.total > 0 && flash.inconclusive === flash.total,
+            // True when NO flash could be measured, including a sequence that
+            // could not run at all (total 0) — which reported false here and
+            // read on the server as a measured failure.
+            inconclusive: flashUnmeasurable(flash),
             sequence: flash.sequence,
           },
         }

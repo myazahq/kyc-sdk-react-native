@@ -18,6 +18,7 @@ import { GlassSurface } from "./glass/GlassSurface";
 import { SandboxBanner, useSandboxBannerVisible } from "./SandboxBanner";
 import { GlassGroup } from "./glass/GlassGroup";
 import { FlashOverlay } from "./FlashOverlay";
+import { BrightScreen } from "./BrightScreen";
 
 // Full-screen sheet shell — 1:1 with the Flutter SDK's KycBottomSheet:
 //   • a tinted header block (Liquid Glass on iOS 26) with a bottom border:
@@ -76,7 +77,7 @@ export function KycSheet({
   fillsViewport,
   immersive = false,
 }: KycSheetProps): React.ReactElement {
-  const { colors, mode, toggle } = useTheme();
+  const { colors, mode, toggle, forced: themeForced } = useTheme();
   const config = useKycConfig();
   const { logoUri, companyName } = useBranding();
   // Android-only (0 on iOS): the translucent Modal blocks adjustResize there,
@@ -212,6 +213,10 @@ export function KycSheet({
                   <GlassIconButton
                     icon={mode === "dark" ? "sun" : "moon"}
                     onPress={toggle}
+                    // Held light while the liveness camera lights the face
+                    // (BrightScreen): shown disabled rather than hidden, so
+                    // the close button does not jump.
+                    disabled={themeForced}
                     plain={showClose}
                     accessibilityLabel="Toggle theme"
                   />
@@ -328,6 +333,9 @@ export function KycSheet({
           painted over it — the flash lit the body and stopped dead at the
           header. Last-with-elevation out-stacks the header on both platforms
           by construction. */}
+      {/* The light theme and full brightness while the liveness camera is
+          on. Before FlashOverlay, so the flash stays on top of its fade. */}
+      <BrightScreen />
       <FlashOverlay />
     </View>
   );

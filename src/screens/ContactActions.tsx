@@ -4,6 +4,7 @@ import { View } from 'react-native';
 import { spacing } from '../config/theme';
 import { MyazaButton } from '../components/MyazaButton';
 import { ContactFooterNote } from './ContactFooterNote';
+import { useText } from '../i18n/useText';
 
 // ---------------------------------------------------------------------------
 // The contact step's footer: the one primary action (send, then verify), the
@@ -30,11 +31,12 @@ export function ContactActions({
   onPrimary: () => void;
   onSkip: () => void;
 }): React.ReactElement {
+  const t = useText();
   return (
     <>
       <View style={{ height: spacing.md }} />
       <MyazaButton
-        label={hasChallenge ? 'Verify code' : 'Send code'}
+        label={hasChallenge ? t('contact.verifyCode') : t('contact.sendCode')}
         loading={busy}
         disabled={disabled}
         onPress={onPrimary}
@@ -43,7 +45,7 @@ export function ContactActions({
       {!required ? (
         <>
           <View style={{ height: spacing.sm }} />
-          <MyazaButton label="Skip for now" variant="ghost" disabled={busy} onPress={onSkip} />
+          <MyazaButton label={t('contact.skip')} variant="ghost" disabled={busy} onPress={onSkip} />
         </>
       ) : null}
 

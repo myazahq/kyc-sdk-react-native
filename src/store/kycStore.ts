@@ -14,7 +14,7 @@ import { createStore } from 'zustand/vanilla';
 
 import { createKYCApi } from '../services/api';
 
-import { resolveBaseUrl, normalizeDevAssetUrl } from '../services/resolveUrl';
+import { resolveBaseUrl, normalizeBrandingUrls } from '../services/resolveUrl';
 import { withRetry } from '../services/retry';
 import { collectFingerprint } from '../services/fingerprint';
 import type { KYCStep, ResolvedKYCConfig } from '../types/config';
@@ -59,6 +59,7 @@ import { multiIdPlan } from '../lib/multi-id';
 import { resolveIdTypeDefinition } from '../config/idTypes';
 import { buildVerifyRequest } from './submit';
 import { IDLE_SELFIE_UPLOAD } from '../lib/selfie-upload-wait';
+import { reserveSilentFrame, settleSilentFrame } from '../lib/silentCapture';
 import { resetBusinessCheck, runBusinessCheck } from './businessCheck';
 import { startAttemptSession, watchSessionProgress } from './session';
 import { applicantMediaCaptured, buildApplicantVerifyRequest } from './submitApplicant';
@@ -120,6 +121,7 @@ export function createKycStore(
       documentCapturePhase: 'front',
       immersiveCapture: false,
       flashPaint: null,
+      livenessCameraOn: false,
       navDirection: 'forward' as const,
       questionnaireAnswers: {},
       contact: {},
@@ -130,6 +132,7 @@ export function createKycStore(
       applicantKeyPersonId: null,
       keyPeopleInvites: [],
       captureIntegrity: null,
+      silentFrames: [],
       mrzScan: null,
       chipData: null,
       poaDocumentType: null,
@@ -149,9 +152,7 @@ export function createKycStore(
           // Make a local dev server's hardcoded `localhost` logo URL reachable on
           // the Android emulator (rewrites the origin to the SDK base; no-op for
           // production CDN URLs).
-          const branding = res.branding
-            ? { ...res.branding, logo: normalizeDevAssetUrl(res.branding.logo, baseUrl) }
-            : res.branding;
+          const branding = normalizeBrandingUrls(res.branding, baseUrl);
           // The facts that just landed can add a step AHEAD of the one the flow
           // opened on (the address search step, on a consent-less address
           // flow). Someone still standing on the placeholder's opening step,
@@ -303,6 +304,20 @@ export function createKycStore(
 
       setSelfieUpload(upload) {
         set({ selfieUpload: upload });
+      },
+
+      reserveSilentFrame(moment) {
+        // Synchronous read-then-write: two captures racing each other can never
+        // share a slot or pass the cap.
+        const capturedAt = new Date().toISOString();
+        const reserved = reserveSilentFrame(get().silentFrames, moment, capturedAt);
+        if (!reserved) return null;
+        set({ silentFrames: reserved.frames });
+        return { index: reserved.index, capturedAt };
+      },
+
+      settleSilentFrame(index, capturedAt, mediaId) {
+        set((s) => ({ silentFrames: settleSilentFrame(s.silentFrames, index, capturedAt, mediaId) }));
       },
 
       setDocumentMediaId(mediaId, side) {
@@ -462,6 +477,12 @@ export function createKycStore(
         set({ captureIntegrity: integrity });
       },
 
+      setLivenessVideoReport(report) {
+        const current = get().captureIntegrity;
+        if (!current) return;
+        set({ captureIntegrity: { liveness: { ...current.liveness, video: report } } });
+      },
+
       setMrzScan(scan) {
         set({ mrzScan: scan });
       },
@@ -540,6 +561,9 @@ export function createKycStore(
 
       setFlashPaint(paint) {
         set({ flashPaint: paint });
+      },
+      setLivenessCameraOn(on) {
+        if (get().livenessCameraOn !== on) set({ livenessCameraOn: on });
       },
       setImmersiveCapture(immersive) {
         if (get().immersiveCapture !== immersive) set({ immersiveCapture: immersive });
@@ -695,6 +719,7 @@ export function createKycStore(
           documentCapturePhase: 'front',
           immersiveCapture: false,
           flashPaint: null,
+          livenessCameraOn: false,
           sessionId: null,
           sessionUrl: null,
           businessCheck: { ...EMPTY_BUSINESS_CHECK },
@@ -706,6 +731,7 @@ export function createKycStore(
           applicantKeyPersonId: null,
           keyPeopleInvites: [],
           captureIntegrity: null,
+          silentFrames: [],
           mrzScan: null,
           chipData: null,
           poaDocumentType: null,

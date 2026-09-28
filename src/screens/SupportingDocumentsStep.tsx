@@ -15,7 +15,7 @@ import {
   type RequestedSupportingDocument,
 } from '../config/supportingDocuments';
 import { useBusinessDocumentAttach } from './useBusinessDocumentAttach';
-import { supportingDocumentsIntro } from '../lib/supportingDocumentsIntro';
+import { useText } from '../i18n/useText';
 
 // ---------------------------------------------------------------------------
 // Supporting documents — artefacts the organisation keeps ON FILE.
@@ -34,18 +34,9 @@ import { supportingDocumentsIntro } from '../lib/supportingDocumentsIntro';
 // sheet and the same Continue rule as the business-documents screen.
 // ---------------------------------------------------------------------------
 
-/** The header, from the slots the flow actually resolved for this applicant.
- *  A function because the line carries the COUNTS: how many documents have to
- *  be produced before they can go on. */
-export const supportingDocumentsMeta = (
-  slots: ReadonlyArray<{ required: boolean }>,
-): { title: string; description: string } => ({
-  title: 'Supporting documents',
-  description: supportingDocumentsIntro(slots),
-});
-
 export function SupportingDocumentsStep(): React.ReactElement {
   const config = useKycConfig();
+  const t = useText();
   const store = useKycStore();
   const { colors } = useTheme();
   const uploaded = useKyc((s) => s.supportingDocuments);
@@ -154,7 +145,7 @@ export function SupportingDocumentsStep(): React.ReactElement {
 
       <View style={{ height: spacing.xs }} />
       <MyazaButton
-        label={optionalOnly && uploaded.length === 0 ? 'Skip' : 'Continue'}
+        label={t(optionalOnly && uploaded.length === 0 ? 'common.skip' : 'common.continue')}
         onPress={handleContinue}
         disabled={missing.length > 0 || busySlot !== null}
       />

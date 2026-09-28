@@ -17,6 +17,7 @@ import { AddressCountryControl, poaOfferedCountries } from './AddressCountryCont
 import { poaCountryDeclared } from '../lib/poa-country-gate';
 import { PoaDropzone, PoaUploadedRow } from './ProofOfAddressParts';
 import type { PoaDocumentType } from '../types/workflow';
+import { useText } from '../i18n/useText';
 
 // ---------------------------------------------------------------------------
 // Proof of Address — pick the kind of document, then supply it.
@@ -31,22 +32,9 @@ import type { PoaDocumentType } from '../types/workflow';
 // beyond making sure a file was actually attached.
 // ---------------------------------------------------------------------------
 
-export function proofOfAddressMeta(
-  maxAgeDays: number,
-  /** Whether the workflow's name rule wants the applicant's name on THIS
-   *  document. False for e.g. a Nigerian utility bill that names the meter,
-   *  not the tenant — asking for "your name" there sends people hunting for a
-   *  document they do not have. */
-  nameNeeded = true,
-): { title: string; description: string } {
-  return {
-    title: 'Proof of address',
-    description: `Upload a document that shows your ${nameNeeded ? 'name and home address' : 'home address'}, issued within the last ${maxAgeDays} days.`,
-  };
-}
-
 export function ProofOfAddressStep(): React.ReactElement {
   const config = useKycConfig();
+  const t = useText();
   const store = useKycStore();
   const { colors } = useTheme();
   const mediaId = useKyc((s) => s.mediaIds.proofOfAddress);
@@ -76,7 +64,7 @@ export function ProofOfAddressStep(): React.ReactElement {
   // "wrong photo from the camera roll" before submitting.
   const [preview, setPreview] = useState<{ uri: string; isPdf: boolean } | null>(null);
 
-  const typeLabel = poaTypeLabel(selectedType, config.proofOfAddress);
+  const typeLabel = poaTypeLabel(selectedType, config.proofOfAddress, t);
 
   const upload = useCallback(
     async ({ uri, mimeType, name }: PoaPick) => {
@@ -154,7 +142,7 @@ export function ProofOfAddressStep(): React.ReactElement {
       {types.length > 1 ? (
         <>
           <MyazaText variant="bodySmall" style={{ fontWeight: '600', marginBottom: spacing.xs }}>
-            Document type
+            {t('proofOfAddress.documentType')}
           </MyazaText>
           <PoaDocumentTypeList
             value={selectedType}
@@ -163,7 +151,7 @@ export function ProofOfAddressStep(): React.ReactElement {
             disabled={uploaded || busy}
             options={types.map((type) => ({
               value: type,
-              label: poaTypeLabel(type, config.proofOfAddress),
+              label: poaTypeLabel(type, config.proofOfAddress, t),
             }))}
             onChange={setSelectedType}
           />
@@ -191,7 +179,7 @@ export function ProofOfAddressStep(): React.ReactElement {
 
       <View style={{ height: spacing.lg }} />
       <MyazaButton
-        label="Continue"
+        label={t('common.continue')}
         disabled={!mediaId || busy || !countryDeclared}
         onPress={() => store.getState().nextStep()}
       />

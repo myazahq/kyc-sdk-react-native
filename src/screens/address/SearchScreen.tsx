@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native';
 import { spacing } from '../../config/theme';
 import { useKycStore, useTheme } from '../../components/runtime';
 import { MyazaText } from '../../components/Typography';
+import { useText } from '../../i18n/useText';
 import { uuid } from '../../utils/uuid';
 import { AUTOCOMPLETE_DEBOUNCE_MS, SEARCH_MIN_QUERY_LENGTH } from '../../lib/address-flow';
 import { AddressSearchField } from './AddressSearchField';
@@ -63,6 +64,7 @@ export function SearchScreen({
 }): React.ReactElement {
   const store = useKycStore();
   const { colors } = useTheme();
+  const t = useText();
   const [query, setQuery] = useState('');
   const [busy, setBusy] = useState(false);
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[] | null>(null);
@@ -168,7 +170,7 @@ export function SearchScreen({
           color={colors.textSecondary}
           style={{ textDecorationLine: 'underline' }}
         >
-          Place a pin on the map instead
+          {t('address.search.pinInstead')}
         </MyazaText>
       </Pressable>
     </View>

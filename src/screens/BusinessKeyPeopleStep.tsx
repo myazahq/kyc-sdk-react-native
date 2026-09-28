@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { View } from 'react-native';
 
-import { spacing } from '../config/theme';
+import { radius, spacing } from '../config/theme';
 import { useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
 import { MyazaText } from '../components/Typography';
 import { MyazaButton } from '../components/MyazaButton';
+import { useText } from '../i18n/useText';
 import { DashedBorder } from '../components/DashedBorder';
 import { KeyPeopleSectionsList } from './KeyPeopleSectionsList';
 import { KeyPersonSheet } from './KeyPersonSheet';
@@ -20,7 +21,6 @@ import {
 import { SECTION_ROLE, type KeyPeopleSection as SectionKey } from '../config/keyPeopleSections';
 import { defaultUboThreshold, keyPeopleSectionList } from '../config/keyPeopleSectionDefs';
 import { prefillKeyPeople, shouldPrefill } from '../config/keyPeoplePrefill';
-import { radius } from '../config/theme';
 
 // ---------------------------------------------------------------------------
 // The key-people step, sectioned: Beneficial owners / Shareholders /
@@ -36,15 +36,11 @@ import { radius } from '../config/theme';
 // `undisclosed` — what the applicant chooses to omit is evidence.
 // ---------------------------------------------------------------------------
 
-export const businessKeyPeopleMeta = {
-  title: 'Key people',
-  description: "Add the company's directors, shareholders and beneficial owners.",
-};
-
 type SheetState = { mode: 'add' | 'edit'; section: SectionKey; index?: number } | null;
 
 export function BusinessKeyPeopleStep(): React.ReactElement {
   const config = useKycConfig();
+  const t = useText();
   const store = useKycStore();
   const { colors } = useTheme();
   const rows = useKyc((s) => s.businessApplication.keyPeople);
@@ -71,10 +67,7 @@ export function BusinessKeyPeopleStep(): React.ReactElement {
   // Roles whose email is mandatory (the ones actually sent a verification
   // link) — threaded into every validity read so the card, the sheet and the
   // Continue gate agree on what "complete" means.
-  const emailRequiredFor = useMemo(
-    () => keyPeopleRequireEmail(config.business),
-    [config.business],
-  );
+  const emailRequiredFor = useMemo(() => keyPeopleRequireEmail(config.business), [config.business]);
   const validCount = rows.filter((r) => isKeyPersonRowValid(r, emailRequiredFor)).length;
   const invalidRows = invalidKeyPersonRows(rows, emailRequiredFor);
   // The same line the server draws: the workflow's own threshold, else the
@@ -101,7 +94,7 @@ export function BusinessKeyPeopleStep(): React.ReactElement {
   // details step) — most directors are local, and a foreign one just switches
   // theirs. Mirrors the web and Flutter SDKs.
   const defaultCountry = registryCountry ?? config.business?.country ?? '';
-  const sections = keyPeopleSectionList(config.business, threshold);
+  const sections = keyPeopleSectionList(config.business, threshold, t);
 
   const commit = (next: KeyPersonEntry[]): void => store.getState().setKeyPeople(next);
   const handleSave = (entry: KeyPersonEntry): void => {
@@ -134,7 +127,7 @@ export function BusinessKeyPeopleStep(): React.ReactElement {
   // The dashed hint boxes and their copy mirror the web SDK's step 1:1.
   const hint =
     rows.length === 0 && minEntries === 0
-      ? "You can skip this if you're unsure. We'll identify directors and owners from the official registry. Adding them here speeds up the review."
+      ? t('keyPeople.hints.skippable')
       : minEntries > 0 && validCount < minEntries
         ? `List at least ${minEntries} ${minEntries === 1 ? 'person' : 'people'} to continue${
             validCount > 0 ? ` (${validCount} of ${minEntries} added)` : ''
@@ -216,7 +209,7 @@ export function BusinessKeyPeopleStep(): React.ReactElement {
       ) : null}
 
       <View style={{ height: spacing.lg }} />
-      <MyazaButton label="Continue" onPress={handleContinue} disabled={!canContinue} />
+      <MyazaButton label={t('common.continue')} onPress={handleContinue} disabled={!canContinue} />
 
       {sheet && (sheet.mode === 'add' || editEntry) ? (
         <KeyPersonSheet

@@ -1,3 +1,6 @@
+import { defaultText } from '../i18n/translate';
+import type { TextFn } from '../i18n/types';
+
 /**
  * The line under "Supporting documents", from what the flow is actually
  * asking for.
@@ -12,6 +15,7 @@
  */
 export function supportingDocumentsIntro(
   slots: ReadonlyArray<{ required: boolean }>,
+  t: TextFn = defaultText,
 ): string {
   const total = slots.length;
   const required = slots.filter((slot) => slot.required).length;
@@ -19,13 +23,13 @@ export function supportingDocumentsIntro(
   // Nothing is compulsory, so the honest line is that the step can be skipped.
   if (required === 0) {
     return total === 1
-      ? 'Upload this document if you have it, so we can keep it on file. You can skip it.'
-      : 'Upload any of these you have, so we can keep them on file. You can skip the rest.';
+      ? t('supportingDocuments.intro.optional.one')
+      : t('supportingDocuments.intro.optional.many');
   }
 
   if (required === total) {
     return total === 1
-      ? 'We need this document to continue. Upload it below.'
+      ? t('supportingDocuments.intro.required.one')
       : `We need all ${total} of these documents to continue. Upload one for each item below.`;
   }
 

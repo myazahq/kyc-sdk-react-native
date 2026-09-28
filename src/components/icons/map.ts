@@ -30,6 +30,7 @@ import FilterIcon from '@hugeicons/core-free-icons/FilterIcon';
 import FingerPrintIcon from '@hugeicons/core-free-icons/FingerPrintIcon';
 import FlashOffIcon from '@hugeicons/core-free-icons/FlashOffIcon';
 import FlaskConicalIcon from '@hugeicons/core-free-icons/FlaskConicalIcon';
+import GlassesIcon from '@hugeicons/core-free-icons/GlassesIcon';
 import GlobeIcon from '@hugeicons/core-free-icons/GlobeIcon';
 import Gps02Icon from '@hugeicons/core-free-icons/Gps02Icon';
 import HelpCircleIcon from '@hugeicons/core-free-icons/HelpCircleIcon';
@@ -61,6 +62,7 @@ import Share01Icon from '@hugeicons/core-free-icons/Share01Icon';
 import SlidersHorizontalIcon from '@hugeicons/core-free-icons/SlidersHorizontalIcon';
 import SmartPhone01Icon from '@hugeicons/core-free-icons/SmartPhone01Icon';
 import StampIcon from '@hugeicons/core-free-icons/StampIcon';
+import SparklesIcon from '@hugeicons/core-free-icons/SparklesIcon';
 import Sun01Icon from '@hugeicons/core-free-icons/Sun01Icon';
 import Timer01Icon from '@hugeicons/core-free-icons/Timer01Icon';
 import Upload01Icon from '@hugeicons/core-free-icons/Upload01Icon';
@@ -92,6 +94,7 @@ export const ICONS: Record<IconName, IconSvgElement> = {
   back: LONG_ARROW_LEFT,
   moon: MoonIcon,
   sun: Sun01Icon,
+  sparkles: SparklesIcon,
   check: CheckIcon,
   lock: LockIcon,
   alert: AlertCircleIcon,
@@ -135,6 +138,7 @@ export const ICONS: Record<IconName, IconSvgElement> = {
   fingerprint: FingerPrintIcon,
   'credit-card': CreditCardIcon,
   globe: GlobeIcon,
+  glasses: GlassesIcon,
   car: Car01Icon,
   vote: VoteIcon,
   'file-text': File02Icon,

@@ -61,6 +61,11 @@ export type { KYCSubmission, KYCResult, KYCErrorCode, KYCErrorDetails } from './
 export type { BiometricFlowConfig, BiometricCopy, BiometricCopyText } from './config/biometricOptions';
 export { KYCError } from './types/verification';
 
+// Custom texts: the keys a workflow's `texts` may set, and the resolver.
+export type { KYCTextsConfig } from './types/texts';
+export type { WorkflowTexts, TextVars } from './i18n/types';
+export { CUSTOMISABLE_KEYS, DEFAULT_TEXTS, resolveText } from './i18n';
+
 // ID-type matrix + helpers
 export {
   ID_TYPES,

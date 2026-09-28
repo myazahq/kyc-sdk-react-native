@@ -19,6 +19,7 @@ import { hasActiveQuestionnaire, questionnairePayload } from '../config/question
 import { multiIdWireSlots } from '../lib/multi-id';
 import { isBusinessFlow } from '../config/business';
 import { addressPayload } from '../config/addressCollection';
+import { silentCaptureSubmission } from '../lib/silentCapture';
 import { businessSubmission, effectiveCountry } from './derive';
 import type { ClientFingerprint } from '../services/fingerprint';
 import type { VerifyRequest } from '../services/api';
@@ -65,6 +66,9 @@ export function buildVerifyRequest(
   // idType/idNumber keeps one meaning.
   const multiSlots = !business && state.multiIdSlots.length >= 2 ? state.multiIdSlots : null;
   const primary = multiSlots?.[0];
+  // Silent capture frames ride an individual submission (a KYB flow's frames
+  // belong to the applicant's own leg, submitApplicant.ts).
+  const silent = business ? null : silentCaptureSubmission(state.silentFrames);
 
   return {
   country: business ? business.country : effectiveCountry(state),
@@ -95,8 +99,8 @@ export function buildVerifyRequest(
   mediaIds: business
     ? {}
     : multiSlots
-      ? { ...state.mediaIds, documentFront: undefined, documentBack: undefined }
-      : state.mediaIds,
+      ? { ...state.mediaIds, documentFront: undefined, documentBack: undefined, ...silent?.mediaIds }
+      : { ...state.mediaIds, ...silent?.mediaIds },
   ...(state.config.workflowId ? { workflowId: state.config.workflowId } : {}),
   ...(state.poaDocumentType ? { proofOfAddressType: state.poaDocumentType } : {}),
   // Supporting documents — artefacts held on file. The server validates them
@@ -173,6 +177,12 @@ export function buildVerifyRequest(
       // workflow disables it — collecting signals nobody will score is
       // data taken for nothing.
       ...(fingerprint ? { fingerprint } : {}),
+      // The liveness claim (mode, flash outcome, recording fate). Builds up to
+      // 3.1.0 recorded it and never sent it, so the server could neither audit
+      // the flash nor tell whether liveness ran at all.
+      ...(state.captureIntegrity ? { integrity: state.captureIntegrity } : {}),
+      // What each submitted silent frame is: its slot, moment and time.
+      ...(silent ? { silentCapture: silent.device } : {}),
     },
   },
   };

@@ -8,6 +8,7 @@ import { MyazaText } from '../components/Typography';
 import { Icon } from '../components/Icon';
 import { DashedBorder } from '../components/DashedBorder';
 import { CountryFlag } from '../components/CountryFlag';
+import { useText } from '../i18n/useText';
 
 // ---------------------------------------------------------------------------
 // Proof of Address — the two states of the attachment area, split out of the
@@ -45,6 +46,7 @@ export function PoaUploadedRow({
   onRemove: () => void;
 }): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
   return (
     <View
       style={{
@@ -81,7 +83,7 @@ export function PoaUploadedRow({
       <View style={{ width: spacing.md, flexShrink: 0 }} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <MyazaText variant="bodySmall" style={{ fontWeight: '600' }} numberOfLines={1}>
-          {fileName ?? 'Document uploaded'}
+          {fileName ?? t('proofOfAddress.uploaded')}
         </MyazaText>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Flag country={country} size={14} />

@@ -1,20 +1,22 @@
-import { ID_TYPES } from '../config/idTypes';
+import { ID_TYPES, getScanSides } from '../config/idTypes';
 import { poaDocumentTypes, poaMaxAgeDays, poaNamePolicy } from '../config/proofOfAddress';
-import { documentCaptureMeta } from '../screens/DocumentCaptureStep';
 import { documentCaptureMethods } from '../config/documentCaptureMethods';
-import { questionnaireMeta } from '../screens/QuestionnaireStep';
 import { contactCodeLength, contactMeta, type ContactChallenge } from '../config/contact';
-
-import { proofOfAddressMeta } from '../screens/ProofOfAddressStep';
 import { addressStepMeta } from '../screens/address';
-import { countrySelectMeta } from '../screens/CountrySelectStep';
-import { businessDetailsMeta } from '../screens/BusinessDetailsStep';
-import { businessKeyPeopleMeta } from '../screens/BusinessKeyPeopleStep';
-import { supportingDocumentsMeta } from '../screens/SupportingDocumentsStep';
 import { resolveSupportingDocuments, verifiedIdsFor } from '../config/supportingDocuments';
-import { businessDocumentsMeta } from '../screens/BusinessDocumentsStep';
-import { applicantRoleMeta } from '../screens/ApplicantRoleStep';
-import { nfcMeta } from '../screens/NfcStep';
+import {
+  applicantRoleMeta,
+  businessDetailsMeta,
+  businessDocumentsMeta,
+  businessKeyPeopleMeta,
+  countrySelectMeta,
+  documentCaptureMeta,
+  nfcMeta,
+  proofOfAddressMeta,
+  questionnaireMeta,
+  supportingDocumentsMeta,
+} from './stepHeaderCopy';
+import type { TextFn } from '../i18n/types';
 import type { DocumentCapturePhase } from '../store/state';
 import type { KYCStep, ResolvedKYCConfig, SupportedCountry } from '../types/config';
 
@@ -54,6 +56,8 @@ export interface StepHeaderContext {
   /** The committed multi-ID slots, so the supporting-documents header resolves
    *  the SAME list the screen shows. */
   multiIdSlots?: Array<{ idType: string }>;
+  /** The workflow's texts (useText): every fixed header is customisable. */
+  t: TextFn;
 }
 
 export function stepHeaderMeta(
@@ -68,6 +72,7 @@ export function stepHeaderMeta(
     addressEntranceFraming,
     poaDocumentType,
     multiIdSlots,
+    t,
   }: StepHeaderContext,
 ): { title: string; description: string | null } {
   const label = labelFor(country, selectedIdType);
@@ -76,11 +81,11 @@ export function stepHeaderMeta(
       case 'consent':
         return { title: '', description: null as string | null };
       case 'id-type':
-        return { title: 'Select ID Type', description: "Choose the type of identification document you'd like to use." };
+        return { title: t('selectDocument.idType.title'), description: t('selectDocument.idType.description') };
       case 'id-input':
         // The number is all this step asks for. The name comes from the
         // integrator (mount props / the session), never the applicant.
-        return { title: `Enter your ${label}`, description: 'We’ll check this against the official record.' };
+        return { title: `Enter your ${label}`, description: t('selectDocument.idInput.description') };
       case 'document-capture':
         // Phase-aware title/description live in the header (synced from the
         // capture screen via `documentCapturePhase`) — mirrors Flutter.
@@ -88,21 +93,23 @@ export function stepHeaderMeta(
           documentCapturePhase,
           label,
           documentCaptureMethods(config).scan ? 'scan' : 'upload',
+          t,
+          selectedIdType ? getScanSides(selectedIdType) === 'front_and_back' : false,
         );
       case 'liveness':
-        return { title: 'Face Verification', description: 'Follow the on-screen instructions' };
+        return { title: t('presence.title'), description: t('presence.camera.description') };
       case 'questionnaire':
-        return questionnaireMeta(config.questionnaire?.title, config.questionnaire?.description);
+        return questionnaireMeta(config.questionnaire?.title, config.questionnaire?.description, t);
       case 'email-verification':
         return contactMeta('email', {
           codeLength: contactCodeLength(config.emailVerification),
           challenge: contactChallenge,
-        });
+        }, t);
       case 'phone-verification':
         return contactMeta('phone', {
           codeLength: contactCodeLength(config.phoneVerification),
           challenge: contactChallenge,
-        });
+        }, t);
       case 'proof-of-address': {
         // Word the ask by the rule the server will judge THIS document under:
         // the picked kind, else the first the country offers (what the screen
@@ -112,21 +119,22 @@ export function stepHeaderMeta(
         return proofOfAddressMeta(
           poaMaxAgeDays(poa),
           poaNamePolicy(poa, country, kind as Parameters<typeof poaNamePolicy>[2]) !== 'off',
+          t,
         );
       }
       case 'address-search':
       case 'address-collection':
       case 'address-entrance':
       case 'address-review':
-        return addressStepMeta(currentStep, config.subjectType === 'business', { framing: addressEntranceFraming });
+        return addressStepMeta(currentStep, config.subjectType === 'business', { framing: addressEntranceFraming }, t);
       case 'country-select':
-        return countrySelectMeta;
+        return countrySelectMeta(t);
       case 'business-details':
-        return businessDetailsMeta;
+        return businessDetailsMeta(t);
       case 'business-key-people':
-        return businessKeyPeopleMeta;
+        return businessKeyPeopleMeta(t);
       case 'business-documents':
-        return businessDocumentsMeta;
+        return businessDocumentsMeta(t);
       case 'supporting-documents':
         // Resolved exactly as the screen resolves its own slots, or the header
         // could name a number the body does not show.
@@ -135,11 +143,12 @@ export function stepHeaderMeta(
             config.supportingDocuments,
             verifiedIdsFor({ country, idType: selectedIdType, multiIdSlots }),
           ),
+          t,
         );
       case 'applicant-role':
-        return applicantRoleMeta;
+        return applicantRoleMeta(t);
       case 'nfc':
-        return nfcMeta;
+        return nfcMeta(t);
       case 'submitted':
       default:
         return { title: '', description: null };

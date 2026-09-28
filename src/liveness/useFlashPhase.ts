@@ -18,6 +18,8 @@ export interface FlashPhase {
   pending: () => boolean;
   /** Called by the screen once the sequence finishes. */
   complete: (result: FlashResult) => void;
+  /** Record the result as final WITHOUT leaving the flash phase (the gesture fallback). */
+  settle: (result: FlashResult) => void;
   /** The verdict, once run. */
   result: () => FlashResult | null;
   /** Face discontinuities seen this session. */
@@ -41,10 +43,9 @@ export function useFlashPhase(
   );
 
   /**
-   * The result is carried into the submission as context, NOT used to fail the
-   * step: an inconclusive flash (sunlight, or a platform that cannot sample
-   * RGB) must not block a user, and the server re-analyses the recorded video
-   * regardless. A definite mismatch is what the server acts on.
+   * The result rides into the submission as the claim the server audits. What
+   * the step DOES with it (pass, retry, fall back to gestures, fail) is decided
+   * by useLiveness through flashOutcome.ts before this is called.
    */
   const complete = useCallback(
     (result: FlashResult) => {
@@ -57,6 +58,11 @@ export function useFlashPhase(
     [setState],
   );
 
+  const settle = useCallback((result: FlashResult) => {
+    doneRef.current = true;
+    resultRef.current = result;
+  }, []);
+
   const reset = useCallback(() => {
     // A retry runs the whole check again, INCLUDING a fresh colour sequence —
     // reusing the previous one would hand an attacker the answer.
@@ -68,6 +74,7 @@ export function useFlashPhase(
   return {
     pending,
     complete,
+    settle,
     result: () => resultRef.current,
     glitches: () => glitchesRef.current,
     recordGlitch: () => {

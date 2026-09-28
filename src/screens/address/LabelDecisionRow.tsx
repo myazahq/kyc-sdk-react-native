@@ -5,6 +5,7 @@ import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
 import { Icon } from '../../components/Icon';
 import { MyazaText } from '../../components/Typography';
+import { useText } from '../../i18n/useText';
 
 /**
  * The keep-or-update decision after a pin move.
@@ -24,6 +25,7 @@ export function LabelDecisionRow({
   onAdopt: () => void;
 }): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
   return (
     <View
       // Web's `border-primary/25 bg-primary/[0.05]`, as Flutter draws it.
@@ -51,7 +53,7 @@ export function LabelDecisionRow({
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
           <MyazaText variant="bodyMedium" style={{ fontWeight: '600' }}>
-            You moved the pin
+            {t('address.labelDecision.title')}
           </MyazaText>
           <MyazaText variant="bodySmall" color={colors.textSecondary}>
             Keep{' '}
@@ -65,8 +67,8 @@ export function LabelDecisionRow({
 
       {/* Indented under the text (web pl-11). */}
       <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm + 4, paddingLeft: 44 }}>
-        <DecisionButton label="Keep this address" primary onPress={onKeep} />
-        <DecisionButton label="Use the pin’s address" onPress={onAdopt} />
+        <DecisionButton label={t('address.labelDecision.keep')} primary onPress={onKeep} />
+        <DecisionButton label={t('address.labelDecision.adopt')} onPress={onAdopt} />
       </View>
     </View>
   );

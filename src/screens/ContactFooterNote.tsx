@@ -5,6 +5,7 @@ import { spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
 import { MyazaText } from '../components/Typography';
 import { Icon } from '../components/Icon';
+import { useText } from '../i18n/useText';
 
 /**
  * The reassurance line under the contact step's actions, matching the web SDK.
@@ -14,6 +15,7 @@ import { Icon } from '../components/Icon';
  */
 export function ContactFooterNote({ isEmail }: { isEmail: boolean }): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
   return (
     <View
       style={{
@@ -25,9 +27,7 @@ export function ContactFooterNote({ isEmail }: { isEmail: boolean }): React.Reac
     >
       <Icon name={isEmail ? 'mail' : 'smartphone'} size={12} color={colors.textMuted} />
       <MyazaText variant="bodySmall" color={colors.textMuted}>
-        {isEmail
-          ? 'We only use this to verify your identity.'
-          : 'Standard message rates may apply.'}
+        {isEmail ? t('contact.email.footer') : t('contact.phone.footer')}
       </MyazaText>
     </View>
   );

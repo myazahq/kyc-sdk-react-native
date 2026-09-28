@@ -12,9 +12,9 @@ import type { FlashResult, Rgb } from '../liveness/flashDetector';
 // the screen painted a solid colour with no way back.
 // ---------------------------------------------------------------------------
 
-/** A sequence that could not run at all — unmeasured, which fails soft. */
+/** A sequence that could not run at all: unmeasured, never a pass (flashOutcome.ts). */
 const UNMEASURED: FlashResult = {
-  passed: true,
+  passed: false,
   score: 0,
   matched: 0,
   total: 0,
@@ -28,6 +28,7 @@ export function useFlashSequence({
   sequenceLength,
   readFaceRgb,
   onComplete,
+  attempt = 0,
 }: {
   /** True while the machine is in the flash phase. */
   active: boolean;
@@ -40,6 +41,8 @@ export function useFlashSequence({
   sequenceLength: number | undefined;
   readFaceRgb: () => Rgb | null;
   onComplete: (result: FlashResult) => void;
+  /** Bumped to run a fresh sequence while still in the flash phase (the retry). */
+  attempt?: number;
 }): { flashColor: string | null } {
   const [flashColor, setFlashColor] = useState<string | null>(null);
   const startedRef = useRef(false);
@@ -53,6 +56,7 @@ export function useFlashSequence({
   readRef.current = readFaceRgb;
   const continueRef = useRef(shouldContinue);
   continueRef.current = shouldContinue;
+  const attemptRef = useRef(attempt);
 
   useEffect(
     () => () => {
@@ -72,6 +76,12 @@ export function useFlashSequence({
       startedRef.current = false;
       return;
     }
+    // A new attempt re-arms the guard: the retry of an unmeasurable flash
+    // stays in the flash phase, so `active` never goes false in between.
+    if (attemptRef.current !== attempt) {
+      attemptRef.current = attempt;
+      startedRef.current = false;
+    }
     if (startedRef.current) return;
     startedRef.current = true;
     void runFlashSequence(
@@ -90,7 +100,7 @@ export function useFlashSequence({
         setFlashColor(null);
         completeRef.current(UNMEASURED);
       });
-  }, [active, sequenceLength]);
+  }, [active, sequenceLength, attempt]);
 
   return { flashColor };
 }

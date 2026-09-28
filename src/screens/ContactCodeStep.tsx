@@ -8,6 +8,7 @@ import { ContactCodeEntry } from '../components/ContactCodeEntry';
 import { ExpiryCountdown } from '../components/ExpiryCountdown';
 import { CHANNEL_LABELS, type PhoneOtpChannel } from '../config/contact';
 import type { OtpInputStyle } from '../types/workflow';
+import { useText } from '../i18n/useText';
 
 // ---------------------------------------------------------------------------
 // The second half of a contact check: the code has been sent, now enter it.
@@ -51,6 +52,7 @@ export function ContactCodeStep({
   onResend: (switchTo?: PhoneOtpChannel) => void;
 }): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
   // No "enter the code we sent to …" line here: the sheet header carries it
   // (see contactMeta), matching the web SDK. Two copies drifted apart.
   return (
@@ -90,7 +92,7 @@ export function ContactCodeStep({
             color={busy ? colors.textMuted : colors.primary}
             style={{ fontWeight: '600' }}
           >
-            Resend code
+            {t('contact.code.resend')}
           </MyazaText>
         </Pressable>
       </View>

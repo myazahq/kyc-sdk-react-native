@@ -4,6 +4,7 @@ import { View } from 'react-native';
 import { CountryField } from '../components/CountryField';
 import { MyazaSelect } from '../components/MyazaSelect';
 import { MyazaText } from '../components/Typography';
+import { useText } from '../i18n/useText';
 import { businessCountryName, getBusinessProductDef } from '../config/business';
 import { spacing } from '../config/theme';
 
@@ -26,12 +27,13 @@ export function BusinessRegistryPickers({
   onCountry: (code: string) => void;
   onProduct: (key: string) => void;
 }): React.ReactElement {
+  const t = useText();
   return (
     <>
       {countries.length > 1 ? (
         <>
           <MyazaText variant="label" style={{ marginBottom: spacing.sm }}>
-            Country of registration
+            {t('business.details.countryLabel')}
           </MyazaText>
           {/* The SAME sheet as the phone field's dial-code picker — restricted
               to the workflow's registry countries. */}

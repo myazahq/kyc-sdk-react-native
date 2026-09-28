@@ -14,6 +14,7 @@ import { SkipForNow } from './SkipForNow';
 import { ReviewMapPicture } from './ReviewMapPicture';
 import { HERO, SECOND, ReviewEntranceThumb } from './ReviewEntranceThumbs';
 import { ReviewAddressBand } from './ReviewAddressBand';
+import { useText } from '../../i18n/useText';
 
 /**
  * The commit point, as ONE composed card: a read-only summary map with the
@@ -27,6 +28,7 @@ import { ReviewAddressBand } from './ReviewAddressBand';
 export function AddressReviewStep(): React.ReactElement {
   const store = useKycStore();
   const { colors } = useTheme();
+  const t = useText();
   const flow = useAddressFlow();
   const previewUri = useKyc((s) => s.addressPhotoPreview);
   const mapsFrameUrl = useKyc((s) => s.serverConfig.mapsFrameUrl ?? null);
@@ -150,7 +152,7 @@ export function AddressReviewStep(): React.ReactElement {
       <AddressSandboxTabs />
       <View style={{ height: spacing.md }} />
       <MyazaButton
-        label="Confirm address"
+        label={t('address.review.confirm')}
         loading={flow.confirming}
         disabled={!flow.pin || missingRequired.length > 0}
         onPress={() => void flow.confirm()}

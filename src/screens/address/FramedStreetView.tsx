@@ -4,6 +4,7 @@ import { ActivityIndicator, useWindowDimensions, View } from 'react-native';
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
 import { MyazaText } from '../../components/Typography';
+import { useText } from '../../i18n/useText';
 import { MyazaButton } from '../../components/MyazaButton';
 import { StickyActions } from '../../components/StickyActions';
 import { loadWebView } from '../../lib/webview-available';
@@ -48,6 +49,7 @@ export function FramedStreetView({
 }): React.ReactElement {
   const WebView = useMemo(loadWebView, []);
   const { colors, mode } = useTheme();
+  const t = useText();
   const height = mapSurfaceHeight(useWindowDimensions());
   const [ready, setReady] = useState(false);
   const [viewWidth, setViewWidth] = useState(0);
@@ -97,11 +99,11 @@ export function FramedStreetView({
         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
           {!hideSkip ? (
             <View style={{ flex: 1 }}>
-              <MyazaButton label="Skip" variant="outline" onPress={onSkip} />
+              <MyazaButton label={t('common.skip')} variant="outline" onPress={onSkip} />
             </View>
           ) : null}
           <View style={{ flex: 1 }}>
-            <MyazaButton label="Use this view" disabled={!ready} onPress={capture} />
+            <MyazaButton label={t('address.entrance.useView')} disabled={!ready} onPress={capture} />
           </View>
         </View>
       }
@@ -147,7 +149,7 @@ export function FramedStreetView({
       </View>
       {ready ? (
         <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ textAlign: 'center', marginTop: spacing.sm }}>
-          Drag to look around until your gate or front door sits inside the frame.
+          {t('address.entrance.frameHint')}
         </MyazaText>
       ) : null}
     </StickyActions>

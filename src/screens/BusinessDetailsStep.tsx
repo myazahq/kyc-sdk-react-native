@@ -4,6 +4,7 @@ import { View } from 'react-native';
 import { spacing } from '../config/theme';
 import { useKyc, useKycConfig, useKycStore } from '../components/runtime';
 import { MyazaButton } from '../components/MyazaButton';
+import { useText } from '../i18n/useText';
 import { BusinessRegistryPickers } from './BusinessRegistryPickers';
 import { BusinessSearch } from './BusinessSearch';
 import { BusinessPickedSection } from './BusinessPickedSection';
@@ -31,14 +32,9 @@ import { businessDetailsValid, checkPanelVisible } from '../config/businessDetai
 // web SDK's BusinessDetailsStep — keep the two in lockstep.
 // ---------------------------------------------------------------------------
 
-export const businessDetailsMeta = {
-  title: 'Business Details',
-  description:
-    'Provide your business registration details for verification against the official registry.',
-};
-
 export function BusinessDetailsStep(): React.ReactElement {
   const config = useKycConfig();
+  const t = useText();
   const store = useKycStore();
   const business = useKyc((s) => s.business);
   const check = useKyc((s) => s.businessCheck);
@@ -189,7 +185,9 @@ export function BusinessDetailsStep(): React.ReactElement {
 
       <View style={{ height: spacing.lg }} />
       <MyazaButton
-        label={checking ? 'Checking…' : phase === 'details' ? 'Confirm details & continue' : 'Continue'}
+        label={
+          checking ? 'Checking…' : phase === 'details' ? t('business.details.confirm') : t('common.continue')
+        }
         onPress={() => void handleContinue()}
         loading={checking}
         disabled={!isFormValid || checking}

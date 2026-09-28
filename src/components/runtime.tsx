@@ -85,4 +85,10 @@ export function useKycConfig(): ResolvedKYCConfig {
   return useRuntime().config;
 }
 
+/** The resolved config, or null outside the provider (for components that
+ *  also render before a flow exists, like the text lookup). */
+export function useOptionalKycConfig(): ResolvedKYCConfig | null {
+  return useContext(RuntimeContext)?.config ?? null;
+}
+
 export { MyazaThemeProvider, useTheme, type ThemeValue } from './theme-provider';

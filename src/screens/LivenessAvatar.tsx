@@ -4,7 +4,7 @@ import { Animated, Easing, Image } from 'react-native';
 import { useTheme, useKycConfig } from '../components/runtime';
 import { Icon } from '../components/Icon';
 import { livenessAvatarUrl } from '../liveness/avatarSource';
-import type { LivenessChallenge } from '../liveness/types';
+import type { GestureChallenge } from '../liveness/types';
 
 // Animated GIF avatar demonstrating the requested gesture — the RN mirror of the
 // web/Flutter `LivenessAvatar`. Shows the same Nod/Turn/Blink/Smile animations in
@@ -28,14 +28,14 @@ export function LivenessAvatar({
   size = DEFAULT_SIZE,
   iconSize = DEFAULT_ICON,
 }: {
-  challenge: LivenessChallenge;
+  challenge: GestureChallenge;
   size?: number;
   iconSize?: number;
 }): React.ReactElement {
   const SIZE = size;
   const { colors } = useTheme();
   const { apiKey, devUrl } = useKycConfig();
-  const [displayed, setDisplayed] = useState<LivenessChallenge>(challenge);
+  const [displayed, setDisplayed] = useState<GestureChallenge>(challenge);
   const [broken, setBroken] = useState(false);
   const anim = useRef(new Animated.Value(1)).current;
   // `displayed`, not `challenge`: the badge cross-fades, so the image must keep

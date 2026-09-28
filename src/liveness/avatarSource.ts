@@ -1,7 +1,7 @@
 import { Image } from 'react-native';
 
 import { resolveBaseUrl } from '../services/resolveUrl';
-import type { LivenessChallenge } from './types';
+import type { GestureChallenge } from './types';
 
 // ---------------------------------------------------------------------------
 // Where the gesture animations come from.
@@ -24,20 +24,20 @@ import type { LivenessChallenge } from './types';
 // ---------------------------------------------------------------------------
 
 export function livenessAvatarUrl(
-  challenge: LivenessChallenge,
+  challenge: GestureChallenge,
   apiKey: string,
   devUrl?: string,
 ): string | null {
   try {
     // Throws on a malformed key, which is a real error everywhere else in the
     // SDK and merely a missing cartoon here.
-    return `${resolveBaseUrl(apiKey, devUrl)}/api/kyc/assets/liveness/${challenge}.gif`;
+    return `${resolveBaseUrl(apiKey, devUrl)}/api/kyc/assets/liveness/${challenge}-transparent.gif`;
   } catch {
     return null;
   }
 }
 
-const GESTURES: readonly LivenessChallenge[] = ['nod', 'turn', 'blink', 'smile'];
+const GESTURES: readonly GestureChallenge[] = ['nod', 'turn', 'blink', 'smile'];
 
 /**
  * Warm the image cache at flow open, so the avatar is already on the device by

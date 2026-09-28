@@ -8,6 +8,7 @@ import { DocumentReviewThumb, type ReviewSide } from './DocumentReviewSide';
 import { DocumentReviewZoom } from './DocumentReviewZoom';
 import { documentReviewCopy, type DocumentCaptureMode } from './documentReviewCopy';
 import { radius, spacing } from '../config/theme';
+import { useText } from '../i18n/useText';
 
 // ─── Document review ──────────────────────────────────────────────────────────
 //
@@ -65,6 +66,7 @@ export function DocumentReview({
   mode?: DocumentCaptureMode;
 }): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
   const [zoomed, setZoomed] = useState<ReviewSide | null>(null);
 
   const sides: ReviewSide[] = [
@@ -72,7 +74,7 @@ export function DocumentReview({
     ...(backUri ? [{ id: 'back' as const, label: 'Back', uri: backUri, onRetake: onRetakeBack }] : []),
   ];
   const twoSided = sides.length > 1;
-  const copy = documentReviewCopy(mode, twoSided);
+  const copy = documentReviewCopy(mode, twoSided, t);
 
   return (
     <View style={{ flex: 1 }}>
@@ -125,7 +127,7 @@ export function DocumentReview({
 
       <View style={{ height: spacing.xs }} />
       <MyazaText variant="bodySmall" color={colors.textMuted} style={{ textAlign: 'center' }}>
-        Tap a photo to see it larger.
+        {t('uploadDocument.review.tapToEnlarge')}
       </MyazaText>
 
       {/* Pushes the action bar to the bottom of the viewport so Continue can

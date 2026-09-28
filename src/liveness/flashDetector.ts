@@ -122,10 +122,10 @@ export interface FlashResult {
  * Aggregate the per-flash samples.
  *
  * Two thirds of the MEASURABLE flashes must match. Flashes the ambient light
- * drowned are excluded rather than counted against the user: a phone in direct
- * sunlight cannot reflect a screen, and failing people for standing outdoors
- * would be a worse error than missing a spoof — which is why an all-inconclusive
- * run passes soft. Paper-photo and mask attacks are the gesture checks' job.
+ * drowned are excluded rather than counted against the user. A run where NONE
+ * could be measured is not a pass, though: a phone screen held up to the camera
+ * drowns the reflection just as sunlight does. The caller retries it, then lets
+ * gestures carry the check (flashOutcome.ts).
  */
 export function evaluateFlashSequence(
   sequence: readonly FlashColor[],
@@ -135,7 +135,7 @@ export function evaluateFlashSequence(
   const matched = measurable.filter((s) => s.matched).length;
   const inconclusive = samples.length - measurable.length;
   return {
-    passed: measurable.length === 0 || matched >= Math.ceil(measurable.length * 0.66),
+    passed: measurable.length > 0 && matched >= Math.ceil(measurable.length * 0.66),
     score: measurable.length === 0 ? 0 : matched / measurable.length,
     matched,
     total: samples.length,

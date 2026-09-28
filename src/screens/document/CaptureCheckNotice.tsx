@@ -5,9 +5,8 @@ import { spacing } from '../../config/theme';
 import { MyazaAlert } from '../../components/MyazaAlert';
 import { MyazaButton } from '../../components/MyazaButton';
 import { documentReviewCopy } from '../../components/documentReviewCopy';
+import { useText } from '../../i18n/useText';
 import {
-  CAPTURE_CHECK_CONTINUE_ANYWAY,
-  CAPTURE_CHECK_TITLE,
   captureProblemMessage,
   captureRetakeLabel,
   captureRetakeSides,
@@ -38,6 +37,9 @@ export function CaptureCheckNotice({
   onRetake: (side: DocumentCaptureSide) => void;
   onContinueAnyway: () => void;
 }): React.ReactElement {
+  const t = useText();
+  const title = t('uploadDocument.check.title');
+  const continueAnyway = t('common.continueAnyway');
   // Once per kind: two sides with the same problem need one sentence, not two.
   const messages = [...new Set(problems.map((p) => captureProblemMessage(p.kind)))];
   const sides = captureRetakeSides(problems);
@@ -51,9 +53,9 @@ export function CaptureCheckNotice({
         accessible
         accessibilityRole="alert"
         accessibilityLiveRegion="polite"
-        accessibilityLabel={`${CAPTURE_CHECK_TITLE}. ${messages.join(' ')}`}
+        accessibilityLabel={`${title}. ${messages.join(' ')}`}
       >
-        <MyazaAlert variant="warning" title={CAPTURE_CHECK_TITLE} message={messages.join('\n\n')} />
+        <MyazaAlert variant="warning" title={title} message={messages.join('\n\n')} />
       </View>
       {sides.map((side, i) => (
         <MyazaButton
@@ -66,9 +68,9 @@ export function CaptureCheckNotice({
         />
       ))}
       <MyazaButton
-        label={CAPTURE_CHECK_CONTINUE_ANYWAY}
+        label={continueAnyway}
         variant="outline"
-        accessibilityLabel={CAPTURE_CHECK_CONTINUE_ANYWAY}
+        accessibilityLabel={continueAnyway}
         accessibilityHint="Carries on with these photos as they are"
         onPress={onContinueAnyway}
       />

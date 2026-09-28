@@ -6,6 +6,8 @@ import { useTheme } from '../../components/runtime';
 import { Icon, type IconName } from '../../components/Icon';
 import { MyazaText } from '../../components/Typography';
 import { useReduceMotion } from '../../components/StaggerIn';
+import { useText } from '../../i18n/useText';
+import type { TextFn } from '../../i18n/types';
 
 // ---------------------------------------------------------------------------
 // The intro screen's three plain-language disclosures — the OkHi-patterned
@@ -17,34 +19,21 @@ import { useReduceMotion } from '../../components/StaggerIn';
 // transition, and LayoutAnimation needs an experimental opt-in on Android.
 // This uses the SDK's own Animated idiom and works the same on both platforms.
 //
-// Keep this copy in lockstep with the web and Flutter SDKs.
+// The copy lives in i18n/defaults/address-intro.ts; keep it in lockstep with
+// the web and Flutter SDKs.
 // ---------------------------------------------------------------------------
-
-const HOW_IT_WORKS = {
-  foreground:
-    'After you finish, your device periodically confirms it is at this address over the coming days. Only day-level summaries ever leave your phone, never your movements.',
-  background:
-    'After you finish, your phone confirms it is at this address over the coming days, even when the app is closed. Only day-level summaries ever leave your phone, never your movements.',
-} as const;
 
 const disclosuresFor = (
   background: boolean,
+  t: TextFn,
 ): Array<{ icon: IconName; title: string; body: string }> => [
   {
     icon: 'circle-help',
-    title: 'How it works',
-    body: background ? HOW_IT_WORKS.background : HOW_IT_WORKS.foreground,
+    title: t('address.intro.howItWorks.title'),
+    body: t(background ? 'address.intro.howItWorks.body.background' : 'address.intro.howItWorks.body'),
   },
-  {
-    icon: 'sliders',
-    title: 'You stay in control',
-    body: 'You can turn location off at any time in your device settings. An unfinished check simply expires. It never counts against you.',
-  },
-  {
-    icon: 'shield',
-    title: 'Your data is protected',
-    body: "Location summaries are used only to confirm this address and are handled under your country's data protection rules.",
-  },
+  { icon: 'sliders', title: t('address.intro.control.title'), body: t('address.intro.control.body') },
+  { icon: 'shield', title: t('address.intro.privacy.title'), body: t('address.intro.privacy.body') },
 ];
 
 export function IntroDisclosures({
@@ -54,8 +43,9 @@ export function IntroDisclosures({
   background?: boolean;
 }): React.ReactElement {
   const { colors } = useTheme();
+  const t = useText();
   const [openIdx, setOpenIdx] = useState<number | null>(null);
-  const DISCLOSURES = disclosuresFor(background);
+  const DISCLOSURES = disclosuresFor(background, t);
   return (
     <View
       style={{

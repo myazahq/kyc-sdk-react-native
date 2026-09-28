@@ -9,6 +9,8 @@
 // ---------------------------------------------------------------------------
 
 import type { EmailVerificationConfig, PhoneVerificationConfig } from '../types/workflow';
+import { defaultText } from '../i18n/translate';
+import type { TextFn } from '../i18n/types';
 
 /**
  * What a contact step is currently doing, published to the store so the SHEET
@@ -79,9 +81,10 @@ export function contactCodeLength(
 export function contactMeta(
   channel: 'email' | 'phone',
   ctx?: { codeLength?: number; challenge?: ContactChallenge | null },
+  t: TextFn = defaultText,
 ): { title: string; description: string } {
   const isEmail = channel === 'email';
-  const title = isEmail ? 'Verify your email' : 'Verify your phone number';
+  const title = isEmail ? t('contact.email.title') : t('contact.phone.title');
   const live = ctx?.challenge?.channel === channel ? ctx.challenge : null;
   const by = !isEmail && live?.via ? ` by ${CHANNEL_LABELS[live.via]}` : '';
 
@@ -96,7 +99,7 @@ export function contactMeta(
   return {
     title,
     description: isEmail
-      ? "We'll send a one-time code to confirm this email belongs to you."
+      ? t('contact.email.intro')
       : `We'll send a one-time code${by} to confirm this number belongs to you.`,
   };
 }

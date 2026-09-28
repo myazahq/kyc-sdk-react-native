@@ -5,6 +5,7 @@ import { radius, spacing } from '../config/theme';
 import { useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
 import { MyazaText } from '../components/Typography';
 import { MyazaButton } from '../components/MyazaButton';
+import { useText } from '../i18n/useText';
 import { MyazaInput } from '../components/MyazaInput';
 import { MyazaSelect } from '../components/MyazaSelect';
 import { Pressable } from 'react-native';
@@ -31,12 +32,6 @@ import type { ApplicantRole } from '../types/business';
 // the plain role + name form. Mirrors the web SDK's ApplicantRoleStep.
 // ---------------------------------------------------------------------------
 
-export const applicantRoleMeta = {
-  title: 'Now verify your own identity',
-  description:
-    'Tell us your role at the business, then verify your identity with a government-issued ID.',
-};
-
 const APPLICANT_ROLES: ApplicantRole[] = [...KEY_PERSON_ROLES, 'authorized_representative'];
 
 const APPLICANT_ROLE_LABELS: Record<ApplicantRole, string> = {
@@ -48,6 +43,7 @@ export function ApplicantRoleStep(): React.ReactElement {
   const store = useKycStore();
   const config = useKycConfig();
   const { colors } = useTheme();
+  const t = useText();
   const stored = useKyc((s) => s.businessApplication);
 
   // The valid entered PEOPLE, keeping their ORIGINAL index — the payload flag
@@ -131,8 +127,7 @@ export function ApplicantRoleStep(): React.ReactElement {
           <Icon name="scan-face" size={18} color={colors.primary} />
         </View>
         <MyazaText variant="bodySmall" style={{ flex: 1 }}>
-          Regulations require the person submitting a business application to verify their own
-          identity. This only takes a minute.
+          {t('business.applicant.notice')}
         </MyazaText>
       </View>
 
@@ -140,7 +135,7 @@ export function ApplicantRoleStep(): React.ReactElement {
         <>
           <View style={{ height: spacing.lg }} />
           <MyazaText variant="bodySmall" style={{ fontWeight: '600', marginBottom: spacing.sm }}>
-            Are you one of the people you listed?
+            {t('business.applicant.whoLabel')}
           </MyazaText>
           {people.map(({ row, index }) => (
             <SelfCard
@@ -154,7 +149,7 @@ export function ApplicantRoleStep(): React.ReactElement {
             />
           ))}
           <SelfCard
-            name="I'm not one of these people"
+            name={t('business.applicant.notListed')}
             other
             selected={selection === 'other'}
             onPress={() => setSelection('other')}
@@ -173,8 +168,7 @@ export function ApplicantRoleStep(): React.ReactElement {
             >
               <Icon name="check" size={14} color={colors.primary} />
               <MyazaText variant="bodySmall" style={{ flex: 1, marginLeft: spacing.xs + 2 }}>
-                You'll verify your identity at the end of this form — no separate invite link is
-                needed for you.
+                {t('business.applicant.selfNote')}
               </MyazaText>
             </View>
           ) : null}
@@ -185,7 +179,7 @@ export function ApplicantRoleStep(): React.ReactElement {
         <>
           <View style={{ height: spacing.lg }} />
           <MyazaText variant="bodySmall" style={{ fontWeight: '600', marginBottom: spacing.xs }}>
-            Your role at the business
+            {t('business.applicant.roleLabel')}
           </MyazaText>
           <MyazaSelect
             value={role}
@@ -210,7 +204,7 @@ export function ApplicantRoleStep(): React.ReactElement {
       ) : null}
 
       <View style={{ height: spacing.xl }} />
-      <MyazaButton label="Continue" onPress={handleContinue} disabled={!canContinue} />
+      <MyazaButton label={t('common.continue')} onPress={handleContinue} disabled={!canContinue} />
     </View>
   );
 }

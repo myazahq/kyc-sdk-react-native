@@ -1,5 +1,55 @@
 # Changelog
 
+## 3.2.0
+
+Passive Liveness, customisable texts, the organisation's own footer logo, silent capture and a bright screen during liveness.
+
+**Rebuild your native app after upgrading:** this release adds the native module `expo-brightness` as a dependency of the SDK. You do not install it yourself, and you should not add its config plugin (it declares `WRITE_SETTINGS`, which the SDK never uses).
+
+These features need the Myaza server release of 2026-09-28. Against an older server the flow still completes: the new settings are simply ignored, and silent frames are refused at upload and left out.
+
+### Passive Liveness, and a head turn in every 3D Active Motion run
+
+`livenessMode: 'passive'` asks the person to hold still for a moment while the SDK records a short clip and takes the selfie. There are no prompts: Myaza's liveness model decides from the capture. 3D Active Motion now always includes a head turn, and the SDK reports the prompts it ran.
+
+### The liveness result is sent with the submission
+
+Builds up to 3.1.0 recorded the liveness result and never sent it, so the server could not audit it. It is sent now. A flash sequence that could not be measured no longer counts as passed, and a recording that fails to upload is reported with its reason.
+
+### A bright screen during liveness
+
+While the liveness camera is on, the flow shows its light theme and raises the screen to full brightness, then restores both. Android changes the brightness of the SDK's own window only, never the system setting; iOS uses `expo-brightness` and reverts on lock. A workflow turns this off with `livenessBrightScreen: false`.
+
+### Customisable texts
+
+A workflow can reword the main text of each screen through its `texts` setting, on the same keys as the web SDK.
+
+### The organisation's own footer logo
+
+When a workflow uses custom trust branding, its logo replaces the Myaza mark in the footer, and the consent notice names Myaza Trust as the processor for the organisation.
+
+### Silent capture
+
+On the document review, the SDK briefly opens the front camera with no prompt, flash or shutter sound and takes one frame of the person holding the ID. It is on by default; a workflow turns it off with `silentCapture: false`.
+
+### Selfie guidance
+
+The selfie primer asks for a bright spot with no glare and an uncovered face (glasses off), and no longer states a duration.
+
+### Logos in local development
+
+With a development key, a workflow's own logo and the footer logos now load over a USB tunnel (`adb reverse`) or after your machine's network address changes, like the organisation logo. Production is unaffected.
+
+### Background monitoring is on by default, and the SDK turns it on
+
+When a presence flow is submitted, the SDK now asks the person to allow location all the time and arms the background geofence itself, unless the workflow switches Background monitoring off. You no longer call `enableBackgroundPresence()` for it. It still needs your app's one-time setup (`expo-task-manager`, the `location: "always"` plugin setting, and `registerBackgroundPresence()` at your app's root). Without that setup the SDK skips the step and asks for nothing: `enableBackgroundPresence()` now returns the new reason `not_registered` when `registerBackgroundPresence()` never ran, instead of arming a fence nothing would handle.
+
+### The SDK sends the first presence report itself
+
+When a workflow enables presence verification, the SDK now reports presence on its own the moment the flow is submitted, so the watch gets its first day (and night, when submitted at night) without any code in your app. Until now every observation depended on your app calling `reportAddressPresence()`, and apps that had not added that call produced watches that collected nothing and lapsed as inconclusive.
+
+Later days still come from your app: keep calling `reportAddressPresence()` on app open, or enable background monitoring. A call you already make at submit is harmless, since one day's reports merge into one. The pin is stored under your `userId`, so pass one: without it there is nothing to report against, and the server now starts no watch.
+
 ## 3.1.0
 
 ### The icon set is Hugeicons, the same one the web and Flutter SDKs draw
