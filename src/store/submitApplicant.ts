@@ -47,6 +47,12 @@ export function buildApplicantVerifyRequest(
   const silent = silentCaptureSubmission(state.silentFrames);
 
   return {
+    // The application's session rides along: the server refuses an applicant
+    // verification that does not name it (409 applicant_session_required).
+    // Without it every embedded applicant check was refused, the refusal was
+    // swallowed by the fire-and-forget caller, and reopening the app resumed
+    // the application at the applicant's ID step. Mirrors the web SDK.
+    ...(state.sessionId ? { sessionId: state.sessionId } : {}),
     // The applicant's own leg country — their country-select choice (or the
     // overlaid applicant workflow's / registry fallback), never forced to the
     // business registry country.

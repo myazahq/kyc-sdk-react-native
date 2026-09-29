@@ -1,6 +1,6 @@
 {
   "name": "@myazahq/kyc-sdk-react-native",
-  "version": "3.3.0",
+  "version": "3.3.1",
   "description": "Myaza KYC SDK for React Native (Expo) — ID verification, liveness detection, and document capture",
   "author": "Flitstack Technologies Inc.",
   "repository": {

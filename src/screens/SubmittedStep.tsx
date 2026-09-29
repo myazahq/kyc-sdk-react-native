@@ -2,6 +2,10 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { mapToKycError, safeReportError } from '../services/errors';
 import { contactStepFor, expiredContactChannels } from '../lib/contact-recovery';
+import { recoveryStepFor, serverRefusalOf } from '../lib/submit-recovery';
+import { buildStepOrder } from '../config/stepOrder';
+import { stepOrderOptions } from '../store/derive';
+import type { KYCStep } from '../types/config';
 import { KYCError, type KYCSubmission } from '../types/verification';
 import { useKyc, useKycConfig, useKycStore } from '../components/runtime';
 import { useText } from '../i18n/useText';
@@ -34,6 +38,9 @@ export function SubmittedStep({ onClose }: { onClose: () => void }): React.React
   const [phase, setPhase] = useState<Phase>('submitting');
   const [error, setError] = useState<KYCError | null>(null);
   const [retry, setRetry] = useState<{ attempt: number; total: number } | null>(null);
+  // Where Go back lands after a refusal (lib/submit-recovery.ts); null when
+  // going back cannot help.
+  const [recoverTo, setRecoverTo] = useState<KYCStep | null>(null);
   const reportedRef = useRef(false);
   const kickedRef = useRef(false);
 
@@ -41,6 +48,7 @@ export function SubmittedStep({ onClose }: { onClose: () => void }): React.React
     setPhase('submitting');
     setError(null);
     setRetry(null);
+    setRecoverTo(null);
     // The biometric scopes hand over BEFORE the selfie upload lands (the
     // review is off, so nothing on the liveness step gated on it): wait for
     // the upload's own record here, under the same loading screen. A failed
@@ -80,6 +88,16 @@ export function SubmittedStep({ onClose }: { onClose: () => void }): React.React
         return;
       }
       const kycError = mapToKycError(err, 'verify');
+      // Retries (if any) are exhausted. Read Go back's target off the SERVER's
+      // refusal code, not the mapped client one.
+      const refusal = serverRefusalOf(err);
+      setRecoverTo(
+        refusal
+          ? recoveryStepFor(refusal.code, buildStepOrder(stepOrderOptions(store.getState())), {
+              mediaKey: refusal.mediaKey,
+            })
+          : null,
+      );
       setError(kycError);
       if (!reportedRef.current) {
         reportedRef.current = true;
@@ -117,6 +135,14 @@ export function SubmittedStep({ onClose }: { onClose: () => void }): React.React
         error={error}
         onRetry={error.code === 'upload_failed' ? retryUpload : error.code === 'network_error' ? () => void submit() : null}
         onClose={onClose}
+        // Only where Try Again is not the answer: a refusal about what was
+        // entered is fixed on its own step, and returning to 'submitted'
+        // remounts this step, which submits again.
+        onGoBack={
+          recoverTo && error.code !== 'upload_failed' && error.code !== 'network_error'
+            ? () => store.getState().goToStep(recoverTo)
+            : null
+        }
       />
     );
   }

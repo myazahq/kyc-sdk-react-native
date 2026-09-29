@@ -13,6 +13,11 @@ import { Badge } from './SubmittedBadge';
 // The submitted step's error screen (split from SubmittedStep, 200-line
 // rule). `onRetry` is null when the failure is not recoverable in-flow (an
 // exhausted balance, a refused key); the step decides, this only renders.
+// `onGoBack` is back to the step that can fix a refusal
+// (lib/submit-recovery.ts). When present it is the primary action beside an
+// outline Close: the application is not lost, only incomplete, and closing
+// would throw it away. Mirrors Flutter's ErrorView and the web SDK's
+// SubmitErrorScreen.
 
 const ERROR_TITLES: Record<string, string> = {
   insufficient_credits: 'Credits Exhausted',
@@ -26,10 +31,12 @@ export function SubmittedError({
   error,
   onRetry,
   onClose,
+  onGoBack = null,
 }: {
   error: KYCError;
   onRetry: (() => void) | null;
   onClose: () => void;
+  onGoBack?: (() => void) | null;
 }): React.ReactElement {
   const { colors } = useTheme();
   const title = ERROR_TITLES[error.code] ?? 'Submission Failed';
@@ -55,9 +62,20 @@ export function SubmittedError({
             <MyazaButton label="Try Again" variant="outline" leadingIcon="refresh" onPress={onRetry} />
           </View>
         ) : null}
-        <View style={{ flex: 1 }}>
-          <MyazaButton label="Close" onPress={onClose} />
-        </View>
+        {onGoBack ? (
+          <>
+            <View style={{ flex: 1 }}>
+              <MyazaButton label="Close" variant="outline" onPress={onClose} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <MyazaButton label="Go back" leadingIcon="back" onPress={onGoBack} />
+            </View>
+          </>
+        ) : (
+          <View style={{ flex: 1 }}>
+            <MyazaButton label="Close" onPress={onClose} />
+          </View>
+        )}
       </View>
     </View>
   );
