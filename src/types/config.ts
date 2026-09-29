@@ -315,10 +315,10 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> e
   /**
    * How progress through the flow is drawn in the header.
    *
-   *   • `'steps'` (default) — numbered circles, one per step, connected. Shows
+   *   • `'steps'` — numbered circles, one per step, connected. Shows
    *     WHICH step you are on and how many there are, and collapses to a window
    *     when they no longer fit.
-   *   • `'bar'` — a single thin bar pinned to the bottom edge of the header.
+   *   • `'bar'` (default) — a single thin bar pinned to the bottom edge of the header.
    *     Quieter, and unaffected by step count, so it suits long flows and hosts
    *     who would rather the chrome said less.
    *   • `'none'` — no progress in the header at all. For hosts whose own

@@ -756,6 +756,20 @@ Three opt-ins, each deliberate:
 the foreground tier working exactly as before — the tiers degrade, never
 break.
 
+**"Still here" check-ins.** A fence only speaks when the person crosses its
+edge, so without help a stay is only recorded when they leave, and someone
+who hardly leaves home earns little background evidence. The SDK therefore
+records a stay while the person is still there, once it has run three hours:
+
+- **On app open**, automatically: an inside `reportAddressPresence()` reading
+  also records the running stay. Nothing to add.
+- **Periodically in the background**, optional: install
+  `npx expo install expo-background-task` and add its config plugin. The SDK
+  then asks the OS for a check-in about every two hours (Android WorkManager,
+  iOS background tasks) and uses the same background location permission it
+  already holds. The OS decides the real timing, so treat it as best-effort.
+  Without the module the fence and the app-open check-in carry on as before.
+
 ### The Android foreground service (reliability on OEM-managed phones)
 
 A geofence alone is not reliable on Android once a manufacturer's battery

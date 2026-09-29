@@ -23,6 +23,11 @@ interface BgRecord {
  *  reserved key, which no org user reference can collide with. */
 const SERVICE_USER_KEY = '__service_user__';
 
+/** The user the OS fence is armed for, so a periodic check-in (whose task,
+ *  like the service's, carries no region identifier) knows whose stay to
+ *  record. Same reserved-key rule as the service user. */
+const FENCE_USER_KEY = '__fence_user__';
+
 function readAll(): Record<string, BgRecord> {
   return readJsonFile(FILE_NAME) as Record<string, BgRecord>;
 }
@@ -78,5 +83,17 @@ export function saveServiceUser(userId: string | null): void {
 
 export function loadServiceUser(): string | null {
   const id = readAll()[SERVICE_USER_KEY]?.serviceUser;
+  return typeof id === 'string' && id.length > 0 ? id : null;
+}
+
+export function saveFenceUser(userId: string | null): void {
+  const all = readAll();
+  if (userId == null) delete all[FENCE_USER_KEY];
+  else all[FENCE_USER_KEY] = { serviceUser: userId };
+  writeJsonFile(FILE_NAME, all as Record<string, unknown>);
+}
+
+export function loadFenceUser(): string | null {
+  const id = readAll()[FENCE_USER_KEY]?.serviceUser;
   return typeof id === 'string' && id.length > 0 ? id : null;
 }

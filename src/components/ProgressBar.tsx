@@ -10,7 +10,7 @@ import { useTheme } from './runtime';
 // Unlike the step circles it does not say WHICH step you are on or how many
 // there are, which is the trade: it is unaffected by step count, so a 14-step
 // KYB flow draws exactly like a 4-step one. Hosts who would rather the chrome
-// said less opt in with `progressStyle: 'bar'`.
+// said less get it by default; `progressStyle: 'steps'` asks for the circles.
 
 export interface ProgressBarProps {
   /** 0.0–1.0 progress fraction. */

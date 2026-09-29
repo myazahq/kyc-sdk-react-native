@@ -24,9 +24,30 @@ describe('applyLocationSamples', () => {
     const r = applyLocationSamples(PIN, [fix(AT_PIN, t(2026, 9, 3, 9))], null, LAGOS);
     expect(r.enterAt).toBe(t(2026, 9, 3, 9));
     expect(r.observations).toEqual([]);
-    // A later inside fix does not re-stamp: the stay began at the first one.
-    const again = applyLocationSamples(PIN, [fix(AT_PIN, t(2026, 9, 3, 12))], r.enterAt, LAGOS);
+    // A later inside fix within the check-in interval does not re-stamp:
+    // the stay began at the first one.
+    const again = applyLocationSamples(PIN, [fix(AT_PIN, t(2026, 9, 3, 11))], r.enterAt, LAGOS);
     expect(again.enterAt).toBe(t(2026, 9, 3, 9));
+    expect(again.observations).toEqual([]);
+  });
+
+  it('checks in on a long stay: folds it so far and restarts it at the reading', () => {
+    const r = applyLocationSamples(PIN, [fix(AT_PIN, t(2026, 9, 3, 12))], t(2026, 9, 3, 9), LAGOS);
+    expect(r.enterAt).toBe(t(2026, 9, 3, 12));
+    expect(r.observations).toEqual([
+      { day: '2026-09-03', dwellMinutes: 180, nightPresent: false, source: 'geofence', samples: 1 },
+    ]);
+  });
+
+  it('records someone who never leaves, one check-in at a time', () => {
+    // Home from Friday 18:00 through Monday 08:00 with no exit at all: every
+    // day is still credited, where before only the first 24 hours could be.
+    const fixes = [];
+    for (let h = 18; h <= 18 + 62; h += 3) fixes.push(fix(AT_PIN, t(2026, 9, 4, 18) + (h - 18) * 3600_000));
+    const r = applyLocationSamples(PIN, fixes, null, LAGOS);
+    expect(r.observations.map((o) => o.day)).toEqual(['2026-09-04', '2026-09-05', '2026-09-06', '2026-09-07']);
+    expect(r.observations.every((o) => o.nightPresent)).toBe(true);
+    expect(r.observations.find((o) => o.day === '2026-09-05')?.dwellMinutes).toBe(1440);
   });
 
   it('closes a stay on the first outside fix and folds the span', () => {

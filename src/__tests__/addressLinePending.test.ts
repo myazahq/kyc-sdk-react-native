@@ -49,7 +49,7 @@ const PENDING_SURFACES = {
   'rn pin': 'kyc-sdk-react-native/src/screens/address/PinSummaryRow.tsx',
   'rn review': 'kyc-sdk-react-native/src/screens/address/ReviewAddressBand.tsx',
   'flutter pin': 'kyc-sdk-flutter/lib/src/screens/address/address_pin_summary.dart',
-  'flutter review': 'kyc-sdk-flutter/lib/src/screens/address/address_review_card.dart',
+  'flutter review': 'kyc-sdk-flutter/lib/src/screens/address/address_review_band.dart',
 };
 
 describeInMonorepo('the wait is a skeleton line, not a spinner', () => {

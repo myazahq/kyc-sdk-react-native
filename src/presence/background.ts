@@ -23,6 +23,7 @@
 
 import * as Location from 'expo-location';
 import { foldSpanIntoDays } from './background-math';
+import { cancelCheckIns, defineCheckInTask, scheduleCheckIns } from './checkin';
 import { defineLocationTask } from './foreground-service';
 import { PRESENCE_GEOFENCE_TASK, armGeofence } from './geofence';
 import { postObservations } from './post';
@@ -35,6 +36,7 @@ import {
   queueObservations,
   replacePending,
   saveEnterAt,
+  saveFenceUser,
   saveReporterConfig,
 } from './background-store';
 
@@ -107,6 +109,7 @@ export function registerBackgroundPresence(): boolean {
     }
   });
   defineLocationTask(tm);
+  defineCheckInTask(tm);
   return true;
 }
 
@@ -168,6 +171,11 @@ export async function enableBackgroundPresence(options: {
 
   try {
     await armGeofence(options.externalUserId, pin);
+    saveFenceUser(options.externalUserId);
+    // "Still here" check-ins (checkin.ts): best-effort, and only when the
+    // host installed expo-background-task. Without them a stay is recorded
+    // when the person leaves or opens the app.
+    await scheduleCheckIns();
     return { enabled: true, reason: 'enabled' };
   } catch {
     return { enabled: false, reason: 'start_failed' };
@@ -176,6 +184,8 @@ export async function enableBackgroundPresence(options: {
 
 /** Disarm the geofence. Never throws; a host may call it defensively. */
 export async function disableBackgroundPresence(): Promise<void> {
+  saveFenceUser(null);
+  await cancelCheckIns();
   try {
     await Location.stopGeofencingAsync(PRESENCE_GEOFENCE_TASK);
   } catch {

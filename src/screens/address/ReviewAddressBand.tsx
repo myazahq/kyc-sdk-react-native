@@ -17,6 +17,11 @@ import { ADDRESS_LINE_PENDING, ADDRESS_LINE_UNAVAILABLE } from '../../lib/addres
 // breathing room once added here starved the "Pinned address" pill on a
 // 360dp phone (the S24, 2026-09-08), so the label wrapped inside its pill
 // here and overflowed on Flutter.
+//
+// The 128 also put Edit flush against the entrance photo's edge (the photo is
+// 112 wide, 16 from the card's edge), so when something hangs over the band
+// Edit moves under the address, clear of the photo, and the pill gets the
+// width Edit used to take.
 
 const BAND_CLEARANCE = 128;
 const BAND_MIN_HEIGHT = 68;
@@ -42,6 +47,13 @@ export function ReviewAddressBand({
 }): React.ReactElement {
   const { colors } = useTheme();
   const t = useText();
+  const editLink = (
+    <Pressable onPress={onEdit} accessibilityRole="button" accessibilityLabel={t('address.review.edit')} hitSlop={8}>
+      <MyazaText variant="bodyMedium" color={colors.primary}>
+        {t('address.review.edit')}
+      </MyazaText>
+    </Pressable>
+  );
   return (
         <View
           style={{
@@ -98,15 +110,13 @@ export function ReviewAddressBand({
                   {`“${directions}”`}
                 </MyazaText>
               ) : null}
+
+              {clearsHero ? <View style={{ alignSelf: 'flex-start', marginTop: spacing.sm }}>{editLink}</View> : null}
             </View>
 
-            {/* A plain link (web `text-sm text-primary`); the band's right
-                padding keeps it clear of the entrance hanging over it. */}
-            <Pressable onPress={onEdit} accessibilityRole="button" accessibilityLabel={t('address.review.edit')} hitSlop={8}>
-              <MyazaText variant="bodyMedium" color={colors.primary}>
-                {t('address.review.edit')}
-              </MyazaText>
-            </Pressable>
+            {/* A plain link (web `text-sm text-primary`), beside the address
+                only when nothing hangs over the band. */}
+            {clearsHero ? null : editLink}
           </View>
         </View>
   );

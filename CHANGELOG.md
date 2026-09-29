@@ -1,5 +1,27 @@
 # Changelog
 
+## 3.3.0
+
+Background presence now records a stay while the person is still at home, the progress bar becomes the default indicator, plus fixes on the address confirmation screens.
+
+No native rebuild is needed for these changes. The periodic background check-in is optional and needs `expo-background-task`, which does need a rebuild if you add it.
+
+### The progress bar is now the default indicator
+
+A workflow or config that doesn't choose a progress indicator now shows the thin bar on the header's bottom edge instead of the numbered step circles. To keep the circles, set `progressStyle: 'steps'` (or choose Steps in the workflow builder). Workflows that already chose a style are unchanged.
+
+### "Edit" keeps clear of the entrance photo on the address review
+
+On the "Confirm your address" card, the "Edit" link sat right against the entrance photo that hangs over the card. When a photo is there, "Edit" now sits under the address instead; without one it stays where it was.
+
+### The address intro button now reads "Continue"
+
+The button on the "Let's confirm your address" screen said "Got it, let's go". Google Play's guidance for the disclosure shown before a background location request asks for a clear accept button rather than a vague "Got it", and a reviewer can treat this screen as that disclosure. The default is now "Continue". If you set your own text for `address.intro.start`, nothing changes for you.
+
+### "Still here" check-ins for background presence
+
+A geofence only reports when the person crosses its edge, so a stay used to be recorded only when they left: someone who hardly leaves home earned little background evidence, and one exit the phone failed to report capped a multi-day stay at 24 hours. The SDK now records a stay while the person is still there, once it has run three hours: on every app open (an inside `reportAddressPresence()` reading), on each reading of the Android foreground service, and, if you install the optional `expo-background-task`, on a periodic background check-in about every two hours. No new permission is needed.
+
 ## 3.2.0
 
 Passive Liveness, customisable texts, the organisation's own footer logo, silent capture and a bright screen during liveness.

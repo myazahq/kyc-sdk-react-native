@@ -6,7 +6,8 @@
 // cooperate on one state rather than double-counting a stay:
 //
 //   inside,  no open stay  → open one (stamp enterAt)
-//   inside,  open stay     → nothing (the fence or an earlier sample did it)
+//   inside,  open stay     → check in: once it has run CHECKPOINT_MS, fold it
+//                            so far and restart it here (checkpointStay)
 //   outside, open stay     → close it: fold the span into per-day aggregates
 //   outside, no open stay  → nothing (absence is never evidence)
 //   mocked                 → report the day FLAGGED, never open a stay
@@ -20,7 +21,7 @@
 // Mirrors the Flutter plugin's PresenceSampler.kt — keep the two in lockstep.
 // ---------------------------------------------------------------------------
 
-import { foldSpanIntoDays } from './background-math';
+import { checkpointStay, foldSpanIntoDays } from './background-math';
 import { insideFence, localDayAndNight } from './math';
 import type { WireObservation } from './post';
 
@@ -94,7 +95,16 @@ export function applyLocationSamples(
     }
     const inside = insideFence(pin, fix);
     if (inside) {
-      if (open == null) open = fix.timestamp;
+      // A person who never leaves never produces an exit, so their stay is
+      // recorded here, at each confirmed-inside reading, instead.
+      const checked = checkpointStay(open, fix.timestamp, offsetMinutes);
+      open = checked.enterAt;
+      if (checked.days.length > 0) {
+        observations = mergeObservations(
+          observations,
+          checked.days.map((d) => ({ ...d, source: 'geofence' as const, samples: 1 })),
+        );
+      }
       continue;
     }
     if (open == null) continue;

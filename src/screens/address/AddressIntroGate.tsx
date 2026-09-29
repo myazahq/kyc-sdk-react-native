@@ -20,7 +20,7 @@ import type { TextFn } from '../../i18n/types';
 //
 // The underlying step still does its mount work behind this gate: the
 // current-fix prefetch starts while the primer is on screen, so by the time
-// "Got it" is tapped the fix is usually already in hand and the pin lands with
+// "Continue" is tapped the fix is usually already in hand and the pin lands with
 // no hesitation. Only the APPLY waits.
 // ---------------------------------------------------------------------------
 

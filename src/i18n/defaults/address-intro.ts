@@ -35,7 +35,7 @@ export const ADDRESS_INTRO_TEXTS: Record<string, string> = {
   'address.intro.privacy.title': 'Your data is protected',
   'address.intro.privacy.body':
     "Location summaries are used only to confirm this address and are handled under your country's data protection rules.",
-  'address.intro.start': 'Got it, let’s go',
+  'address.intro.start': 'Continue',
 };
 
 export const ADDRESS_INTRO_NOT_SHOWN: Record<string, string> = {};

@@ -98,3 +98,38 @@ export function foldSpanIntoDays(
   }
   return out;
 }
+
+/**
+ * How long an open stay may run before a confirmed "still here" reading
+ * records it. A stay used to be credited only when the person LEFT, so
+ * someone who hardly leaves home produced no background evidence, and one
+ * lost exit capped a multi-day stay at its first 24 hours. Checking in folds
+ * the stay so far and restarts it at the confirmation, so the 24-hour cap is
+ * measured from the last time we knew they were there. Three hours keeps each
+ * folded slice comfortably above the server's 30-minute dwell floor.
+ */
+export const CHECKPOINT_MS = 3 * 60 * 60 * 1000;
+
+export interface CheckpointResult {
+  /** The open stay after the check-in. */
+  enterAt: number;
+  /** Per-day aggregates to queue (empty when nothing was folded). */
+  days: DayAggregate[];
+}
+
+/**
+ * Apply a CONFIRMED-INSIDE reading at `atMs` to the open-stay state. No open
+ * stay opens one (a missed ENTER, or a fence armed while already inside);
+ * a stay open at least CHECKPOINT_MS is folded up to `atMs` and restarted
+ * there; anything else is unchanged. Only ever called on a reading inside the
+ * fence: an outside reading is the exit rules' business, never this one's.
+ */
+export function checkpointStay(
+  enterAt: number | null,
+  atMs: number,
+  offsetMinutes: number = deviceUtcOffsetMinutes(atMs),
+): CheckpointResult {
+  if (enterAt == null) return { enterAt: atMs, days: [] };
+  if (!Number.isFinite(atMs) || atMs - enterAt < CHECKPOINT_MS) return { enterAt, days: [] };
+  return { enterAt: atMs, days: foldSpanIntoDays(enterAt, atMs, offsetMinutes) };
+}

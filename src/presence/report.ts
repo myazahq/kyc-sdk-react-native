@@ -12,6 +12,7 @@
 import * as Location from 'expo-location';
 import { currentPosition } from '../services/location';
 import { insideFence, localDayAndNight } from './math';
+import { recordCheckIn } from './checkin';
 import { postObservations } from './post';
 import { loadPresencePin } from './store';
 import { awaitWatch, fetchWatchStatus, pinIsFresh } from './watch-wait';
@@ -60,6 +61,11 @@ export async function reportAddressPresence(
   if (!inside && fix.mocked !== true) {
     return { reported: false, inside: false, reason: 'outside_fence' };
   }
+
+  // An inside reading is also a "still here" check-in for the background
+  // tier: a stay it is tracking is recorded now rather than when they leave.
+  // A no-op when the background tier is not enabled.
+  if (inside && fix.mocked !== true) await recordCheckIn(options.externalUserId, fix);
 
   // The watch is minted seconds after a submission is accepted, and the
   // ingest drops a report that arrives before it (watch-wait.ts).

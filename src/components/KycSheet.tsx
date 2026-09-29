@@ -94,7 +94,7 @@ export function KycSheet({
   // noise, and the point of the bar is that it costs no height), and 'none'
   // drops both. Switching on the resolved style rather than negating flags
   // keeps a future fourth style from silently falling into the 'steps' branch.
-  const progressStyle = config.progressStyle ?? "steps";
+  const progressStyle = config.progressStyle ?? "bar";
   const showIndicator = hasProgress && progressStyle === "steps";
   const showBar = hasProgress && progressStyle === "bar";
 

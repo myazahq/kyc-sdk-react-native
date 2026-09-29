@@ -23,7 +23,7 @@ export function AddressSearchStep(): React.ReactElement {
   const gate = useAddressIntroGate('address-search', flow.steps[0]!);
 
   // Warm the GPS and its reverse geocode from the moment the flow is reached,
-  // UNDER the primer too: by the time "Got it" is tapped the fix is usually
+  // UNDER the primer too: by the time "Continue" is tapped the fix is usually
   // already resolved, so the row carries the address immediately and the pin
   // lands with no hesitation.
   const { startPrefetch } = flow;
