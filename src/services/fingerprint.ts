@@ -7,6 +7,13 @@ import {
   platformVersion,
   expoDevice,
 } from './fingerprint-sources';
+import {
+  collectAttestation,
+  type AttestationContext,
+  type DeviceAttestation,
+} from './device-intel/attestation';
+import { collectIntegrity, type DeviceIntegrity } from './device-intel/integrity';
+import { collectStableId } from './device-intel/ids';
 
 // ---------------------------------------------------------------------------
 // Device Intelligence — the client fingerprint.
@@ -61,7 +68,23 @@ export interface ClientFingerprint {
    * it identifies an install, not a person.
    */
   deviceId?: string;
+  /**
+   * NEVER add keys to `components`: the server hashes that object, and a new
+   * key would move every device's hash. New signals ride beside it.
+   */
   components: FingerprintComponents;
+  /** An id that survives a reinstall (iOS Keychain UUID, Android ANDROID_ID). */
+  stableId?: string;
+  /** Client-side root / jailbreak / hook heuristics. Soft evidence. */
+  integrity?: DeviceIntegrity;
+  /** App Attest / Play Integrity, bound to a single-use server challenge. */
+  attestation?: DeviceAttestation;
+}
+
+export interface CollectFingerprintOptions {
+  /** When given, attestation is attempted (bounded, best-effort). Omit it
+   *  where a challenge cannot be fetched or would be wasted. */
+  attestation?: AttestationContext;
 }
 
 /**
@@ -71,8 +94,19 @@ export interface ClientFingerprint {
  * called once at submit and must never throw — a fingerprint that fails to
  * collect is a missing signal, not a failed verification.
  */
-export async function collectFingerprint(): Promise<ClientFingerprint> {
+export async function collectFingerprint(
+  options: CollectFingerprintOptions = {},
+): Promise<ClientFingerprint> {
   const device = expoDevice();
+  // The slow parts run together, each with its own bound (integrity ~1.5 s,
+  // attestation ~5 s), so the whole fingerprint never waits on the sum.
+  const [deviceId, integrity, attestation] = await Promise.all([
+    persistentDeviceId(),
+    collectIntegrity().catch(() => undefined),
+    options.attestation
+      ? collectAttestation(options.attestation).catch(() => undefined)
+      : Promise.resolve(undefined),
+  ]);
 
   const components: FingerprintComponents = {
     screen: safeScreen(),
@@ -90,12 +124,29 @@ export async function collectFingerprint(): Promise<ClientFingerprint> {
     isDevelopmentBuild: typeof __DEV__ === 'boolean' ? __DEV__ : undefined,
   };
 
+  const stableId = collectStableId();
   return {
-    deviceId: await persistentDeviceId(),
+    deviceId,
     // Undefined entries are stripped so the server canonicalises the same shape
     // whether a module was missing or a value was genuinely absent.
     components: Object.fromEntries(
       Object.entries(components).filter(([, v]) => v !== undefined),
     ) as FingerprintComponents,
+    ...(stableId ? { stableId } : {}),
+    ...(integrity ? { integrity } : {}),
+    ...(attestation ? { attestation } : {}),
   };
+}
+
+/**
+ * The fingerprint for a SECOND submission in the same flow (the KYB
+ * applicant's own check). An attestation challenge is single-use and the
+ * first submission spends it, so it is dropped rather than replayed.
+ */
+export function withoutAttestation(
+  fingerprint: ClientFingerprint | undefined,
+): ClientFingerprint | undefined {
+  if (!fingerprint?.attestation) return fingerprint;
+  const { attestation: _spent, ...rest } = fingerprint;
+  return rest;
 }

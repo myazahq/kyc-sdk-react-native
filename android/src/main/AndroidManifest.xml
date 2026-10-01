@@ -19,6 +19,26 @@
     device with no radio, so a host that opts out loses nothing else.
   -->
 
+  <!--
+    Package VISIBILITY, not a permission: Android 11+ hides other apps from
+    PackageManager unless they are named here. These are the root managers the
+    Device Intelligence integrity check looks for (AndroidIntegrityChecks.kt,
+    keep the two lists in step). Without this block the check could only ever
+    answer "not installed". Merged into the host app, it lets the host see
+    exactly these packages and nothing else.
+  -->
+  <queries>
+    <package android:name="com.topjohnwu.magisk" />
+    <package android:name="eu.chainfire.supersu" />
+    <package android:name="com.koushikdutta.superuser" />
+    <package android:name="com.noshufou.android.su" />
+    <package android:name="com.thirdparty.superuser" />
+    <package android:name="com.kingroot.kinguser" />
+    <package android:name="com.kingo.root" />
+    <package android:name="me.weishu.kernelsu" />
+    <package android:name="com.devadvance.rootcloak" />
+  </queries>
+
   <application>
     <!--
       ML Kit models are downloaded on demand by Play Services. Naming them here

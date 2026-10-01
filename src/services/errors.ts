@@ -9,6 +9,7 @@
 
 import { KYCApiError } from './api';
 import { KYCError, type KYCErrorCode } from '../types/verification';
+import { cancelledRefusalOf } from '../lib/session-cancelled';
 
 /** Which operation failed — picks the fallback code for non-HTTP failures. */
 export type ErrorContext = 'upload' | 'verify';
@@ -48,6 +49,10 @@ function toNum(v: unknown): number | undefined {
  */
 export function mapToKycError(err: unknown, context: ErrorContext): KYCError {
   if (err instanceof KYCApiError) {
+    // A cancelled session is terminal until an admin uncancels it, so it gets
+    // its own code rather than a generic "try again" one.
+    const cancelled = cancelledRefusalOf(err);
+    if (cancelled) return new KYCError('session_cancelled', cancelled.message);
     if (err.statusCode === 401) {
       return new KYCError('invalid_api_key', 'Invalid API key. Please contact support.');
     }

@@ -39,6 +39,12 @@ export interface ServerConfigState {
    * page never reports ready.
    */
   mapsFrameUrl?: string | null;
+  /**
+   * The Google Cloud project Play Integrity tokens are requested for
+   * (`deviceAttestation.playIntegrityCloudProjectNumber`). Null or absent ⇒
+   * the Android attestation step is skipped.
+   */
+  playIntegrityCloudProjectNumber?: string | null;
   environment?: 'DEVELOPMENT' | 'SANDBOX' | 'PRODUCTION';
   /** HTTP status of a failed config fetch (if any). */
   statusCode?: number;

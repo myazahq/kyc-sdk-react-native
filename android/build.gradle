@@ -113,6 +113,12 @@ dependencies {
   implementation 'edu.ucar:jj2000:5.2'
   implementation 'com.facebook.react:react-android'
 
+  // Play Integrity, Standard API — the Android half of Device Intelligence
+  // attestation (PlayIntegrityClient.kt). Needs Google Play Services at
+  // runtime; on a device without them the request fails and the submission
+  // simply carries no attestation. Brings play-services-tasks transitively.
+  implementation 'com.google.android.play:integrity:1.4.0'
+
   // Nitro core — provides the HybridObject base + the NitroModules prefab the
   // generated CMake links against (find_package(react-native-nitro-modules)).
   implementation project(':react-native-nitro-modules')

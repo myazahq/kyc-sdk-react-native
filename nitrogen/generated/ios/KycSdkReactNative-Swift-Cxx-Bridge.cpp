@@ -8,6 +8,7 @@
 #include "KycSdkReactNative-Swift-Cxx-Bridge.hpp"
 
 // Include C++ implementation defined types
+#include "HybridMyazaDeviceIntelSpecSwift.hpp"
 #include "HybridMyazaEmrtdSpecSwift.hpp"
 #include "HybridMyazaFaceDetectorSpecSwift.hpp"
 #include "HybridMyazaRectDetectorSpecSwift.hpp"
@@ -18,10 +19,10 @@
 
 namespace margelo::nitro::myazakyc::bridge::swift {
 
-  // pragma MARK: std::function<void(const EmrtdTagInfo& /* result */)>
-  Func_void_EmrtdTagInfo create_Func_void_EmrtdTagInfo(void* NON_NULL swiftClosureWrapper) noexcept {
-    auto swiftClosure = KycSdkReactNative::Func_void_EmrtdTagInfo::fromUnsafe(swiftClosureWrapper);
-    return [swiftClosure = std::move(swiftClosure)](const EmrtdTagInfo& result) mutable -> void {
+  // pragma MARK: std::function<void(const std::vector<std::string>& /* result */)>
+  Func_void_std__vector_std__string_ create_Func_void_std__vector_std__string_(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = KycSdkReactNative::Func_void_std__vector_std__string_::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](const std::vector<std::string>& result) mutable -> void {
       swiftClosure.call(result);
     };
   }
@@ -31,6 +32,46 @@ namespace margelo::nitro::myazakyc::bridge::swift {
     auto swiftClosure = KycSdkReactNative::Func_void_std__exception_ptr::fromUnsafe(swiftClosureWrapper);
     return [swiftClosure = std::move(swiftClosure)](const std::exception_ptr& error) mutable -> void {
       swiftClosure.call(error);
+    };
+  }
+  
+  // pragma MARK: std::function<void(const AppAttestKey& /* result */)>
+  Func_void_AppAttestKey create_Func_void_AppAttestKey(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = KycSdkReactNative::Func_void_AppAttestKey::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](const AppAttestKey& result) mutable -> void {
+      swiftClosure.call(result);
+    };
+  }
+  
+  // pragma MARK: std::function<void(const std::string& /* result */)>
+  Func_void_std__string create_Func_void_std__string(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = KycSdkReactNative::Func_void_std__string::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](const std::string& result) mutable -> void {
+      swiftClosure.call(result);
+    };
+  }
+  
+  // pragma MARK: std::shared_ptr<HybridMyazaDeviceIntelSpec>
+  std::shared_ptr<HybridMyazaDeviceIntelSpec> create_std__shared_ptr_HybridMyazaDeviceIntelSpec_(void* NON_NULL swiftUnsafePointer) noexcept {
+    KycSdkReactNative::HybridMyazaDeviceIntelSpec_cxx swiftPart = KycSdkReactNative::HybridMyazaDeviceIntelSpec_cxx::fromUnsafe(swiftUnsafePointer);
+    return std::make_shared<margelo::nitro::myazakyc::HybridMyazaDeviceIntelSpecSwift>(swiftPart);
+  }
+  void* NON_NULL get_std__shared_ptr_HybridMyazaDeviceIntelSpec_(std__shared_ptr_HybridMyazaDeviceIntelSpec_ cppType) {
+    std::shared_ptr<margelo::nitro::myazakyc::HybridMyazaDeviceIntelSpecSwift> swiftWrapper = std::dynamic_pointer_cast<margelo::nitro::myazakyc::HybridMyazaDeviceIntelSpecSwift>(cppType);
+    #ifdef NITRO_DEBUG
+    if (swiftWrapper == nullptr) [[unlikely]] {
+      throw std::runtime_error("Class \"HybridMyazaDeviceIntelSpec\" is not implemented in Swift!");
+    }
+    #endif
+    KycSdkReactNative::HybridMyazaDeviceIntelSpec_cxx& swiftPart = swiftWrapper->getSwiftPart();
+    return swiftPart.toUnsafe();
+  }
+  
+  // pragma MARK: std::function<void(const EmrtdTagInfo& /* result */)>
+  Func_void_EmrtdTagInfo create_Func_void_EmrtdTagInfo(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = KycSdkReactNative::Func_void_EmrtdTagInfo::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](const EmrtdTagInfo& result) mutable -> void {
+      swiftClosure.call(result);
     };
   }
   
@@ -46,14 +87,6 @@ namespace margelo::nitro::myazakyc::bridge::swift {
   Func_void_EmrtdApduResponse create_Func_void_EmrtdApduResponse(void* NON_NULL swiftClosureWrapper) noexcept {
     auto swiftClosure = KycSdkReactNative::Func_void_EmrtdApduResponse::fromUnsafe(swiftClosureWrapper);
     return [swiftClosure = std::move(swiftClosure)](const EmrtdApduResponse& result) mutable -> void {
-      swiftClosure.call(result);
-    };
-  }
-  
-  // pragma MARK: std::function<void(const std::string& /* result */)>
-  Func_void_std__string create_Func_void_std__string(void* NON_NULL swiftClosureWrapper) noexcept {
-    auto swiftClosure = KycSdkReactNative::Func_void_std__string::fromUnsafe(swiftClosureWrapper);
-    return [swiftClosure = std::move(swiftClosure)](const std::string& result) mutable -> void {
       swiftClosure.call(result);
     };
   }

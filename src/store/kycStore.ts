@@ -16,7 +16,8 @@ import { createKYCApi } from '../services/api';
 
 import { resolveBaseUrl, normalizeBrandingUrls } from '../services/resolveUrl';
 import { withRetry } from '../services/retry';
-import { collectFingerprint } from '../services/fingerprint';
+import { withoutAttestation } from '../services/fingerprint';
+import { submissionFingerprint, uploadDeviceIdSource } from '../services/device-intel/submission';
 import type { KYCStep, ResolvedKYCConfig } from '../types/config';
 import { INITIAL_SERVER_CONFIG, describeConfigError, type ServerConfigState } from './serverConfig';
 import {
@@ -87,7 +88,9 @@ export function createKycStore(
   serverConfig?: ServerConfigState,
 ): KycStore {
   const baseUrl = resolveBaseUrl(config.apiKey, config.devUrl);
-  const api = createKYCApi(baseUrl, config.apiKey);
+  // Uploads carry the per-install device id (X-Myaza-Device-Id) while Device
+  // Intelligence is on — the same value the fingerprint's deviceId carries.
+  const api = createKYCApi(baseUrl, config.apiKey, { deviceId: uploadDeviceIdSource(config) });
 
   const store = createStore<KycState>((set, get) => {
     function emitStepChange(step: KYCStep): void {
@@ -101,6 +104,7 @@ export function createKycStore(
       currentStep: 'consent',
       sessionId: null,
       sessionUrl: null,
+      cancelled: null,
       businessCheck: { ...EMPTY_BUSINESS_CHECK },
       selectedCountry: null,
       countryAutoPicked: false,
@@ -168,6 +172,8 @@ export function createKycStore(
               addressSearch: res.addressSearch,
               addressSearchMode: res.addressSearchMode,
               mapsFrameUrl: res.mapsFrameUrl ?? null,
+              playIntegrityCloudProjectNumber:
+                res.deviceAttestation?.playIntegrityCloudProjectNumber ?? null,
               environment: res.environment,
               fatal: false,
             },
@@ -379,6 +385,11 @@ export function createKycStore(
 
       setSessionId(sessionId, sessionUrl) {
         set({ sessionId, ...(sessionUrl !== undefined ? { sessionUrl } : {}) });
+      },
+
+      markCancelled(message) {
+        if (get().cancelled) return;
+        set({ cancelled: { message } });
       },
 
       async checkBusiness() {
@@ -642,12 +653,14 @@ export function createKycStore(
       async submitAsync(onRetry) {
         set({ isLoading: true, error: null });
         const state = get();
-        // Best-effort: a fingerprint that fails to collect is a missing signal,
-        // never a failed submission.
-        const fingerprint =
-          state.config.deviceIntelligence === false
-            ? undefined
-            : await collectFingerprint().catch(() => undefined);
+        // Best-effort and gated on deviceIntelligence (see submissionFingerprint):
+        // a fingerprint that fails to collect is a missing signal, never a
+        // failed submission. Attestation inside it is bounded to ~5 s.
+        const fingerprint = await submissionFingerprint({
+          config: state.config,
+          api,
+          playIntegrityCloudProjectNumber: state.serverConfig.playIntegrityCloudProjectNumber,
+        });
         const request = buildVerifyRequest(state, fingerprint);
         try {
           const res = await withRetry(() => api.verify(request), { onRetry });
@@ -670,7 +683,10 @@ export function createKycStore(
           // and Flutter SDKs.
           if (res.applicantKeyPersonId && applicantMediaCaptured(state)) {
             void withRetry(() =>
-              api.verify(buildApplicantVerifyRequest(state, res.applicantKeyPersonId!, fingerprint)),
+              // The attestation challenge was spent by the business submit.
+              api.verify(
+                buildApplicantVerifyRequest(state, res.applicantKeyPersonId!, withoutAttestation(fingerprint)),
+              ),
             ).catch((err) => {
               console.warn(
                 '[MyazaKYC] Applicant identity submission failed — the organization can re-invite the applicant from the dashboard:',
@@ -722,6 +738,7 @@ export function createKycStore(
           livenessCameraOn: false,
           sessionId: null,
           sessionUrl: null,
+          cancelled: null,
           businessCheck: { ...EMPTY_BUSINESS_CHECK },
           questionnaireAnswers: {},
           contact: {},

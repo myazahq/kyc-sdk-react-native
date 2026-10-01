@@ -11,6 +11,7 @@ import { awaitVerificationOutcome, type VerificationOutcome } from '../lib/resul
 import { describeOutcome, describeWaiting } from '../lib/result-copy';
 import { biometricCopyFor } from '../lib/biometric-copy';
 import { configScope } from '../lib/scope';
+import { DEFAULT_CANCELLED_MESSAGE, isCancelledStatus } from '../lib/session-cancelled';
 import { Badge } from './SubmittedBadge';
 import { SubmittedWaiting } from './SubmittedWaiting';
 import { StaggerIn } from '../components/StaggerIn';
@@ -51,6 +52,13 @@ export function SubmittedResult({
       fetchStatus: () => api.status(verificationId).catch(() => null),
     }).then((settled) => {
       if (!alive) return;
+      // Cancelled by the organisation while we waited: terminal, and the flow
+      // swaps to the cancelled screen (which reports onError once).
+      if (settled.kind === 'settled' && isCancelledStatus(settled.status)) {
+        // Never the status reason: that is the checks' own finding, not why it stopped.
+        store.getState().markCancelled(DEFAULT_CANCELLED_MESSAGE);
+        return;
+      }
       setOutcome(settled);
       if (settled.kind === 'settled') {
         config.onResult?.({

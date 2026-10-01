@@ -114,6 +114,7 @@ export async function resolveWorkflow(
         addressSearch: res.addressSearch,
         addressSearchMode: res.addressSearchMode,
         mapsFrameUrl: res.mapsFrameUrl ?? null,
+        playIntegrityCloudProjectNumber: res.deviceAttestation?.playIntegrityCloudProjectNumber ?? null,
         environment: res.environment,
         fatal: false,
       },

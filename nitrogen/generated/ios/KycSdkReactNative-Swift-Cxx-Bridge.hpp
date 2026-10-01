@@ -8,6 +8,8 @@
 #pragma once
 
 // Forward declarations of C++ defined types
+// Forward declaration of `AppAttestKey` to properly resolve imports.
+namespace margelo::nitro::myazakyc { struct AppAttestKey; }
 // Forward declaration of `DetectedRect` to properly resolve imports.
 namespace margelo::nitro::myazakyc { struct DetectedRect; }
 // Forward declaration of `EmrtdApduResponse` to properly resolve imports.
@@ -18,6 +20,8 @@ namespace margelo::nitro::myazakyc { struct EmrtdTagInfo; }
 namespace margelo::nitro::myazakyc { struct FaceResult; }
 // Forward declaration of `HybridFrameSpec` to properly resolve imports.
 namespace margelo::nitro::camera { class HybridFrameSpec; }
+// Forward declaration of `HybridMyazaDeviceIntelSpec` to properly resolve imports.
+namespace margelo::nitro::myazakyc { class HybridMyazaDeviceIntelSpec; }
 // Forward declaration of `HybridMyazaEmrtdSpec` to properly resolve imports.
 namespace margelo::nitro::myazakyc { class HybridMyazaEmrtdSpec; }
 // Forward declaration of `HybridMyazaFaceDetectorSpec` to properly resolve imports.
@@ -32,6 +36,8 @@ namespace margelo::nitro::myazakyc { struct TextResult; }
 // Forward declarations of Swift defined types
 // Forward declaration of `HybridFrameSpec_cxx` to properly resolve imports.
 namespace VisionCamera { class HybridFrameSpec_cxx; }
+// Forward declaration of `HybridMyazaDeviceIntelSpec_cxx` to properly resolve imports.
+namespace KycSdkReactNative { class HybridMyazaDeviceIntelSpec_cxx; }
 // Forward declaration of `HybridMyazaEmrtdSpec_cxx` to properly resolve imports.
 namespace KycSdkReactNative { class HybridMyazaEmrtdSpec_cxx; }
 // Forward declaration of `HybridMyazaFaceDetectorSpec_cxx` to properly resolve imports.
@@ -42,10 +48,12 @@ namespace KycSdkReactNative { class HybridMyazaRectDetectorSpec_cxx; }
 namespace KycSdkReactNative { class HybridMyazaTextRecognizerSpec_cxx; }
 
 // Include C++ defined types
+#include "AppAttestKey.hpp"
 #include "DetectedRect.hpp"
 #include "EmrtdApduResponse.hpp"
 #include "EmrtdTagInfo.hpp"
 #include "FaceResult.hpp"
+#include "HybridMyazaDeviceIntelSpec.hpp"
 #include "HybridMyazaEmrtdSpec.hpp"
 #include "HybridMyazaFaceDetectorSpec.hpp"
 #include "HybridMyazaRectDetectorSpec.hpp"
@@ -67,6 +75,198 @@ namespace KycSdkReactNative { class HybridMyazaTextRecognizerSpec_cxx; }
  */
 namespace margelo::nitro::myazakyc::bridge::swift {
 
+  // pragma MARK: std::vector<std::string>
+  /**
+   * Specialized version of `std::vector<std::string>`.
+   */
+  using std__vector_std__string_ = std::vector<std::string>;
+  inline std::vector<std::string> create_std__vector_std__string_(size_t size) noexcept {
+    std::vector<std::string> vector;
+    vector.reserve(size);
+    return vector;
+  }
+  
+  // pragma MARK: std::shared_ptr<Promise<std::vector<std::string>>>
+  /**
+   * Specialized version of `std::shared_ptr<Promise<std::vector<std::string>>>`.
+   */
+  using std__shared_ptr_Promise_std__vector_std__string___ = std::shared_ptr<Promise<std::vector<std::string>>>;
+  inline std::shared_ptr<Promise<std::vector<std::string>>> create_std__shared_ptr_Promise_std__vector_std__string___() noexcept {
+    return Promise<std::vector<std::string>>::create();
+  }
+  inline PromiseHolder<std::vector<std::string>> wrap_std__shared_ptr_Promise_std__vector_std__string___(std::shared_ptr<Promise<std::vector<std::string>>> promise) noexcept {
+    return PromiseHolder<std::vector<std::string>>(std::move(promise));
+  }
+  
+  // pragma MARK: std::function<void(const std::vector<std::string>& /* result */)>
+  /**
+   * Specialized version of `std::function<void(const std::vector<std::string>&)>`.
+   */
+  using Func_void_std__vector_std__string_ = std::function<void(const std::vector<std::string>& /* result */)>;
+  /**
+   * Wrapper class for a `std::function<void(const std::vector<std::string>& / * result * /)>`, this can be used from Swift.
+   */
+  class Func_void_std__vector_std__string__Wrapper final {
+  public:
+    explicit Func_void_std__vector_std__string__Wrapper(std::function<void(const std::vector<std::string>& /* result */)>&& func): _function(std::make_unique<std::function<void(const std::vector<std::string>& /* result */)>>(std::move(func))) {}
+    inline void call(std::vector<std::string> result) const noexcept {
+      _function->operator()(result);
+    }
+  private:
+    std::unique_ptr<std::function<void(const std::vector<std::string>& /* result */)>> _function;
+  } SWIFT_NONCOPYABLE;
+  Func_void_std__vector_std__string_ create_Func_void_std__vector_std__string_(void* NON_NULL swiftClosureWrapper) noexcept;
+  inline Func_void_std__vector_std__string__Wrapper wrap_Func_void_std__vector_std__string_(Func_void_std__vector_std__string_ value) noexcept {
+    return Func_void_std__vector_std__string__Wrapper(std::move(value));
+  }
+  
+  // pragma MARK: std::function<void(const std::exception_ptr& /* error */)>
+  /**
+   * Specialized version of `std::function<void(const std::exception_ptr&)>`.
+   */
+  using Func_void_std__exception_ptr = std::function<void(const std::exception_ptr& /* error */)>;
+  /**
+   * Wrapper class for a `std::function<void(const std::exception_ptr& / * error * /)>`, this can be used from Swift.
+   */
+  class Func_void_std__exception_ptr_Wrapper final {
+  public:
+    explicit Func_void_std__exception_ptr_Wrapper(std::function<void(const std::exception_ptr& /* error */)>&& func): _function(std::make_unique<std::function<void(const std::exception_ptr& /* error */)>>(std::move(func))) {}
+    inline void call(std::exception_ptr error) const noexcept {
+      _function->operator()(error);
+    }
+  private:
+    std::unique_ptr<std::function<void(const std::exception_ptr& /* error */)>> _function;
+  } SWIFT_NONCOPYABLE;
+  Func_void_std__exception_ptr create_Func_void_std__exception_ptr(void* NON_NULL swiftClosureWrapper) noexcept;
+  inline Func_void_std__exception_ptr_Wrapper wrap_Func_void_std__exception_ptr(Func_void_std__exception_ptr value) noexcept {
+    return Func_void_std__exception_ptr_Wrapper(std::move(value));
+  }
+  
+  // pragma MARK: std::shared_ptr<Promise<AppAttestKey>>
+  /**
+   * Specialized version of `std::shared_ptr<Promise<AppAttestKey>>`.
+   */
+  using std__shared_ptr_Promise_AppAttestKey__ = std::shared_ptr<Promise<AppAttestKey>>;
+  inline std::shared_ptr<Promise<AppAttestKey>> create_std__shared_ptr_Promise_AppAttestKey__() noexcept {
+    return Promise<AppAttestKey>::create();
+  }
+  inline PromiseHolder<AppAttestKey> wrap_std__shared_ptr_Promise_AppAttestKey__(std::shared_ptr<Promise<AppAttestKey>> promise) noexcept {
+    return PromiseHolder<AppAttestKey>(std::move(promise));
+  }
+  
+  // pragma MARK: std::function<void(const AppAttestKey& /* result */)>
+  /**
+   * Specialized version of `std::function<void(const AppAttestKey&)>`.
+   */
+  using Func_void_AppAttestKey = std::function<void(const AppAttestKey& /* result */)>;
+  /**
+   * Wrapper class for a `std::function<void(const AppAttestKey& / * result * /)>`, this can be used from Swift.
+   */
+  class Func_void_AppAttestKey_Wrapper final {
+  public:
+    explicit Func_void_AppAttestKey_Wrapper(std::function<void(const AppAttestKey& /* result */)>&& func): _function(std::make_unique<std::function<void(const AppAttestKey& /* result */)>>(std::move(func))) {}
+    inline void call(AppAttestKey result) const noexcept {
+      _function->operator()(result);
+    }
+  private:
+    std::unique_ptr<std::function<void(const AppAttestKey& /* result */)>> _function;
+  } SWIFT_NONCOPYABLE;
+  Func_void_AppAttestKey create_Func_void_AppAttestKey(void* NON_NULL swiftClosureWrapper) noexcept;
+  inline Func_void_AppAttestKey_Wrapper wrap_Func_void_AppAttestKey(Func_void_AppAttestKey value) noexcept {
+    return Func_void_AppAttestKey_Wrapper(std::move(value));
+  }
+  
+  // pragma MARK: std::shared_ptr<Promise<std::string>>
+  /**
+   * Specialized version of `std::shared_ptr<Promise<std::string>>`.
+   */
+  using std__shared_ptr_Promise_std__string__ = std::shared_ptr<Promise<std::string>>;
+  inline std::shared_ptr<Promise<std::string>> create_std__shared_ptr_Promise_std__string__() noexcept {
+    return Promise<std::string>::create();
+  }
+  inline PromiseHolder<std::string> wrap_std__shared_ptr_Promise_std__string__(std::shared_ptr<Promise<std::string>> promise) noexcept {
+    return PromiseHolder<std::string>(std::move(promise));
+  }
+  
+  // pragma MARK: std::function<void(const std::string& /* result */)>
+  /**
+   * Specialized version of `std::function<void(const std::string&)>`.
+   */
+  using Func_void_std__string = std::function<void(const std::string& /* result */)>;
+  /**
+   * Wrapper class for a `std::function<void(const std::string& / * result * /)>`, this can be used from Swift.
+   */
+  class Func_void_std__string_Wrapper final {
+  public:
+    explicit Func_void_std__string_Wrapper(std::function<void(const std::string& /* result */)>&& func): _function(std::make_unique<std::function<void(const std::string& /* result */)>>(std::move(func))) {}
+    inline void call(std::string result) const noexcept {
+      _function->operator()(result);
+    }
+  private:
+    std::unique_ptr<std::function<void(const std::string& /* result */)>> _function;
+  } SWIFT_NONCOPYABLE;
+  Func_void_std__string create_Func_void_std__string(void* NON_NULL swiftClosureWrapper) noexcept;
+  inline Func_void_std__string_Wrapper wrap_Func_void_std__string(Func_void_std__string value) noexcept {
+    return Func_void_std__string_Wrapper(std::move(value));
+  }
+  
+  // pragma MARK: std::shared_ptr<HybridMyazaDeviceIntelSpec>
+  /**
+   * Specialized version of `std::shared_ptr<HybridMyazaDeviceIntelSpec>`.
+   */
+  using std__shared_ptr_HybridMyazaDeviceIntelSpec_ = std::shared_ptr<HybridMyazaDeviceIntelSpec>;
+  std::shared_ptr<HybridMyazaDeviceIntelSpec> create_std__shared_ptr_HybridMyazaDeviceIntelSpec_(void* NON_NULL swiftUnsafePointer) noexcept;
+  void* NON_NULL get_std__shared_ptr_HybridMyazaDeviceIntelSpec_(std__shared_ptr_HybridMyazaDeviceIntelSpec_ cppType);
+  
+  // pragma MARK: std::weak_ptr<HybridMyazaDeviceIntelSpec>
+  using std__weak_ptr_HybridMyazaDeviceIntelSpec_ = std::weak_ptr<HybridMyazaDeviceIntelSpec>;
+  inline std__weak_ptr_HybridMyazaDeviceIntelSpec_ weakify_std__shared_ptr_HybridMyazaDeviceIntelSpec_(const std::shared_ptr<HybridMyazaDeviceIntelSpec>& strong) noexcept { return strong; }
+  
+  // pragma MARK: Result<std::string>
+  using Result_std__string_ = Result<std::string>;
+  inline Result_std__string_ create_Result_std__string_(const std::string& value) noexcept {
+    return Result<std::string>::withValue(value);
+  }
+  inline Result_std__string_ create_Result_std__string_(const std::exception_ptr& error) noexcept {
+    return Result<std::string>::withError(error);
+  }
+  
+  // pragma MARK: Result<std::shared_ptr<Promise<std::vector<std::string>>>>
+  using Result_std__shared_ptr_Promise_std__vector_std__string____ = Result<std::shared_ptr<Promise<std::vector<std::string>>>>;
+  inline Result_std__shared_ptr_Promise_std__vector_std__string____ create_Result_std__shared_ptr_Promise_std__vector_std__string____(const std::shared_ptr<Promise<std::vector<std::string>>>& value) noexcept {
+    return Result<std::shared_ptr<Promise<std::vector<std::string>>>>::withValue(value);
+  }
+  inline Result_std__shared_ptr_Promise_std__vector_std__string____ create_Result_std__shared_ptr_Promise_std__vector_std__string____(const std::exception_ptr& error) noexcept {
+    return Result<std::shared_ptr<Promise<std::vector<std::string>>>>::withError(error);
+  }
+  
+  // pragma MARK: Result<bool>
+  using Result_bool_ = Result<bool>;
+  inline Result_bool_ create_Result_bool_(bool value) noexcept {
+    return Result<bool>::withValue(std::move(value));
+  }
+  inline Result_bool_ create_Result_bool_(const std::exception_ptr& error) noexcept {
+    return Result<bool>::withError(error);
+  }
+  
+  // pragma MARK: Result<std::shared_ptr<Promise<AppAttestKey>>>
+  using Result_std__shared_ptr_Promise_AppAttestKey___ = Result<std::shared_ptr<Promise<AppAttestKey>>>;
+  inline Result_std__shared_ptr_Promise_AppAttestKey___ create_Result_std__shared_ptr_Promise_AppAttestKey___(const std::shared_ptr<Promise<AppAttestKey>>& value) noexcept {
+    return Result<std::shared_ptr<Promise<AppAttestKey>>>::withValue(value);
+  }
+  inline Result_std__shared_ptr_Promise_AppAttestKey___ create_Result_std__shared_ptr_Promise_AppAttestKey___(const std::exception_ptr& error) noexcept {
+    return Result<std::shared_ptr<Promise<AppAttestKey>>>::withError(error);
+  }
+  
+  // pragma MARK: Result<std::shared_ptr<Promise<std::string>>>
+  using Result_std__shared_ptr_Promise_std__string___ = Result<std::shared_ptr<Promise<std::string>>>;
+  inline Result_std__shared_ptr_Promise_std__string___ create_Result_std__shared_ptr_Promise_std__string___(const std::shared_ptr<Promise<std::string>>& value) noexcept {
+    return Result<std::shared_ptr<Promise<std::string>>>::withValue(value);
+  }
+  inline Result_std__shared_ptr_Promise_std__string___ create_Result_std__shared_ptr_Promise_std__string___(const std::exception_ptr& error) noexcept {
+    return Result<std::shared_ptr<Promise<std::string>>>::withError(error);
+  }
+  
   // pragma MARK: std::shared_ptr<Promise<EmrtdTagInfo>>
   /**
    * Specialized version of `std::shared_ptr<Promise<EmrtdTagInfo>>`.
@@ -99,28 +299,6 @@ namespace margelo::nitro::myazakyc::bridge::swift {
   Func_void_EmrtdTagInfo create_Func_void_EmrtdTagInfo(void* NON_NULL swiftClosureWrapper) noexcept;
   inline Func_void_EmrtdTagInfo_Wrapper wrap_Func_void_EmrtdTagInfo(Func_void_EmrtdTagInfo value) noexcept {
     return Func_void_EmrtdTagInfo_Wrapper(std::move(value));
-  }
-  
-  // pragma MARK: std::function<void(const std::exception_ptr& /* error */)>
-  /**
-   * Specialized version of `std::function<void(const std::exception_ptr&)>`.
-   */
-  using Func_void_std__exception_ptr = std::function<void(const std::exception_ptr& /* error */)>;
-  /**
-   * Wrapper class for a `std::function<void(const std::exception_ptr& / * error * /)>`, this can be used from Swift.
-   */
-  class Func_void_std__exception_ptr_Wrapper final {
-  public:
-    explicit Func_void_std__exception_ptr_Wrapper(std::function<void(const std::exception_ptr& /* error */)>&& func): _function(std::make_unique<std::function<void(const std::exception_ptr& /* error */)>>(std::move(func))) {}
-    inline void call(std::exception_ptr error) const noexcept {
-      _function->operator()(error);
-    }
-  private:
-    std::unique_ptr<std::function<void(const std::exception_ptr& /* error */)>> _function;
-  } SWIFT_NONCOPYABLE;
-  Func_void_std__exception_ptr create_Func_void_std__exception_ptr(void* NON_NULL swiftClosureWrapper) noexcept;
-  inline Func_void_std__exception_ptr_Wrapper wrap_Func_void_std__exception_ptr(Func_void_std__exception_ptr value) noexcept {
-    return Func_void_std__exception_ptr_Wrapper(std::move(value));
   }
   
   // pragma MARK: std::shared_ptr<Promise<void>>
@@ -191,40 +369,6 @@ namespace margelo::nitro::myazakyc::bridge::swift {
     return Func_void_EmrtdApduResponse_Wrapper(std::move(value));
   }
   
-  // pragma MARK: std::shared_ptr<Promise<std::string>>
-  /**
-   * Specialized version of `std::shared_ptr<Promise<std::string>>`.
-   */
-  using std__shared_ptr_Promise_std__string__ = std::shared_ptr<Promise<std::string>>;
-  inline std::shared_ptr<Promise<std::string>> create_std__shared_ptr_Promise_std__string__() noexcept {
-    return Promise<std::string>::create();
-  }
-  inline PromiseHolder<std::string> wrap_std__shared_ptr_Promise_std__string__(std::shared_ptr<Promise<std::string>> promise) noexcept {
-    return PromiseHolder<std::string>(std::move(promise));
-  }
-  
-  // pragma MARK: std::function<void(const std::string& /* result */)>
-  /**
-   * Specialized version of `std::function<void(const std::string&)>`.
-   */
-  using Func_void_std__string = std::function<void(const std::string& /* result */)>;
-  /**
-   * Wrapper class for a `std::function<void(const std::string& / * result * /)>`, this can be used from Swift.
-   */
-  class Func_void_std__string_Wrapper final {
-  public:
-    explicit Func_void_std__string_Wrapper(std::function<void(const std::string& /* result */)>&& func): _function(std::make_unique<std::function<void(const std::string& /* result */)>>(std::move(func))) {}
-    inline void call(std::string result) const noexcept {
-      _function->operator()(result);
-    }
-  private:
-    std::unique_ptr<std::function<void(const std::string& /* result */)>> _function;
-  } SWIFT_NONCOPYABLE;
-  Func_void_std__string create_Func_void_std__string(void* NON_NULL swiftClosureWrapper) noexcept;
-  inline Func_void_std__string_Wrapper wrap_Func_void_std__string(Func_void_std__string value) noexcept {
-    return Func_void_std__string_Wrapper(std::move(value));
-  }
-  
   // pragma MARK: std::shared_ptr<HybridMyazaEmrtdSpec>
   /**
    * Specialized version of `std::shared_ptr<HybridMyazaEmrtdSpec>`.
@@ -236,15 +380,6 @@ namespace margelo::nitro::myazakyc::bridge::swift {
   // pragma MARK: std::weak_ptr<HybridMyazaEmrtdSpec>
   using std__weak_ptr_HybridMyazaEmrtdSpec_ = std::weak_ptr<HybridMyazaEmrtdSpec>;
   inline std__weak_ptr_HybridMyazaEmrtdSpec_ weakify_std__shared_ptr_HybridMyazaEmrtdSpec_(const std::shared_ptr<HybridMyazaEmrtdSpec>& strong) noexcept { return strong; }
-  
-  // pragma MARK: Result<bool>
-  using Result_bool_ = Result<bool>;
-  inline Result_bool_ create_Result_bool_(bool value) noexcept {
-    return Result<bool>::withValue(std::move(value));
-  }
-  inline Result_bool_ create_Result_bool_(const std::exception_ptr& error) noexcept {
-    return Result<bool>::withError(error);
-  }
   
   // pragma MARK: Result<std::shared_ptr<Promise<EmrtdTagInfo>>>
   using Result_std__shared_ptr_Promise_EmrtdTagInfo___ = Result<std::shared_ptr<Promise<EmrtdTagInfo>>>;
@@ -271,24 +406,6 @@ namespace margelo::nitro::myazakyc::bridge::swift {
   }
   inline Result_std__shared_ptr_Promise_EmrtdApduResponse___ create_Result_std__shared_ptr_Promise_EmrtdApduResponse___(const std::exception_ptr& error) noexcept {
     return Result<std::shared_ptr<Promise<EmrtdApduResponse>>>::withError(error);
-  }
-  
-  // pragma MARK: Result<std::shared_ptr<Promise<std::string>>>
-  using Result_std__shared_ptr_Promise_std__string___ = Result<std::shared_ptr<Promise<std::string>>>;
-  inline Result_std__shared_ptr_Promise_std__string___ create_Result_std__shared_ptr_Promise_std__string___(const std::shared_ptr<Promise<std::string>>& value) noexcept {
-    return Result<std::shared_ptr<Promise<std::string>>>::withValue(value);
-  }
-  inline Result_std__shared_ptr_Promise_std__string___ create_Result_std__shared_ptr_Promise_std__string___(const std::exception_ptr& error) noexcept {
-    return Result<std::shared_ptr<Promise<std::string>>>::withError(error);
-  }
-  
-  // pragma MARK: Result<std::string>
-  using Result_std__string_ = Result<std::string>;
-  inline Result_std__string_ create_Result_std__string_(const std::string& value) noexcept {
-    return Result<std::string>::withValue(value);
-  }
-  inline Result_std__string_ create_Result_std__string_(const std::exception_ptr& error) noexcept {
-    return Result<std::string>::withError(error);
   }
   
   // pragma MARK: std::shared_ptr<margelo::nitro::camera::HybridFrameSpec>
@@ -386,17 +503,6 @@ namespace margelo::nitro::myazakyc::bridge::swift {
   }
   inline Result_DetectedRect_ create_Result_DetectedRect_(const std::exception_ptr& error) noexcept {
     return Result<DetectedRect>::withError(error);
-  }
-  
-  // pragma MARK: std::vector<std::string>
-  /**
-   * Specialized version of `std::vector<std::string>`.
-   */
-  using std__vector_std__string_ = std::vector<std::string>;
-  inline std::vector<std::string> create_std__vector_std__string_(size_t size) noexcept {
-    std::vector<std::string> vector;
-    vector.reserve(size);
-    return vector;
   }
   
   // pragma MARK: std::shared_ptr<Promise<TextResult>>

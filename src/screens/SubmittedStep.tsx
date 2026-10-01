@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { mapToKycError, safeReportError } from '../services/errors';
 import { contactStepFor, expiredContactChannels } from '../lib/contact-recovery';
 import { recoveryStepFor, serverRefusalOf } from '../lib/submit-recovery';
+import { cancelledRefusalOf } from '../lib/session-cancelled';
 import { buildStepOrder } from '../config/stepOrder';
 import { stepOrderOptions } from '../store/derive';
 import type { KYCStep } from '../types/config';
@@ -78,6 +79,13 @@ export function SubmittedStep({ onClose }: { onClose: () => void }): React.React
       void autoReportPresence(config);
       setPhase('success');
     } catch (err) {
+      // The organisation cancelled this session: no retry or go-back can help.
+      // The flow swaps to the cancelled screen, which reports onError once.
+      const cancelled = cancelledRefusalOf(err);
+      if (cancelled) {
+        store.getState().markCancelled(cancelled.message);
+        return;
+      }
       // A refusal over stale contact proofs is recoverable in-flow: clear the
       // dead tokens and walk back to the contact step, which routes straight
       // back here once re-verified (see lib/contact-recovery.ts).

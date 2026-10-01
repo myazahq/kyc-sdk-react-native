@@ -2,6 +2,7 @@ import type { VerificationOutcome } from './result-wait';
 import type { BiometricCopyText } from '../config/biometricOptions';
 import { defaultText } from '../i18n/translate';
 import type { TextFn } from '../i18n/types';
+import { CANCELLED_TITLE, DEFAULT_CANCELLED_MESSAGE } from './session-cancelled';
 
 // ─── What the terminal screens say ──────────────────────────────────────────
 //
@@ -107,6 +108,13 @@ export function describeOutcome(
     }
     case 'in_review':
       return { tone: 'info', ...screen(t, OUTCOME_KEYS.inReview) };
+    case 'cancelled':
+      return {
+        tone: 'error',
+        title: CANCELLED_TITLE,
+        // The status reason is the checks' finding, never why it was stopped.
+        description: DEFAULT_CANCELLED_MESSAGE,
+      };
     case 'error':
       return {
         tone: 'error',

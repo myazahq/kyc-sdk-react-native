@@ -305,6 +305,12 @@ export interface KycState {
   /** The session's own hosted web page (see SessionStartResponse.url). */
   sessionUrl: string | null;
   /**
+   * Set when the server refused this session as CANCELLED by the organisation
+   * (lib/session-cancelled.ts). Terminal for this run: the flow swaps to the
+   * cancelled screen and nothing else is saved or submitted.
+   */
+  cancelled: { message: string } | null;
+  /**
    * What the register said about the company the applicant identified — the
    * paid check run at SELECTION (`/business/select`), so the officer list is
    * already here by the time the key-people step asks for it. `officers` is
@@ -527,6 +533,8 @@ export interface KycState {
     prefilled: (keyof BusinessState)[],
   ) => void;
   setSessionId: (sessionId: string, sessionUrl?: string | null) => void;
+  /** Stop the flow on the cancelled screen. Idempotent: the first message wins. */
+  markCancelled: (message: string) => void;
   /** Run the paid registry check for the typed company. Never blocks the flow. */
   checkBusiness: () => Promise<BusinessCheckResult>;
   setKeyPeople: (rows: KeyPersonEntry[]) => void;

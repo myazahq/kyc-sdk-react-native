@@ -52,6 +52,16 @@
         "language": "kotlin",
         "implementationClassName": "HybridMyazaRectDetector"
       }
+    },
+    "MyazaDeviceIntel": {
+      "ios": {
+        "language": "swift",
+        "implementationClassName": "HybridMyazaDeviceIntel"
+      },
+      "android": {
+        "language": "kotlin",
+        "implementationClassName": "HybridMyazaDeviceIntel"
+      }
     }
   },
   "ignorePaths": [

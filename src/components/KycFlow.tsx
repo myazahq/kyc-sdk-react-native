@@ -12,6 +12,7 @@ import { useEffectiveCountry, useKyc, useKycConfig, useKycStore, useTheme } from
 import { COUNTRY_SEARCH_THRESHOLD } from '../screens/CountrySelectStep';
 import { KycSheet } from './KycSheet';
 import { FatalConfigError } from './flow/FatalConfigError';
+import { SessionCancelled, useReportCancellation } from './flow/SessionCancelled';
 import { ToastProvider } from './toast';
 import { MyazaText } from './Typography';
 import { MyazaButton } from './MyazaButton';
@@ -53,6 +54,9 @@ export function KycFlow({
   const serverConfig = useKyc((s) => s.serverConfig);
   const immersiveCapture = useKyc((s) => s.immersiveCapture);
   const addressIntroSeen = useKyc((s) => s.addressIntroSeen);
+  // Cancelled by the organisation (lib/session-cancelled.ts): terminal.
+  const cancelled = useKyc((s) => s.cancelled);
+  useReportCancellation(cancelled, config.onError);
 
   const startedRef = useRef(false);
   const reportedRef = useRef(false);
@@ -153,7 +157,7 @@ export function KycFlow({
   // `disableClose` set it reports 'blocked' so back can never force the flow
   // closed. (iOS has no hardware back; its swipe-down keeps the standard
   // dismiss behaviour, handled by the Modal.)
-  const canGoBack = !isFatal && onBack != null;
+  const canGoBack = !isFatal && !cancelled && onBack != null;
   const disableClose = config.disableClose === true;
   useEffect(() => {
     if (!backRef) return undefined;
@@ -172,6 +176,7 @@ export function KycFlow({
   if (isFatal) {
     return <FatalConfigError message={serverConfig.message} onClose={onClose} />;
   }
+  if (cancelled) return <SessionCancelled message={cancelled.message} onClose={onClose} />;
 
   return (
     <ToastProvider>

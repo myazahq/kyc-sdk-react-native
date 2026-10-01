@@ -12,7 +12,9 @@ import type { SessionStatus, VerificationStatusResponse } from '../services/api-
 export const RESULT_WAIT_MS = 60 * 1000;
 export const RESULT_POLL_MS = 1500;
 
-/** The states a submitted check passes through before it settles. */
+/** The states a submitted check passes through before it settles. Anything
+ *  else is terminal, `cancelled` included (the organisation cancelled the
+ *  session; the screen swaps to the cancelled view, never waits it out). */
 const PENDING: ReadonlySet<SessionStatus> = new Set(['not_started', 'in_progress', 'processing']);
 
 export type VerificationOutcome =

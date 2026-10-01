@@ -8,6 +8,8 @@
 #pragma once
 
 // Forward declarations of C++ defined types
+// Forward declaration of `AppAttestKey` to properly resolve imports.
+namespace margelo::nitro::myazakyc { struct AppAttestKey; }
 // Forward declaration of `DetectedRect` to properly resolve imports.
 namespace margelo::nitro::myazakyc { struct DetectedRect; }
 // Forward declaration of `EmrtdApduResponse` to properly resolve imports.
@@ -18,6 +20,8 @@ namespace margelo::nitro::myazakyc { struct EmrtdTagInfo; }
 namespace margelo::nitro::myazakyc { struct FaceResult; }
 // Forward declaration of `HybridFrameSpec` to properly resolve imports.
 namespace margelo::nitro::camera { class HybridFrameSpec; }
+// Forward declaration of `HybridMyazaDeviceIntelSpec` to properly resolve imports.
+namespace margelo::nitro::myazakyc { class HybridMyazaDeviceIntelSpec; }
 // Forward declaration of `HybridMyazaEmrtdSpec` to properly resolve imports.
 namespace margelo::nitro::myazakyc { class HybridMyazaEmrtdSpec; }
 // Forward declaration of `HybridMyazaFaceDetectorSpec` to properly resolve imports.
@@ -30,10 +34,12 @@ namespace margelo::nitro::myazakyc { class HybridMyazaTextRecognizerSpec; }
 namespace margelo::nitro::myazakyc { struct TextResult; }
 
 // Include C++ defined types
+#include "AppAttestKey.hpp"
 #include "DetectedRect.hpp"
 #include "EmrtdApduResponse.hpp"
 #include "EmrtdTagInfo.hpp"
 #include "FaceResult.hpp"
+#include "HybridMyazaDeviceIntelSpec.hpp"
 #include "HybridMyazaEmrtdSpec.hpp"
 #include "HybridMyazaFaceDetectorSpec.hpp"
 #include "HybridMyazaRectDetectorSpec.hpp"
@@ -59,6 +65,8 @@ namespace margelo::nitro::myazakyc { struct TextResult; }
 // Forward declarations of Swift defined types
 // Forward declaration of `HybridFrameSpec_cxx` to properly resolve imports.
 namespace VisionCamera { class HybridFrameSpec_cxx; }
+// Forward declaration of `HybridMyazaDeviceIntelSpec_cxx` to properly resolve imports.
+namespace KycSdkReactNative { class HybridMyazaDeviceIntelSpec_cxx; }
 // Forward declaration of `HybridMyazaEmrtdSpec_cxx` to properly resolve imports.
 namespace KycSdkReactNative { class HybridMyazaEmrtdSpec_cxx; }
 // Forward declaration of `HybridMyazaFaceDetectorSpec_cxx` to properly resolve imports.

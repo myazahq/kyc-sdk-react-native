@@ -102,6 +102,8 @@ export type SessionStatus =
     | 'declined'
     | 'abandoned'
     | 'expired'
+    // The organisation cancelled the session; terminal until uncancelled.
+    | 'cancelled'
     | 'error';
 
 export interface VerifyResponse {
@@ -190,6 +192,27 @@ export interface SdkConfigResponse {
    * built-in OSM picker is the fallback every map failure degrades to.
    */
   mapsFrameUrl?: string | null;
+  /** Device Intelligence attestation settings (see DeviceAttestationConfig). */
+  deviceAttestation?: DeviceAttestationConfig;
+}
+
+/**
+ * What the server tells the SDK about platform attestation. A null project
+ * number means the platform has no Play Integrity project, and the Android
+ * attestation step is skipped (App Attest needs nothing from here).
+ */
+export interface DeviceAttestationConfig {
+  playIntegrityCloudProjectNumber?: string | null;
+}
+
+/** `POST /api/kyc/device/challenge`. `challenge` is base64 of 32 bytes. */
+export interface DeviceChallengeResponse {
+  challengeId: string;
+  challenge: string;
+  expiresAt: string;
+  /** iOS: true when the server needs a fresh App Attest attestation (no
+   *  keyId sent, or one it does not know); otherwise an assertion. */
+  attest?: boolean;
 }
 
 // ── Address search / reverse geocoding ──────────────────────────────────────
@@ -306,6 +329,8 @@ export interface WorkflowResolutionResponse {
   /** The framed Google-map picker page, when the route carries one (see
    *  SdkConfigResponse.mapsFrameUrl). */
   mapsFrameUrl?: string | null;
+  /** Device Intelligence attestation settings (same as /config). */
+  deviceAttestation?: DeviceAttestationConfig;
   /** KYB only: the mapped applicant workflow, when configured and resolvable. */
   applicantWorkflow?: ApplicantWorkflowPayload | null;
 }

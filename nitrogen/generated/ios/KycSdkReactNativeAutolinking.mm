@@ -14,6 +14,7 @@
 #include "HybridMyazaTextRecognizerSpecSwift.hpp"
 #include "HybridMyazaEmrtdSpecSwift.hpp"
 #include "HybridMyazaRectDetectorSpecSwift.hpp"
+#include "HybridMyazaDeviceIntelSpecSwift.hpp"
 
 @interface KycSdkReactNativeAutolinking : NSObject
 @end
@@ -49,6 +50,13 @@
     "MyazaRectDetector",
     []() -> std::shared_ptr<HybridObject> {
       std::shared_ptr<HybridMyazaRectDetectorSpec> hybridObject = KycSdkReactNative::KycSdkReactNativeAutolinking::createMyazaRectDetector();
+      return hybridObject;
+    }
+  );
+  HybridObjectRegistry::registerHybridObjectConstructor(
+    "MyazaDeviceIntel",
+    []() -> std::shared_ptr<HybridObject> {
+      std::shared_ptr<HybridMyazaDeviceIntelSpec> hybridObject = KycSdkReactNative::KycSdkReactNativeAutolinking::createMyazaDeviceIntel();
       return hybridObject;
     }
   );

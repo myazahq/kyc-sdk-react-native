@@ -42,6 +42,8 @@ const NOT_RECOVERABLE = new Set([
   'feature_disabled',
   'business_not_approved',
   'rate_limited',
+  // Cancelled by the organisation: nothing the applicant changes reopens it.
+  'session_cancelled',
 ]);
 
 const has = (map: Readonly<Record<string, KYCStep>>, key: string): boolean =>

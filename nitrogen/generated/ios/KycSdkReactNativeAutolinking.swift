@@ -59,4 +59,16 @@ public final class KycSdkReactNativeAutolinking {
   public static func isMyazaRectDetectorRecyclable() -> Bool {
     return HybridMyazaRectDetector.self is any RecyclableView.Type
   }
+  
+  public static func createMyazaDeviceIntel() -> bridge.std__shared_ptr_HybridMyazaDeviceIntelSpec_ {
+    let hybridObject = HybridMyazaDeviceIntel()
+    return { () -> bridge.std__shared_ptr_HybridMyazaDeviceIntelSpec_ in
+      let __cxxWrapped = hybridObject.getCxxWrapper()
+      return __cxxWrapped.getCxxPart()
+    }()
+  }
+  
+  public static func isMyazaDeviceIntelRecyclable() -> Bool {
+    return HybridMyazaDeviceIntel.self is any RecyclableView.Type
+  }
 }

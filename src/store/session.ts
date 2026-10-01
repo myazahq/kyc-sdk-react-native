@@ -7,6 +7,7 @@ import { emptyKeyPerson, type KeyPersonEntry } from '../config/keyPeople';
 import type { SessionStartResponse } from '../services/api-types';
 import { persistentDeviceId } from '../services/fingerprint-sources';
 import { openingStep } from './derive';
+import { cancelledRefusalOf, shouldStopOnSessionStartFailure } from '../lib/session-cancelled';
 
 // ---------------------------------------------------------------------------
 // The attempt SESSION: minting at launch, and progress writes as the user moves.
@@ -75,7 +76,14 @@ export function startAttemptSession(store: KycStore): void {
       // restored capture slot is one whose bytes genuinely still exist.
       if (res.progress) restoreAttemptProgress(store, res.progress);
     })
-    .catch(() => undefined);
+    .catch((err: unknown) => {
+      // Best-effort, except a cancellation: the organisation cancelled this
+      // attempt, so the flow stops on the cancelled screen rather than walking
+      // the applicant through capture steps the server will refuse.
+      if (shouldStopOnSessionStartFailure(err)) {
+        store.getState().markCancelled(cancelledRefusalOf(err)!.message);
+      }
+    });
 }
 
 /**
@@ -235,13 +243,18 @@ export function watchSessionProgress(store: KycStore): () => void {
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => {
       const s = store.getState();
-      if (!s.sessionId) return;
+      if (!s.sessionId || s.cancelled) return;
       const payload = progressFromState(s);
       if (isUntouchedProgress(payload, openingStep(s))) return;
       const fingerprint = JSON.stringify(payload);
       if (fingerprint === lastSaved) return;
       lastSaved = fingerprint;
-      void s.api.saveProgress(s.sessionId, payload).catch(() => undefined);
+      void s.api.saveProgress(s.sessionId, payload).catch((err: unknown) => {
+        // A lost save is swallowed (it costs some re-typing on resume), but a
+        // cancellation stops the flow: no later save or submit can succeed.
+        const cancelled = cancelledRefusalOf(err);
+        if (cancelled) store.getState().markCancelled(cancelled.message);
+      });
     }, SAVE_DEBOUNCE_MS);
   });
 

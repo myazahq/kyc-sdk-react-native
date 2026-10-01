@@ -10,6 +10,7 @@ import type {
   DocumentCaptureCheckResponse,
   NfcChallengeResponse,
   ContactSendResponse,
+  DeviceChallengeResponse,
   HealthResponse,
   MediaUploadType,
   PlaceSuggestion,
@@ -150,7 +151,28 @@ function normalizeMimeType(rawType: string | undefined, type: MediaUploadType): 
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createKYCApi(baseUrl: string, apiKey: string) {
+export interface KYCApiOptions {
+  /**
+   * Resolves the per-install device id sent as `X-Myaza-Device-Id` on every
+   * upload — the same value the submission's `fingerprint.deviceId` carries,
+   * so the server can tell when one session's captures came from more than one
+   * device. Absent (Device Intelligence off) means no header.
+   */
+  deviceId?: () => Promise<string | undefined>;
+}
+
+/** The upload headers: the shared ones plus the device id, when known. */
+export async function uploadHeaders(
+  headers: Record<string, string>,
+  deviceId: KYCApiOptions['deviceId'],
+): Promise<Record<string, string>> {
+  // Best-effort by contract: a device id that cannot be read must never cost
+  // the applicant their upload.
+  const id = await deviceId?.().catch(() => undefined);
+  return id ? { ...headers, 'X-Myaza-Device-Id': id } : headers;
+}
+
+export function createKYCApi(baseUrl: string, apiKey: string, options: KYCApiOptions = {}) {
   const base = `${baseUrl}/api/kyc`;
   const headers = baseHeaders(apiKey);
 
@@ -201,7 +223,7 @@ export function createKYCApi(baseUrl: string, apiKey: string) {
       // Don't set Content-Type — the fetch impl adds the multipart boundary.
       const res = await fetch(`${base}/upload`, {
         method: 'POST',
-        headers,
+        headers: await uploadHeaders(headers, options.deviceId),
         body: form,
       });
       const { mediaId } = await handleResponse<UploadResponse>(res);
@@ -278,6 +300,21 @@ export function createKYCApi(baseUrl: string, apiKey: string) {
      */
     async nfcChallenge(): Promise<NfcChallengeResponse> {
       return request<NfcChallengeResponse>('/nfc/challenge', { method: 'POST' });
+    },
+
+    /**
+     * A single-use Device Intelligence attestation challenge. Any failure
+     * (404/503 included) means "skip attestation" — the caller treats it so.
+     */
+    async deviceChallenge(
+      body: { platform: 'ios' | 'android'; keyId?: string },
+      signal?: AbortSignal,
+    ): Promise<DeviceChallengeResponse> {
+      return request<DeviceChallengeResponse>('/device/challenge', {
+        method: 'POST',
+        body: JSON.stringify(body),
+        ...(signal ? { signal } : {}),
+      });
     },
 
     async config(signal?: AbortSignal): Promise<SdkConfigResponse> {

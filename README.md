@@ -625,6 +625,49 @@ v5 Nitro frame processor: the camera frame never crosses the JS bridge. The self
 is **auto-captured** once challenges pass (anti-spoofing — never user-triggered),
 and a short liveness video is recorded and uploaded best-effort.
 
+## Device Intelligence (device signals and attestation)
+
+While a workflow's `deviceIntelligence` is on (the default), the SDK sends a
+device fingerprint with each submission and an `X-Myaza-Device-Id` header with
+every upload. Besides the components it has always sent, it now adds, all
+best-effort and never blocking a submission:
+
+- **`stableId`**: an id that survives a reinstall. iOS: a random UUID in the
+  Keychain (this-device-only, never synced). Android: `ANDROID_ID`.
+- **`integrity`**: root, jailbreak and hooking heuristics (su binaries, Magisk,
+  test-keys, a writable `/system`, jailbreak files, a sandbox escape, injected
+  libraries, Frida, an attached debugger). No prompt, no permission. On Android
+  the SDK's manifest lists a handful of root-manager package names under
+  `<queries>` (package visibility, not a permission) so the check can see them.
+- **`attestation`**: the platform vouching for your app and the device, bound
+  to a single-use server challenge and bounded to about 5 seconds.
+
+Nothing in your app's code changes. Two pieces of setup make attestation count:
+
+**iOS (App Attest).** Add the App Attest capability to your App ID and the
+entitlement to your app. In an Expo app:
+
+```json
+{
+  "expo": {
+    "ios": {
+      "entitlements": { "com.apple.developer.devicecheck.appattest-environment": "production" }
+    }
+  }
+}
+```
+
+Without it, iOS attests in App Attest's development environment, which is not
+meant for apps in production. Simulators do not support App
+Attest; there the field is simply omitted. Send Myaza your Team ID and bundle
+ID so the server can recognise your app.
+
+**Android (Play Integrity).** In Play Console, link your app to the Google
+Cloud project Myaza gives you (App integrity, Play Integrity API). The SDK
+reads that project number from the server and asks Play for a token; until the
+server serves one, the step is skipped. Send Myaza your package name. Devices
+without Google Play Services (Huawei, AOSP) send no token.
+
 ## App size
 
 The SDK adds native machine learning to a host app, and that is where the weight

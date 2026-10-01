@@ -15,6 +15,7 @@
 #include <fbjni/fbjni.h>
 #include <NitroModules/HybridObjectRegistry.hpp>
 
+#include "JHybridMyazaDeviceIntelSpec.hpp"
 #include "JHybridMyazaEmrtdSpec.hpp"
 #include "JHybridMyazaFaceDetectorSpec.hpp"
 #include "JHybridMyazaRectDetectorSpec.hpp"
@@ -61,12 +62,21 @@ struct JHybridMyazaRectDetectorSpecImpl: public jni::JavaClass<JHybridMyazaRectD
     return javaPart->getJHybridMyazaRectDetectorSpec();
   }
 };
+struct JHybridMyazaDeviceIntelSpecImpl: public jni::JavaClass<JHybridMyazaDeviceIntelSpecImpl, JHybridMyazaDeviceIntelSpec::JavaPart> {
+  static constexpr auto kJavaDescriptor = "Lcom/margelo/nitro/myazakyc/HybridMyazaDeviceIntel;";
+  static std::shared_ptr<JHybridMyazaDeviceIntelSpec> create() {
+    static const auto constructorFn = javaClassStatic()->getConstructor<JHybridMyazaDeviceIntelSpecImpl::javaobject()>();
+    jni::local_ref<JHybridMyazaDeviceIntelSpec::JavaPart> javaPart = javaClassStatic()->newObject(constructorFn);
+    return javaPart->getJHybridMyazaDeviceIntelSpec();
+  }
+};
 
 void registerAllNatives() {
   using namespace margelo::nitro;
   using namespace margelo::nitro::myazakyc;
 
   // Register native JNI methods
+  margelo::nitro::myazakyc::JHybridMyazaDeviceIntelSpec::CxxPart::registerNatives();
   margelo::nitro::myazakyc::JHybridMyazaEmrtdSpec::CxxPart::registerNatives();
   margelo::nitro::myazakyc::JHybridMyazaFaceDetectorSpec::CxxPart::registerNatives();
   margelo::nitro::myazakyc::JHybridMyazaRectDetectorSpec::CxxPart::registerNatives();
@@ -95,6 +105,12 @@ void registerAllNatives() {
     "MyazaRectDetector",
     []() -> std::shared_ptr<HybridObject> {
       return JHybridMyazaRectDetectorSpecImpl::create();
+    }
+  );
+  HybridObjectRegistry::registerHybridObjectConstructor(
+    "MyazaDeviceIntel",
+    []() -> std::shared_ptr<HybridObject> {
+      return JHybridMyazaDeviceIntelSpecImpl::create();
     }
   );
 }

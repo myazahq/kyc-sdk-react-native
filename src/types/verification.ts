@@ -55,6 +55,9 @@ export type KYCErrorCode =
   | 'upload_failed'
   | 'camera_permission_denied'
   | 'feature_disabled'
+  // The organisation (or Myaza support) cancelled this verification session.
+  // Terminal until an admin uncancels it: retrying cannot succeed.
+  | 'session_cancelled'
   | 'unknown';
 
 export interface KYCErrorDetails {
