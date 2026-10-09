@@ -17,6 +17,12 @@ export interface StoredPin {
    *  (cleared only by clearPresencePin — revoke or sign-out), because the
    *  server keeps renewing the watch and reports must keep flowing. */
   alwaysOn?: boolean;
+  /** `false` when the workflow switched background monitoring off for this
+   *  check. Absent on pins saved before this was recorded: treated as on. */
+  background?: false;
+  /** The reporter has asked for "allow all the time" for this pin once
+   *  (auto-arm.ts). It never asks again; a new pin starts clean. */
+  backgroundAsked?: true;
 }
 
 const FILE_NAME = 'myaza-kyc-presence.json';
@@ -59,7 +65,7 @@ function writeAll(pins: Record<string, StoredPin>): void {
 export function savePresencePin(
   externalUserId: string,
   pin: { lat: number; lng: number },
-  opts?: { alwaysOn?: boolean },
+  opts?: { alwaysOn?: boolean; background?: boolean },
 ): void {
   if (!externalUserId) return;
   const pins = readAll();
@@ -68,7 +74,17 @@ export function savePresencePin(
     lng: pin.lng,
     savedAt: new Date().toISOString(),
     ...(opts?.alwaysOn === true ? { alwaysOn: true } : {}),
+    ...(opts?.background === false ? { background: false as const } : {}),
   };
+  writeAll(pins);
+}
+
+/** Records that the reporter asked for "allow all the time" for this pin. */
+export function markBackgroundAsked(externalUserId: string): void {
+  const pins = readAll();
+  const pin = pins[externalUserId];
+  if (!pin || pin.backgroundAsked === true) return;
+  pins[externalUserId] = { ...pin, backgroundAsked: true };
   writeAll(pins);
 }
 

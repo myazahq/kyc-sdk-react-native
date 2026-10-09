@@ -71,4 +71,28 @@ public final class KycSdkReactNativeAutolinking {
   public static func isMyazaDeviceIntelRecyclable() -> Bool {
     return HybridMyazaDeviceIntel.self is any RecyclableView.Type
   }
+  
+  public static func createMyazaBackdropBlur() -> bridge.std__shared_ptr_HybridMyazaBackdropBlurSpec_ {
+    let hybridObject = HybridMyazaBackdropBlur()
+    return { () -> bridge.std__shared_ptr_HybridMyazaBackdropBlurSpec_ in
+      let __cxxWrapped = hybridObject.getCxxWrapper()
+      return __cxxWrapped.getCxxPart()
+    }()
+  }
+  
+  public static func isMyazaBackdropBlurRecyclable() -> Bool {
+    return HybridMyazaBackdropBlur.self is any RecyclableView.Type
+  }
+  
+  public static func createMyazaTouchGuard() -> bridge.std__shared_ptr_HybridMyazaTouchGuardSpec_ {
+    let hybridObject = HybridMyazaTouchGuard()
+    return { () -> bridge.std__shared_ptr_HybridMyazaTouchGuardSpec_ in
+      let __cxxWrapped = hybridObject.getCxxWrapper()
+      return __cxxWrapped.getCxxPart()
+    }()
+  }
+  
+  public static func isMyazaTouchGuardRecyclable() -> Bool {
+    return HybridMyazaTouchGuard.self is any RecyclableView.Type
+  }
 }

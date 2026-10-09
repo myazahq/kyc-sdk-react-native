@@ -434,6 +434,8 @@ export interface KycState {
      */
     previewUri?: string;
     isPdf?: boolean;
+    /** How it was provided, where the workflow lets the applicant sign on screen. */
+    method?: 'drawn' | 'uploaded';
   }>;
   /**
    * Set by a KYB submission that requires applicant verification — the
@@ -548,6 +550,7 @@ export interface KycState {
     fileName?: string;
     previewUri?: string;
     isPdf?: boolean;
+    method?: 'drawn' | 'uploaded';
   }) => void;
   removeSupportingDocument: (type: string) => void;
   setApplicant: (role: ApplicantRole, name: string, keyPersonIndex?: number | null) => void;

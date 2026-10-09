@@ -24,7 +24,7 @@ export function resolveGuidance(
     return { text: placeFaceInstruction(t), tone: 'normal' };
   }
   if (l.positionGuidance) return { text: positionGuidanceText(l.positionGuidance), tone: 'error' };
-  if (l.wrongGesture) return { text: 'Wrong gesture — follow the prompt', tone: 'error' };
+  if (l.wrongGesture) return { text: 'Wrong gesture. Follow the prompt', tone: 'error' };
   return { text: l.instruction, tone: 'normal' };
 }
 

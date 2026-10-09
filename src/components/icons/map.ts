@@ -20,6 +20,7 @@ import ChevronDownIcon from '@hugeicons/core-free-icons/ChevronDownIcon';
 import ChevronLeftIcon from '@hugeicons/core-free-icons/ChevronLeftIcon';
 import ChevronRightIcon from '@hugeicons/core-free-icons/ChevronRightIcon';
 import CircleDashedIcon from '@hugeicons/core-free-icons/CircleDashedIcon';
+import CollapseIcon from '@hugeicons/core-free-icons/CollapseIcon';
 import ContactIcon from '@hugeicons/core-free-icons/ContactIcon';
 import CopyIcon from '@hugeicons/core-free-icons/CopyIcon';
 import CreditCardIcon from '@hugeicons/core-free-icons/CreditCardIcon';
@@ -50,6 +51,7 @@ import Message01Icon from '@hugeicons/core-free-icons/Message01Icon';
 import MinusSignIcon from '@hugeicons/core-free-icons/MinusSignIcon';
 import MoonIcon from '@hugeicons/core-free-icons/MoonIcon';
 import NfcIcon from '@hugeicons/core-free-icons/NfcIcon';
+import PenTool01Icon from '@hugeicons/core-free-icons/PenTool01Icon';
 import PencilEdit01Icon from '@hugeicons/core-free-icons/PencilEdit01Icon';
 import PencilIcon from '@hugeicons/core-free-icons/PencilIcon';
 import Radar01Icon from '@hugeicons/core-free-icons/Radar01Icon';
@@ -104,6 +106,7 @@ export const ICONS: Record<IconName, IconSvgElement> = {
   refresh: RefreshCwIcon,
   'refresh-ccw': RefreshIcon,
   maximize: ExpandIcon,
+  minimize: CollapseIcon,
   calendar: Calendar01Icon,
   image: Image01Icon,
   'chevron-left': ChevronLeftIcon,
@@ -129,6 +132,8 @@ export const ICONS: Record<IconName, IconSvgElement> = {
   'scan-face': FaceIdIcon,
   nfc: NfcIcon,
   filter: FilterIcon,
+  // The web SDK's `PenLine`: the mark for signing, and for editing a signature.
+  'pen-line': PenTool01Icon,
   pencil: PencilIcon,
   'pencil-line': PencilEdit01Icon,
   search: Search01Icon,

@@ -1,0 +1,14 @@
+{
+  "uiViewClassName": "MyazaBackdropBlur",
+  "supportsRawText": false,
+  "bubblingEventTypes": {},
+  "directEventTypes": {},
+  "validAttributes": {
+    "windowX": true,
+    "windowY": true,
+    "windowWidth": true,
+    "windowHeight": true,
+    "dark": true,
+    "hybridRef": true
+  }
+}

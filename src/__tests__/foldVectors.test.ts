@@ -1,4 +1,10 @@
-import { CHECKPOINT_MS, checkpointStay, foldSpanIntoDays } from '../presence/background-math';
+import {
+  CHECKPOINT_MS,
+  FIRST_CHECKPOINT_MS,
+  checkpointStay,
+  foldSpanIntoDays,
+  nextCheckpointAt,
+} from '../presence/background-math';
 import { describeInMonorepo, sharedVectors } from './helpers/monorepo';
 
 // The canonical fold vectors live in the Flutter package because its NATIVE
@@ -33,19 +39,27 @@ describeInMonorepo('presence fold vectors (cross-language contract)', () => {
 interface CheckpointVector {
   name: string;
   enterAt: number | null;
+  stayStart: number | null;
   atMs: number;
   offsetMinutes: number;
-  expected: { enterAt: number; days: Vector['expected'] };
+  expected: { enterAt: number; stayStart: number; days: Vector['expected'] };
 }
 
-const checkpointDoc = sharedVectors<{ checkpointMs: number; checkpoints: CheckpointVector[] }>(
-  VECTORS,
-  { checkpointMs: CHECKPOINT_MS, checkpoints: [] },
+const checkpointDoc = sharedVectors<{
+  checkpointMs: number;
+  firstCheckpointMs: number;
+  checkpoints: CheckpointVector[];
+}>(VECTORS, {
+  checkpointMs: CHECKPOINT_MS,
+  firstCheckpointMs: FIRST_CHECKPOINT_MS,
+  checkpoints: [],
+}
 );
 
 describeInMonorepo('presence check-in vectors (cross-language contract)', () => {
   it('agrees on the check-in interval', () => {
     expect(checkpointDoc.checkpointMs).toBe(CHECKPOINT_MS);
+    expect(checkpointDoc.firstCheckpointMs).toBe(FIRST_CHECKPOINT_MS);
   });
 
   it('has a meaningful case set', () => {
@@ -54,7 +68,20 @@ describeInMonorepo('presence check-in vectors (cross-language contract)', () => 
 
   for (const v of checkpointDoc.checkpoints) {
     it(v.name, () => {
-      expect(checkpointStay(v.enterAt, v.atMs, v.offsetMinutes)).toEqual(v.expected);
+      expect(checkpointStay(v.enterAt, v.atMs, v.offsetMinutes, v.stayStart)).toEqual(v.expected);
     });
   }
+});
+
+describe('nextCheckpointAt', () => {
+  it('is null with no stay open', () => {
+    expect(nextCheckpointAt(null, null)).toBeNull();
+  });
+  it('waits the short interval for a stay nothing has recorded', () => {
+    expect(nextCheckpointAt(1000, 1000)).toBe(1000 + FIRST_CHECKPOINT_MS);
+    expect(nextCheckpointAt(1000, null)).toBe(1000 + FIRST_CHECKPOINT_MS);
+  });
+  it('waits three hours once the stay has been recorded', () => {
+    expect(nextCheckpointAt(5000, 1000)).toBe(5000 + CHECKPOINT_MS);
+  });
 });

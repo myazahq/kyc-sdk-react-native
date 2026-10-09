@@ -11,24 +11,33 @@ import type { SelfieUpload } from './useSelfieUpload';
 import type { LivenessFailureReason } from '../../liveness/types';
 
 // ---------------------------------------------------------------------------
-// The two ways the liveness step ends.
+// How the liveness step ends, in the sheet.
 //
 // COMPLETE is not "done": the selfie is uploading behind the preview, so
 // Continue stays disabled until the media id exists. A failed upload keeps the
 // captured selfie and offers a retry rather than sending the user back through
 // the whole check for a network blip.
 //
-// FAILED mirrors the Flutter failed view — a centred red line and a full-width
-// "Try Again", no icon.
+// A FAILED check is not an ending and has no screen here: it stays on the
+// camera, with its reason and Try Again under the window (LivenessLive).
 // ---------------------------------------------------------------------------
+
+/** The finished step, when the person comes back to it. The same wording as
+ *  the web and Flutter SDKs. */
+export const SELFIE_DONE_TITLE = 'Selfie already taken';
+export const SELFIE_DONE_BODY = 'You have completed this step. There is nothing more to do here.';
 
 export function LivenessComplete({
   selfieUri,
-  soft = false,
+  soft: reportedSoft = false,
   upload,
+  done = false,
   onRetake,
   onContinue,
 }: {
+  /** Taken on an earlier visit to this step: shown as finished, with Continue
+   *  and no Retake, so the check runs once per session. */
+  done?: boolean;
   /** Null on a restored session: the mediaId survived, the local file did not. */
   selfieUri: string | null;
   /** The still reads out of focus. A notice on the preview, never a gate. */
@@ -39,11 +48,23 @@ export function LivenessComplete({
 }): React.ReactElement {
   const { colors } = useTheme();
   const t = useText();
+  // A finished step offers no retake, so it gives no advice to take one.
+  const soft = reportedSoft && !done;
   const { uploading, uploadError, retryInfo, selfieIdRef, videoPathRef, uploadSelfieAndVideo } =
     upload;
   return (
       <View>
         <SelfiePreview uri={selfieUri} uploading={uploading && !uploadError} soft={soft} />
+        {done ? (
+          <View style={{ marginTop: spacing.md, gap: 4 }}>
+            <MyazaText variant="label" style={{ textAlign: 'center', fontWeight: '600' }}>
+              {SELFIE_DONE_TITLE}
+            </MyazaText>
+            <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ textAlign: 'center' }}>
+              {SELFIE_DONE_BODY}
+            </MyazaText>
+          </View>
+        ) : null}
         {retryInfo && uploading ? (
           <MyazaText variant="bodySmall" color={colors.warning} style={{ textAlign: 'center', marginTop: spacing.sm }}>
             {`Upload failed, retrying (${retryInfo.attempt}/${retryInfo.total})`}
@@ -61,15 +82,17 @@ export function LivenessComplete({
           />
         ) : (
           <View style={{ flexDirection: 'row', gap: spacing.md }}>
-            <View style={{ flex: 1 }}>
-              <MyazaButton
-                label={t('common.retake')}
-                variant="outline"
-                leadingIcon="refresh"
-                disabled={uploading}
-                onPress={onRetake}
-              />
-            </View>
+            {done ? null : (
+              <View style={{ flex: 1 }}>
+                <MyazaButton
+                  label={t('common.retake')}
+                  variant="outline"
+                  leadingIcon="refresh"
+                  disabled={uploading}
+                  onPress={onRetake}
+                />
+              </View>
+            )}
             <View style={{ flex: 1 }}>
               {/* No spinner on Continue, deliberately — 1:1 with Flutter.
               
@@ -92,26 +115,9 @@ export function LivenessComplete({
   );
 }
 
-export function LivenessFailed({
-  reason,
-  onRetry,
-}: {
-  reason: LivenessFailureReason | null;
-  onRetry: () => void;
-}): React.ReactElement {
-  const { colors } = useTheme();
-  return (
-      <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xl, gap: spacing.lg }}>
-        <MyazaText variant="bodyMedium" color={colors.error} style={{ textAlign: 'center', fontWeight: '500' }}>
-          {reason === 'timeout'
-            ? "Time's up. Let's try again."
-            : reason === 'flash_failed'
-              ? "We couldn't confirm the check. Let's try again."
-              : 'Face lost. Please try again.'}
-        </MyazaText>
-        <View style={{ alignSelf: 'stretch' }}>
-          <MyazaButton label="Try Again" onPress={onRetry} />
-        </View>
-      </View>
-  );
+/** Why a check stopped, in the person's words. */
+export function livenessFailureMessage(reason: LivenessFailureReason | null): string {
+  if (reason === 'timeout') return "Time's up. Let's try again.";
+  if (reason === 'flash_failed') return "We couldn't confirm the check. Let's try again.";
+  return 'Face lost. Please try again.';
 }

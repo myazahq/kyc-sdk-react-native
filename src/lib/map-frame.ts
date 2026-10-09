@@ -15,8 +15,12 @@ export const MAP_FRAME_SOURCE = 'myaza-map';
 export const MAP_PARENT_SOURCE = 'myaza-sdk';
 
 /** How long to wait for `ready` before falling back to the OSM picker.
- *  Generous: the page loads Google's script on a cold cache. */
-export const MAP_FRAME_READY_TIMEOUT_MS = 8000;
+ *  20 seconds: the hosted page is rendered per request and then loads Google's
+ *  script, and from a phone on mobile data that measured over 8 seconds often
+ *  enough that the map fell back to the built-in picker while the real one
+ *  was still on its way (production, 2026-10-04). The three SDKs keep one
+ *  value. */
+export const MAP_FRAME_READY_TIMEOUT_MS = 20000;
 
 export interface MapFrameOptions {
   center: LatLng;

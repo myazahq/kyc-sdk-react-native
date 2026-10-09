@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, View, type ViewStyle } from 'react-native';
+import { Pressable, View, type ViewStyle } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { radius, spacing } from '../../config/theme';
@@ -8,6 +8,7 @@ import { MyazaText } from '../Typography';
 import { Icon } from '../Icon';
 import { CountryFlag } from '../CountryFlag';
 import { CHROME_SCRIM, ChromeGlass } from '../glass/ChromeGlass';
+import { Spinner } from '../Spinner';
 
 // ---------------------------------------------------------------------------
 // Immersive capture chrome — 1:1 with the Flutter SDK's full-screen camera.

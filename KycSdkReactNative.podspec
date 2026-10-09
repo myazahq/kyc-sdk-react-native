@@ -29,4 +29,11 @@ Pod::Spec.new do |s|
   # dead-strip workaround is gone.
   load 'nitrogen/generated/ios/KycSdkReactNative+autolinking.rb'
   add_nitrogen_files(s)
+
+  # The SDK ships one native VIEW (the blur around the liveness face window,
+  # ios/HybridMyazaBackdropBlur.swift). A view is a Fabric component, and its
+  # generated C++ includes React's renderer and Yoga headers, which a pod only
+  # sees through React Native's own helper. Without this line the pod fails to
+  # compile with "'yoga/style/Style.h' file not found".
+  install_modules_dependencies(s)
 end

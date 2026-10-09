@@ -59,14 +59,14 @@ export function PoweredBy({ bottomInset = 0 }: { bottomInset?: number }): React.
         alignItems: 'center',
       }}
     >
-      {/* The ROW is not the link — only the mark is. "Powered by" is a label,
+      {/* The ROW is not the link — only the mark is. "Protected by" is a label,
           not a destination, so it does not carry the tap. */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, opacity: 0.9 }}>
-        {/* Small and muted on purpose — "Powered by" is connective tissue, not
-            the message. The BRAND carries the weight. With the org's own logo
-            it reads "Protected by", the web SDK's label for that mode. */}
+        {/* Small and muted on purpose: "Protected by" is connective tissue, not
+            the message. The BRAND carries the weight. The same words whichever
+            logo follows, as on the web and Flutter SDKs. */}
         <MyazaText variant="body" color={markColor} style={{ flexShrink: 1, fontSize: 12 }}>
-          {attribution.mode === 'custom' ? 'Protected by' : 'Powered by'}
+          Protected by
         </MyazaText>
 
         {/* The lockup, spaced TIGHTER than the gap before it so it reads as one

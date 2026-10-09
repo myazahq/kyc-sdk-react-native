@@ -33,12 +33,18 @@ target_sources(
   # Autolinking Setup
   ../nitrogen/generated/android/KycSdkReactNativeOnLoad.cpp
   # Shared Nitrogen C++ sources
+  ../nitrogen/generated/shared/c++/HybridMyazaBackdropBlurSpec.cpp
+  ../nitrogen/generated/shared/c++/views/HybridMyazaBackdropBlurComponent.cpp
   ../nitrogen/generated/shared/c++/HybridMyazaDeviceIntelSpec.cpp
   ../nitrogen/generated/shared/c++/HybridMyazaEmrtdSpec.cpp
   ../nitrogen/generated/shared/c++/HybridMyazaFaceDetectorSpec.cpp
   ../nitrogen/generated/shared/c++/HybridMyazaRectDetectorSpec.cpp
   ../nitrogen/generated/shared/c++/HybridMyazaTextRecognizerSpec.cpp
+  ../nitrogen/generated/shared/c++/HybridMyazaTouchGuardSpec.cpp
+  ../nitrogen/generated/shared/c++/views/HybridMyazaTouchGuardComponent.cpp
   # Android-specific Nitrogen C++ sources
+  ../nitrogen/generated/android/c++/JHybridMyazaBackdropBlurSpec.cpp
+  ../nitrogen/generated/android/c++/views/JHybridMyazaBackdropBlurStateUpdater.cpp
   ../nitrogen/generated/android/c++/JHybridMyazaDeviceIntelSpec.cpp
   ../nitrogen/generated/android/c++/JHybridMyazaEmrtdSpec.cpp
   ../nitrogen/generated/android/c++/JHybridMyazaFaceDetectorSpec.cpp

@@ -12,6 +12,8 @@ const FILE_NAME = 'myaza-kyc-presence-bg.json';
 
 interface BgRecord {
   enterAt?: number | null;
+  /** When the open stay began; `enterAt` moves on at each check-in. */
+  stayStart?: number | null;
   pending?: WireObservation[];
   config?: { apiKey: string; devUrl?: string };
   serviceUser?: string;
@@ -38,8 +40,26 @@ function write(userId: string, patch: Partial<BgRecord>): void {
   writeJsonFile(FILE_NAME, all as Record<string, unknown>);
 }
 
+/** Open a fresh stay at `at`, or close the open one (null). */
 export function saveEnterAt(userId: string, at: number | null): void {
-  write(userId, { enterAt: at });
+  write(userId, { enterAt: at, stayStart: at });
+}
+
+export interface StoredStay {
+  enterAt: number | null;
+  stayStart: number | null;
+}
+
+/** The open stay as the check-in rule needs it (checkpointStay). */
+export function loadStay(userId: string): StoredStay {
+  const record = readAll()[userId];
+  const enterAt = typeof record?.enterAt === 'number' ? record.enterAt : null;
+  const stayStart = typeof record?.stayStart === 'number' ? record.stayStart : null;
+  return { enterAt, stayStart: enterAt == null ? null : stayStart };
+}
+
+export function saveStay(userId: string, stay: StoredStay): void {
+  write(userId, { enterAt: stay.enterAt, stayStart: stay.enterAt == null ? null : stay.stayStart });
 }
 
 export function loadEnterAt(userId: string): number | null {

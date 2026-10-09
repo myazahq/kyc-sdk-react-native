@@ -222,6 +222,9 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> e
    * applies either way. See lib/bright-screen.
    */
   livenessBrightScreen?: boolean;
+  /** Show the captured selfie, with Retake and Continue, before moving on.
+   *  Off unless `true`; the liveness capture otherwise hands straight over. */
+  selfieReview?: boolean;
 
   /**
    * The biometric scopes' flow options (workflow-driven, or passed here on a

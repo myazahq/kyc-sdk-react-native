@@ -2,6 +2,7 @@ import { useCallback, useRef } from 'react';
 import type { CameraVideoOutput, Recorder } from 'react-native-vision-camera';
 
 import { MAX_VIDEO_DURATION_MS } from '../config/captureSettings';
+import { markRecordingStart } from '../liveness/flashTimeline';
 
 // Shared best-effort video recorder for the VisionCamera v5 output model, used by
 // both the liveness selfie video and the document-capture videos. Mirrors the
@@ -62,6 +63,9 @@ export function useVideoRecorder(videoOutput: CameraVideoOutput, enabled: boolea
         resolveFinishedRef.current?.(null);
         resolveFinishedRef.current = null;
       };
+      // No recording yet: a time left by an earlier one (a document video) must
+      // never date this one's flash, should this recorder fail to start.
+      markRecordingStart(null);
       // Retry until the video output is connected to the session (~2.4s); the
       // "not yet connected" error is transient. Any other error → bail (best-effort).
       for (let attempt = 0; attempt < 12; attempt++) {
@@ -71,6 +75,8 @@ export function useVideoRecorder(videoOutput: CameraVideoOutput, enabled: boolea
           await recorder.startRecording(onFinished, onError);
           recorderRef.current = recorder;
           startedRef.current = true;
+          // The flash reports its colours' times from here (liveness/flashTimeline.ts).
+          markRecordingStart(Date.now());
           // Hard length cap — stop the recording (path arrives via onFinished); a
           // later stop() will just await the already-resolved path.
           autoStopRef.current = setTimeout(() => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
@@ -8,6 +8,7 @@ import { Icon, type IconName } from '../../components/Icon';
 import { DashedBorder } from '../../components/DashedBorder';
 import { RequiredPill } from './RequiredPill';
 import { useText } from '../../i18n/useText';
+import { Spinner } from '../../components/Spinner';
 
 // ─── Document capture without the camera ──────────────────────────────────────
 //
@@ -102,7 +103,7 @@ export function UploadPhase(p: UploadPhaseProps): React.ReactElement {
               }}
             >
               {p.busy ? (
-                <ActivityIndicator size="small" color={colors.primary} />
+                <Spinner size="small" color={colors.primary} />
               ) : (
                 <Icon name="image" size={30} color={colors.primary} />
               )}

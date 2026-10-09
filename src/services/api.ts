@@ -1,3 +1,4 @@
+import { compactDrawing, type SignatureDrawing } from '../lib/signature';
 import { SDK_VERSION } from './deviceMetadata';
 import type {
   AddressReverseResult,
@@ -227,6 +228,19 @@ export function createKYCApi(baseUrl: string, apiKey: string, options: KYCApiOpt
         body: form,
       });
       const { mediaId } = await handleResponse<UploadResponse>(res);
+      return mediaId;
+    },
+
+    /**
+     * Save a signature drawn on screen. The server draws the image from the
+     * strokes and stores it as a supporting document; returns its mediaId.
+     */
+    async uploadSignature(drawing: SignatureDrawing): Promise<string> {
+      const { mediaId } = await request<{ mediaId: string }>('/upload/signature', {
+        method: 'POST',
+        body: JSON.stringify(compactDrawing(drawing)),
+        headers: await uploadHeaders({}, options.deviceId),
+      });
       return mediaId;
     },
 

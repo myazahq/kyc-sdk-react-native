@@ -25,16 +25,17 @@ import { applyLocationSamples, mergeObservations } from './sampler';
 import { postObservations } from './post';
 import { loadPresencePin } from './store';
 import {
-  loadEnterAt,
+  loadStay,
   loadReporterConfig,
   loadServiceUser,
   pendingObservations,
   queueObservations,
   replacePending,
-  saveEnterAt,
+  saveStay,
   saveReporterConfig,
   saveServiceUser,
 } from './background-store';
+import { nativeModulePresent } from '../lib/native-module-present';
 
 export const PRESENCE_LOCATION_TASK = 'myaza-kyc-presence-location';
 
@@ -83,6 +84,7 @@ export function defineLocationTask(tm: TaskManagerLike): void {
     const pin = loadPresencePin(userId);
     if (!pin) return;
 
+    const stay = loadStay(userId);
     const result = applyLocationSamples(
       pin,
       locations.map((l) => ({
@@ -92,9 +94,11 @@ export function defineLocationTask(tm: TaskManagerLike): void {
         timestamp: l.timestamp ?? Date.now(),
         mocked: typeof l.mocked === 'boolean' ? l.mocked : null,
       })),
-      loadEnterAt(userId),
+      stay.enterAt,
+      undefined,
+      stay.stayStart,
     );
-    saveEnterAt(userId, result.enterAt);
+    saveStay(userId, result);
     if (result.observations.length > 0) {
       queueObservations(userId, result.observations, mergeObservations);
     }
@@ -131,6 +135,7 @@ export async function enableForegroundService(options: {
   notification: PresenceNotification;
 }): Promise<EnableForegroundServiceResult> {
   if (Platform.OS !== 'android') return { enabled: false, reason: 'unsupported_platform' };
+  if (!nativeModulePresent('ExpoTaskManager')) return { enabled: false, reason: 'module_missing' };
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     require('expo-task-manager');

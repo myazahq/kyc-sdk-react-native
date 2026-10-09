@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, View, type ViewStyle } from 'react-native';
+import { Pressable, View, type ViewStyle } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { radius, spacing } from '../../config/theme';
@@ -8,6 +8,7 @@ import { useText } from '../../i18n';
 import { MyazaText } from '../Typography';
 import { Icon } from '../Icon';
 import { CHROME_SCRIM, ChromeGlass } from '../glass/ChromeGlass';
+import { Spinner } from '../Spinner';
 
 const SCRIM = CHROME_SCRIM;
 
@@ -151,7 +152,7 @@ export function BottomBar({
                 justifyContent: 'center',
               }}
             >
-              {busy ? <ActivityIndicator color="#FFFFFF" /> : <Icon name="scan-line" size={26} color="#FFFFFF" />}
+              {busy ? <Spinner color="#FFFFFF" /> : <Icon name="scan-line" size={26} color="#FFFFFF" />}
             </View>
           </Pressable>
         </View>

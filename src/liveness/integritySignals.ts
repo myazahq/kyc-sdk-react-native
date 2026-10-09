@@ -32,6 +32,8 @@ export interface LivenessIntegrity {
     inconclusive: boolean;
     /** The colours emitted, in order — what the server checks the video for. */
     sequence: string[];
+    /** When each colour came on, ms from the start of the recording. */
+    onsets?: number[];
   };
 }
 
@@ -81,6 +83,7 @@ export function buildLivenessIntegrity(
             // read on the server as a measured failure.
             inconclusive: flashUnmeasurable(flash),
             sequence: flash.sequence,
+            ...(flash.onsets ? { onsets: flash.onsets } : {}),
           },
         }
       : {}),

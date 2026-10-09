@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { Camera, useCameraDevice, useCameraDevices, usePhotoOutput, useVideoOutput, type CameraRef } from 'react-native-vision-camera';
 
 import { radius, spacing } from '../config/theme';
@@ -13,6 +13,7 @@ import { useVideoRecorder } from './useVideoRecorder';
 import { CardGuide } from './viewfinder/CardGuide';
 import { HintBanner, OverlayButton, Shutter } from './viewfinder/ViewfinderControls';
 import { ImmersiveOverlay } from './viewfinder/ImmersiveOverlay';
+import { Spinner } from './Spinner';
 
 // Back-camera viewfinder for document capture — the RN mirror of the Flutter
 // SDK's _DocumentViewfinder. Shows a VisionCamera preview with an ID-card guide
@@ -250,7 +251,7 @@ export function CameraViewfinder({
         />
       ) : (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color="#FFFFFF" />
+          <Spinner color="#FFFFFF" />
         </View>
       )}
 

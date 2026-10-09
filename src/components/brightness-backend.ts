@@ -1,6 +1,7 @@
 import { NativeModules, Platform } from 'react-native';
 
 import type { BrightnessBackend } from '../lib/brightness-booster';
+import { nativeModulePresent } from '../lib/native-module-present';
 
 // ---------------------------------------------------------------------------
 // Where the brightness actually changes, per platform.
@@ -44,7 +45,9 @@ function loadExpoBrightness(): ExpoBrightnessShape | null {
     // flow. Typed structurally: only the two calls below are used.
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      expoBrightness = require('expo-brightness') as ExpoBrightnessShape;
+      expoBrightness = nativeModulePresent('ExpoBrightness')
+        ? (require('expo-brightness') as ExpoBrightnessShape)
+        : null;
     } catch {
       expoBrightness = null;
     }

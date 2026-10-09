@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, useWindowDimensions, View } from 'react-native';
+import { useWindowDimensions, View } from 'react-native';
 
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
@@ -16,6 +16,7 @@ import {
 import { captureStreetViewFrame, type StreetViewFrame } from '../../lib/street-view-fov';
 import { mapSurfaceHeight, type LatLng } from '../../lib/map-tiles';
 import { StreetViewChrome, streetViewFrameRect } from './StreetViewChrome';
+import { Spinner } from '../../components/Spinner';
 
 // Street View on mobile, via OUR hosted /embed/street-view page in a WebView —
 // the same model (and the same app grant) as FramedMapPicker. The page renders
@@ -141,7 +142,7 @@ export function FramedStreetView({
         ) : null}
         {!ready ? (
           <View pointerEvents="none" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator size="small" color={colors.primary} />
+            <Spinner size="small" color={colors.primary} />
           </View>
         ) : (
           <StreetViewChrome viewportWidth={viewWidth} viewportHeight={height} />

@@ -7,6 +7,7 @@ import {
   type FlashSample,
   type Rgb,
 } from './flashDetector';
+import { flashOnsets } from './flashTimeline';
 
 // ---------------------------------------------------------------------------
 // Driving the flash sequence.
@@ -48,6 +49,10 @@ export interface FlashRunnerDeps {
   isActive: () => boolean;
   /** Injectable for tests; production uses setTimeout. */
   sleep?: (ms: number) => Promise<void>;
+  /** Injectable for tests; production uses Date.now. */
+  now?: () => number;
+  /** Injectable for tests; production reads the recording clock (flashTimeline.ts). */
+  recordingStartedAt?: () => number | null;
 }
 
 const realSleep = (ms: number): Promise<void> =>
@@ -88,6 +93,9 @@ export async function runFlashSequence(
 ): Promise<FlashResult> {
   const sleep = deps.sleep ?? realSleep;
   const samples: FlashSample[] = [];
+  const now = deps.now ?? Date.now;
+  // When each colour came on, for the server's re-check (flashTimeline.ts).
+  const onAt: number[] = [];
 
   try {
     for (const flash of sequence) {
@@ -98,6 +106,7 @@ export async function runFlashSequence(
       const baseline = await sampleWindow(deps, FLASH_TIMING.baselineMs, sleep);
 
       deps.setColor(flash.css);
+      onAt.push(now());
       await sleep(FLASH_TIMING.litSettleMs);
       const lit = await sampleWindow(deps, FLASH_TIMING.litMs, sleep);
 
@@ -114,5 +123,9 @@ export async function runFlashSequence(
     deps.setColor(null);
   }
 
-  return evaluateFlashSequence(sequence, samples);
+  const result = evaluateFlashSequence(sequence, samples);
+  const onsets = deps.recordingStartedAt
+    ? flashOnsets(onAt, sequence.length, deps.recordingStartedAt())
+    : flashOnsets(onAt, sequence.length);
+  return onsets ? { ...result, onsets } : result;
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
 
 import { spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
@@ -7,6 +7,7 @@ import { MyazaText } from '../../components/Typography';
 import { Icon } from '../../components/Icon';
 import { NFC_STAGE_ORDER, nfcStageLabel, type NfcReadStage } from '../../emrtd';
 import { useText } from '../../i18n/useText';
+import { Spinner } from '../../components/Spinner';
 
 // ---------------------------------------------------------------------------
 // NFC read progress.
@@ -43,7 +44,7 @@ export function NfcReadProgress({ stage }: { stage: NfcReadStage }): React.React
   if (stage === 'waiting') {
     return (
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="small" color={colors.primary} />
+        <Spinner size="small" color={colors.primary} />
         <View style={{ width: 8 }} />
         <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '600' }}>
           {t('nfc.waiting')}
@@ -71,7 +72,7 @@ export function NfcReadProgress({ stage }: { stage: NfcReadStage }): React.React
               {complete ? (
                 <Icon name="badge-check" size={16} color={colors.success} />
               ) : active ? (
-                <ActivityIndicator size="small" color={colors.primary} />
+                <Spinner size="small" color={colors.primary} />
               ) : (
                 <View
                   style={{

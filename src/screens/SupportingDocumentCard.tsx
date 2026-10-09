@@ -1,10 +1,13 @@
-import React from 'react';
-import { View } from 'react-native';
+import React, { useState } from 'react';
+import { Pressable, View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
 import { MyazaText } from '../components/Typography';
 import { BusinessDocumentSlot } from './BusinessDocumentSlot';
+import { SignedSignatureRow } from './SignedSignatureRow';
+import { SupportingDocumentSignature } from './SupportingDocumentSignature';
+import type { SignatureDrawing } from '../lib/signature';
 import {
   DocumentMarker,
   DocumentReads,
@@ -39,6 +42,9 @@ export function SupportingDocumentCard({
   error = null,
   onPick,
   onRemove,
+  capture = 'upload',
+  drawn = false,
+  onSign,
 }: {
   /** 1-based, so the list reads as a checklist rather than a pile. */
   position: number;
@@ -56,9 +62,20 @@ export function SupportingDocumentCard({
   error?: string | null;
   onPick: () => void;
   onRemove: () => void;
+  /** How it is provided: a file, a signature drawn on screen, or either. */
+  capture?: 'upload' | 'draw' | 'draw_or_upload';
+  /** The provided document was signed on screen. */
+  drawn?: boolean;
+  onSign?: (drawing: SignatureDrawing) => void;
 }): React.ReactElement {
   const { colors } = useTheme();
+  // Where the workflow offers both, the pad comes first: it is the shorter way.
+  const [uploadInstead, setUploadInstead] = useState(false);
+  const signing = capture !== 'upload' && !uploadInstead && fileName === null && onSign !== undefined;
   const done = fileName !== null && !uploading;
+  // What was signed, kept so it can be shown once saved and reopened by Edit.
+  // It lives only as long as this screen: a resumed session shows the pen mark.
+  const [signed, setSigned] = useState<SignatureDrawing | null>(null);
 
   return (
     <View
@@ -108,17 +125,58 @@ export function SupportingDocumentCard({
       <View style={{ height: 1, backgroundColor: colors.border }} />
 
       <View style={{ padding: spacing.sm + 4 }}>
-        <BusinessDocumentSlot
-          label={label}
-          required={required}
-          fileName={fileName}
-          uploading={uploading}
-          previewUri={previewUri}
-          isPdf={isPdf}
-          onPick={onPick}
-          onRemove={onRemove}
-          compact
-        />
+        {signing ? (
+          <SupportingDocumentSignature
+            label={label}
+            saving={uploading}
+            initial={signed}
+            onSave={(drawing) => {
+              setSigned(drawing);
+              onSign!(drawing);
+            }}
+            onUploadInstead={capture === 'draw_or_upload' ? () => setUploadInstead(true) : undefined}
+          />
+        ) : drawn && done ? (
+          <SignedSignatureRow
+            drawing={signed}
+            label={label}
+            // Edit reopens the pad with the signature in it.
+            onEdit={onRemove}
+            onRemove={() => {
+              setSigned(null);
+              onRemove();
+            }}
+          />
+        ) : (
+                  <BusinessDocumentSlot
+            label={label}
+            required={required}
+            fileName={drawn && fileName !== null ? 'Signed on screen' : fileName}
+            uploading={uploading}
+            previewUri={previewUri}
+            isPdf={isPdf}
+            onPick={onPick}
+            onRemove={onRemove}
+            compact
+          />
+        )}
+        {!signing && fileName === null && capture === 'draw_or_upload' && uploadInstead ? (
+          <Pressable
+            onPress={() => setUploadInstead(false)}
+            disabled={uploading}
+            accessibilityRole="button"
+            style={({ pressed }) => ({
+              minHeight: 44,
+              justifyContent: 'center',
+              alignItems: 'center',
+              opacity: uploading ? 0.5 : pressed ? 0.7 : 1,
+            })}
+          >
+            <MyazaText variant="label" color={colors.primary}>
+              {'Sign on screen instead'}
+            </MyazaText>
+          </Pressable>
+        ) : null}
         {error ? (
           <MyazaText
             variant="bodySmall"

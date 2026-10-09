@@ -149,12 +149,26 @@ export {
   type PresenceTier,
 } from './presence/status';
 export { resolvePresenceTier, type PermissionState, type TierInputs } from './presence/tier';
+// The stay the background tier has open on this phone: when the person
+// arrived and when it can next be reported.
+export { presenceStay, type PresenceStay } from './presence/stay';
+// Where the check stands on the server (running, verified, how far along),
+// for the host app to show without a webhook relayed through its backend.
+export {
+  fetchPresenceWatchStatus,
+  parsePresenceWatchStatus,
+  type PresenceWatchState,
+  type PresenceWatchStatus,
+} from './presence/watch-status';
 // savePresencePin is the org-side handoff for STANDALONE address verification:
 // when capture happened on a hosted web link (or the org's own backend already
 // holds the address), the host app hands the SDK the pin so the foreground and
 // background presence tiers can run — the pin otherwise only ever exists where
 // OUR capture step stored it.
 export { clearPresencePin, savePresencePin } from './presence/store';
+// What the SDK does when the organisation stops monitoring; a host may also
+// call it itself (for example on sign-out).
+export { standDownPresence, type StandDownResult } from './presence/stand-down';
 
 // Country grouping for multi-region flows
 export { groupCountriesByRegion, regionCountryName, type Region } from './config/regions';

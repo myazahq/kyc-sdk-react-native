@@ -105,22 +105,42 @@ export function foldSpanIntoDays(
  * someone who hardly leaves home produced no background evidence, and one
  * lost exit capped a multi-day stay at its first 24 hours. Checking in folds
  * the stay so far and restarts it at the confirmation, so the 24-hour cap is
- * measured from the last time we knew they were there. Three hours keeps each
- * folded slice comfortably above the server's 30-minute dwell floor.
+ * measured from the last time we knew they were there.
+ *
+ * Two intervals. The FIRST check-in of a stay comes at 35 minutes, just past
+ * the server's default 30-minute dwell floor, so a day is credited soon after
+ * the person gets home rather than three hours later. Every later one waits
+ * three hours: the server keeps the LONGEST slice per day, so short slices
+ * all day would never satisfy an organisation whose floor is set above them.
  */
+export const FIRST_CHECKPOINT_MS = 35 * 60 * 1000;
 export const CHECKPOINT_MS = 3 * 60 * 60 * 1000;
 
 export interface CheckpointResult {
-  /** The open stay after the check-in. */
+  /** The open stay after the check-in (restarted at a recorded check-in). */
   enterAt: number;
+  /** When the person arrived: unchanged by check-ins, so `enterAt` moving
+   *  past it is what says the stay has already been recorded once. */
+  stayStart: number;
   /** Per-day aggregates to queue (empty when nothing was folded). */
   days: DayAggregate[];
+}
+
+/** The interval the open stay is waiting on. A stay nothing has recorded yet
+ *  (no start on file, or a start that is the stay's own) waits the short one. */
+export function checkpointInterval(enterAt: number, stayStart: number | null): number {
+  return stayStart == null || stayStart >= enterAt ? FIRST_CHECKPOINT_MS : CHECKPOINT_MS;
+}
+
+/** When the next check-in can record the open stay; null with no stay open. */
+export function nextCheckpointAt(enterAt: number | null, stayStart: number | null): number | null {
+  return enterAt == null ? null : enterAt + checkpointInterval(enterAt, stayStart);
 }
 
 /**
  * Apply a CONFIRMED-INSIDE reading at `atMs` to the open-stay state. No open
  * stay opens one (a missed ENTER, or a fence armed while already inside);
- * a stay open at least CHECKPOINT_MS is folded up to `atMs` and restarted
+ * a stay open at least its interval is folded up to `atMs` and restarted
  * there; anything else is unchanged. Only ever called on a reading inside the
  * fence: an outside reading is the exit rules' business, never this one's.
  */
@@ -128,8 +148,12 @@ export function checkpointStay(
   enterAt: number | null,
   atMs: number,
   offsetMinutes: number = deviceUtcOffsetMinutes(atMs),
+  stayStart: number | null = null,
 ): CheckpointResult {
-  if (enterAt == null) return { enterAt: atMs, days: [] };
-  if (!Number.isFinite(atMs) || atMs - enterAt < CHECKPOINT_MS) return { enterAt, days: [] };
-  return { enterAt: atMs, days: foldSpanIntoDays(enterAt, atMs, offsetMinutes) };
+  if (enterAt == null) return { enterAt: atMs, stayStart: atMs, days: [] };
+  const start = stayStart ?? enterAt;
+  if (!Number.isFinite(atMs) || atMs - enterAt < checkpointInterval(enterAt, stayStart)) {
+    return { enterAt, stayStart: start, days: [] };
+  }
+  return { enterAt: atMs, stayStart: start, days: foldSpanIntoDays(enterAt, atMs, offsetMinutes) };
 }

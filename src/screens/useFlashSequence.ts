@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { runFlashSequence } from '../liveness/flashRunner';
+import { holdCameraSteady } from '../liveness/cameraSteady';
 import { DEFAULT_FLASH_SEQUENCE, generateFlashSequence } from '../liveness/flashDetector';
 import type { FlashResult, Rgb } from '../liveness/flashDetector';
 
@@ -84,14 +85,22 @@ export function useFlashSequence({
     }
     if (startedRef.current) return;
     startedRef.current = true;
-    void runFlashSequence(
-      {
-        setColor: setFlashColor,
-        readFaceRgb: () => readRef.current(),
-        isActive: () => liveRef.current && (continueRef.current?.() ?? true),
-      },
-      generateFlashSequence(sequenceLength ?? DEFAULT_FLASH_SEQUENCE),
-    )
+    // Exposure and white balance are held still for the sequence, where the
+    // camera can (liveness/cameraSteady.ts), and handed back however it ends.
+    let release = () => {};
+    void holdCameraSteady()
+      .then((handBack) => {
+        release = handBack;
+        return runFlashSequence(
+          {
+            setColor: setFlashColor,
+            readFaceRgb: () => readRef.current(),
+            isActive: () => liveRef.current && (continueRef.current?.() ?? true),
+          },
+          generateFlashSequence(sequenceLength ?? DEFAULT_FLASH_SEQUENCE),
+        );
+      })
+      .finally(() => release())
       .then((result) => completeRef.current(result))
       .catch(() => {
         // A failed sequence is a MISSING measurement, not a failed check — the

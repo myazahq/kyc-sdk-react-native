@@ -1,3 +1,4 @@
+import type { FaceWindow } from '../lib/faceWindow';
 import type {
   LivenessChallenge,
   LivenessConfig,
@@ -23,7 +24,7 @@ import type { TextFn } from '../i18n/types';
 export const INTEGRITY_FAILED_PATCH = {
   phase: 'failed' as const,
   failureReason: 'face_swap' as const,
-  instruction: 'Let\u2019s start over \u2014 please stay in frame.',
+  instruction: 'Let\u2019s start over. Please stay in frame.',
   activeChallenge: null,
   positionGuidance: null,
 };
@@ -36,7 +37,13 @@ export const POSITION_TOO_FAR = 'too_far';
 export const POSITION_TOO_CLOSE = 'too_close';
 export const MULTIPLE_FACES_GUIDANCE = 'Make sure only your face is visible';
 
-export type PositionGuidance = typeof POSITION_TOO_FAR | typeof POSITION_TOO_CLOSE;
+/** Full screen only: the face is beside the window, not in it. */
+export const POSITION_OFF_CENTRE = 'off_centre';
+
+export type PositionGuidance =
+  | typeof POSITION_TOO_FAR
+  | typeof POSITION_TOO_CLOSE
+  | typeof POSITION_OFF_CENTRE;
 export type LightingGuidance = 'dark' | 'bright';
 
 export interface LivenessUiState {
@@ -87,6 +94,12 @@ export interface UseLivenessReturn extends LivenessUiState {
   awaitFreshFace: (timeoutMs: number) => Promise<boolean>;
   /** Feed live lighting quality (null = ok). */
   setLighting: (guidance: LightingGuidance | null) => void;
+  /**
+   * The full-screen camera's window onto the frame, or null in the sheet,
+   * where the circle shows the whole frame. With one set, the face is judged
+   * against the window (lib/faceWindow) rather than the frame.
+   */
+  setFaceWindow: (window: FaceWindow | null) => void;
   /** Mark the selfie captured → phase `complete`. */
   markComplete: () => void;
   /** Restart the session with a fresh random challenge set. */
@@ -125,13 +138,14 @@ export interface UseLivenessReturn extends LivenessUiState {
 
 /** Position guidance text (spoken + shown), matching the Flutter SDK exactly. */
 export function positionGuidanceText(g: PositionGuidance): string {
+  if (g === POSITION_OFF_CENTRE) return 'Centre your face in the frame';
   return g === POSITION_TOO_FAR ? 'Kindly move closer' : 'Kindly move further away';
 }
 /** Lighting warning banner text — the full Flutter strings (shown, not spoken). */
 export function lightingGuidanceText(g: LightingGuidance): string {
   return g === 'dark'
     ? 'It looks dark here. Move to a brighter area or near a light source for better detection.'
-    : 'Too bright — reduce glare or move away from direct light for better detection.';
+    : 'Too bright. Reduce glare or move away from direct light for better detection.';
 }
 
 /**

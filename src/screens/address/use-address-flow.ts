@@ -168,7 +168,7 @@ export function useAddressFlow() {
       savePresencePin(
         config.userId,
         { lat: committed.lat, lng: committed.lng },
-        { alwaysOn: cfg.presence.alwaysOn === true },
+        { alwaysOn: cfg.presence.alwaysOn === true, background: cfg.presence.background !== false },
       );
     }
     setConfirming(false);

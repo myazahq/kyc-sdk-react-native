@@ -308,6 +308,7 @@ export default function VerifyScreen() {
 | `enableLiveness`        | `boolean`                                 | `true`              | Run the liveness challenge step. The server can still disable it per ID type.                                        |
 | `livenessMode`          | `'gestures' \| 'flash' \| 'both'`         | `'gestures'`        | How liveness is proven. See [Liveness](#liveness).                                                                   |
 | `flashSequenceLength`   | `number` (2–5)                            | `4`                 | Colours in the flash sequence, for `'flash'` / `'both'`.                                                             |
+| `selfieReview`          | `boolean`                                 | `false`             | Show the selfie with Retake and Continue after the liveness capture. Off by default: the capture hands straight on to the next step. A failed upload still shows it. |
 | `voiceGuidance`         | `boolean \| { enabled?, language? }`      | `true`              | Spoken liveness instructions (accessibility, TTS **output** — no microphone). `false` mutes it; pass `{ language: 'fr-FR' }` to set the voice. See [Robustness & error handling](#robustness--error-handling). |
 | `emailVerification`     | `EmailVerificationConfig`                 | off                 | Email OTP step after consent. See [Optional steps](#optional-steps).                                                 |
 | `phoneVerification`     | `PhoneVerificationConfig`                 | off                 | Phone OTP step (SMS or WhatsApp). See [Optional steps](#optional-steps).                                             |
@@ -750,7 +751,8 @@ const result = await reportAddressPresence({
   apiKey: 'pk_live_…',
   externalUserId: 'user_42', // the same userId the KYC flow ran with
 });
-// result.reason: 'reported' | 'no_pin' | 'services_off' | 'no_fix' | 'outside_fence' | 'network_error'
+// result.reason: 'reported' | 'no_pin' | 'services_off' | 'no_fix' | 'outside_fence'
+//              | 'no_watch' | 'stopped' | 'network_error'
 ```
 
 It never throws and never blocks startup. The geofence is evaluated ON-DEVICE:
@@ -758,6 +760,15 @@ only the derived record (calendar day + a night flag) is transmitted, never a
 coordinate. A fix outside the fence sends nothing (the server scores presence,
 never absence); a mock-location fix is reported flagged. `clearPresencePin`
 drops the stored pin (sign-out, or once the watch resolves).
+
+When your organisation stops monitoring for a user, the next report switches
+background location off, forgets the stored pin and answers `stopped`. Nothing
+more is sent for that user until a new check starts.
+
+A report also switches background monitoring on for a person whose check is
+running without it (someone verified on an older version of the SDK). They see
+the system's "allow all the time" prompt once; the SDK never asks again from a
+report. Pass `autoBackground: false` to ask yourself, at a moment you choose.
 
 ### Background monitoring (OS geofencing)
 
@@ -802,16 +813,30 @@ break.
 **"Still here" check-ins.** A fence only speaks when the person crosses its
 edge, so without help a stay is only recorded when they leave, and someone
 who hardly leaves home earns little background evidence. The SDK therefore
-records a stay while the person is still there, once it has run three hours:
+records a stay while the person is still there: the first time 35 minutes
+after they arrive, then once every three hours. Until one of those moments (or
+until they leave) nothing is sent, so the server's day count does not move:
 
 - **On app open**, automatically: an inside `reportAddressPresence()` reading
   also records the running stay. Nothing to add.
 - **Periodically in the background**, optional: install
   `npx expo install expo-background-task` and add its config plugin. The SDK
-  then asks the OS for a check-in about every two hours (Android WorkManager,
+  then asks the OS for a check-in about every 40 minutes (Android WorkManager,
   iOS background tasks) and uses the same background location permission it
   already holds. The OS decides the real timing, so treat it as best-effort.
   Without the module the fence and the app-open check-in carry on as before.
+  **Rebuild the app after installing it.** The package has native code, and a
+  build that has its JavaScript but not its native module cannot check in.
+
+`presenceStay(externalUserId)` reads the stay this phone has open, so your app
+can say "inside since 18:04, first report due after 18:39" rather than leave
+the person looking at a count that has not moved:
+
+```ts
+const stay = presenceStay('user_42');
+// null: no stay open. Otherwise { since, nextReportAt } in epoch milliseconds.
+// nextReportAt is "not before": the OS decides when a background check-in runs.
+```
 
 ### The Android foreground service (reliability on OEM-managed phones)
 
@@ -887,3 +912,20 @@ const { status, progress, tier } = await res.json();
 //                 geofence nights both read 1); nightsObserved/daysObserved beside it
 // tier: 'background' | 'foreground' | null — what is actually feeding it
 ```
+
+The SDK wraps that read:
+
+```ts
+import { fetchPresenceWatchStatus } from '@myazahq/kyc-sdk-react-native';
+
+const check = await fetchPresenceWatchStatus({ apiKey: 'pk_live_…', externalUserId });
+if (check === null) {
+  // The server could not be reached.
+} else if (check.state === 'in_progress') {
+  // check.progress is 0..1; check.nightsObserved and check.daysObserved are
+  // the raw counts; check.deadlineAt is when the check ends.
+}
+```
+
+It never throws. `presenceStatus()` answers for the phone (permissions, pin,
+tier); this answers for the check itself.

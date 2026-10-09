@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, View, type ViewStyle } from 'react-native';
+import { Pressable, View, type ViewStyle } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { radius, spacing } from '../../config/theme';
@@ -7,6 +7,7 @@ import { useTheme } from '../runtime';
 import { MyazaText } from '../Typography';
 import { Icon } from '../Icon';
 import { ChromeGlass } from '../glass/ChromeGlass';
+import { Spinner } from '../Spinner';
 
 /** This overlay's own scrim, kept so non-glass devices look unchanged. */
 const OVERLAY_SCRIM = 'rgba(0,0,0,0.4)';
@@ -169,7 +170,7 @@ export function Shutter({
           transform: [{ scale: pressed ? 0.94 : 1 }],
         })}
       >
-        {busy ? <ActivityIndicator color={colors.primary} /> : <Icon name="camera" size={24} color={ready ? colors.primary : '#FFFFFF'} />}
+        {busy ? <Spinner color={colors.primary} /> : <Icon name="camera" size={24} color={ready ? colors.primary : '#FFFFFF'} />}
       </Pressable>
     </View>
   );

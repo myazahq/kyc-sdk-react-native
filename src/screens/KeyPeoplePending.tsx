@@ -1,11 +1,12 @@
 import React, { useEffect, useRef } from 'react';
-import { ActivityIndicator, Animated, View } from 'react-native';
+import { Animated, View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
 import { MyazaText } from '../components/Typography';
 import { useText } from '../i18n/useText';
 import { useReduceMotion } from '../components/StaggerIn';
+import { Spinner } from '../components/Spinner';
 
 /**
  * Held while the register is reconciled against what the applicant typed.
@@ -124,7 +125,7 @@ export function KeyPeoplePending(): React.ReactElement {
         style={{ alignItems: 'center', marginBottom: spacing.md }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <ActivityIndicator size="small" color={colors.primary} />
+          <Spinner size="small" color={colors.primary} />
           <MyazaText variant="bodyMedium" style={{ fontWeight: '600', marginLeft: spacing.sm }}>
             {title}
           </MyazaText>

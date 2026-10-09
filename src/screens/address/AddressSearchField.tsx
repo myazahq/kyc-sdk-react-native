@@ -1,10 +1,11 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, TextInput, View } from 'react-native';
+import { Pressable, TextInput, View } from 'react-native';
 
 import { radius, sizing, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
 import { useInputFontFamily } from '../../components/fonts';
 import { Icon } from '../../components/Icon';
+import { Spinner } from '../../components/Spinner';
 
 /**
  * The address search box.
@@ -76,7 +77,7 @@ export function AddressSearchField({
             fontFamily,
           }}
         />
-        {busy && !showSubmit ? <ActivityIndicator size="small" color={colors.textSecondary} /> : null}
+        {busy && !showSubmit ? <Spinner size="small" color={colors.textSecondary} /> : null}
       </View>
 
       {showSubmit ? (
@@ -100,7 +101,7 @@ export function AddressSearchField({
           }}
         >
           {busy ? (
-            <ActivityIndicator size="small" color={colors.primary} />
+            <Spinner size="small" color={colors.primary} />
           ) : (
             <Icon
               name="search"

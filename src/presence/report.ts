@@ -15,7 +15,10 @@ import { insideFence, localDayAndNight } from './math';
 import { recordCheckIn } from './checkin';
 import { postObservations } from './post';
 import { loadPresencePin } from './store';
-import { awaitWatch, fetchWatchStatus, pinIsFresh } from './watch-wait';
+import { standDownPresence } from './stand-down';
+import { maybeArmBackground } from './auto-arm';
+import type { EnableBackgroundResult } from './background';
+import { awaitWatch, fetchWatchState, pinIsFresh, shouldStandDown } from './watch-wait';
 
 export interface ReportPresenceOptions {
   /** The org's PUBLISHABLE key (the same one the KYC flow mounts with). */
@@ -24,6 +27,13 @@ export interface ReportPresenceOptions {
   externalUserId: string;
   /** Dev-server override, exactly like the SDK config's `devUrl`. */
   devUrl?: string;
+  /**
+   * The reporter switches background monitoring on for a person whose check
+   * is running without it, asking for "allow all the time" once. Pass `false`
+   * to do that yourself with `enableBackgroundPresence()`, at a moment you
+   * choose. Default `true`.
+   */
+  autoBackground?: boolean;
 }
 
 export interface ReportPresenceResult {
@@ -38,14 +48,44 @@ export interface ReportPresenceResult {
     | 'outside_fence'
     /** Nothing is monitoring this user right now, so a report would be dropped. */
     | 'no_watch'
+    /** The organisation stopped monitoring. Background location was switched
+     *  off for this user and the stored pin forgotten. */
+    | 'stopped'
     | 'network_error';
+  /** Set when this report tried to switch background monitoring on. */
+  background?: EnableBackgroundResult;
 }
 
 export async function reportAddressPresence(
   options: ReportPresenceOptions,
 ): Promise<ReportPresenceResult> {
+  // What the arming step did rides whichever answer the report ends on.
+  const arm: { background?: EnableBackgroundResult } = {};
+  const result = await report(options, arm);
+  return arm.background ? { ...result, background: arm.background } : result;
+}
+
+async function report(
+  options: ReportPresenceOptions,
+  arm: { background?: EnableBackgroundResult },
+): Promise<ReportPresenceResult> {
   const pin = loadPresencePin(options.externalUserId);
   if (!pin) return { reported: false, inside: null, reason: 'no_pin' };
+
+  // Asked before anything touches location: when the organisation has stopped
+  // monitoring, the phone stops too (stand-down.ts), and takes no fix at all.
+  const fresh = pinIsFresh(pin);
+  const read = () => fetchWatchState(options.apiKey, options.devUrl, options.externalUserId);
+  let known = fresh ? undefined : await read();
+  if (shouldStandDown(known ?? null, fresh)) {
+    await standDownPresence(options.externalUserId);
+    return { reported: false, inside: null, reason: 'stopped' };
+  }
+
+  // A check running without background monitoring gets it switched on here,
+  // once (auto-arm.ts): this call is the only one an existing app makes.
+  const armed = await maybeArmBackground(options, pin, known ?? null, fresh);
+  if (armed) arm.background = armed;
 
   // The phone's location toggle, checked before the permission dance: off,
   // every fix fails, and `no_fix` told the host nothing about why.
@@ -69,8 +109,13 @@ export async function reportAddressPresence(
 
   // The watch is minted seconds after a submission is accepted, and the
   // ingest drops a report that arrives before it (watch-wait.ts).
-  const watch = await awaitWatch(pinIsFresh(pin), {
-    fetchStatus: () => fetchWatchStatus(options.apiKey, options.devUrl, options.externalUserId),
+  const watch = await awaitWatch(fresh, {
+    // The read made above is used once, so an old pin costs one request.
+    fetchStatus: async () => {
+      const state = known !== undefined ? known : await read();
+      known = undefined;
+      return state?.status ?? null;
+    },
   });
   if (watch === 'absent') return { reported: false, inside, reason: 'no_watch' };
 

@@ -10,7 +10,13 @@
 export interface FlashHole {
   x: number;
   y: number;
+  /** The diameter of the circle, or the width of the tall window. */
   size: number;
+  /**
+   * Set when the preview is the full-screen camera's window: taller than it
+   * is wide, with fully round ends. Absent for the sheet's circle.
+   */
+  height?: number;
 }
 
 /**
@@ -25,6 +31,16 @@ export interface FlashHole {
 export function holePath(width: number, height: number, hole: FlashHole): string {
   const r = hole.size / 2;
   const cx = hole.x + r;
+  if (hole.height != null && hole.height > hole.size) {
+    // The tall window: a half-circle at each end, joined by straight sides.
+    const top = hole.y + r;
+    const bottom = hole.y + hole.height - r;
+    return (
+      `M0 0 H${width} V${height} H0 Z ` +
+      `M${cx - r} ${top} A${r} ${r} 0 0 1 ${cx + r} ${top} ` +
+      `V${bottom} A${r} ${r} 0 0 1 ${cx - r} ${bottom} Z`
+    );
+  }
   const cy = hole.y + r;
   // Two half-arcs rather than one: a single 360° arc has identical start and
   // end points and renders as nothing.

@@ -24,11 +24,25 @@ describe('applyLocationSamples', () => {
     const r = applyLocationSamples(PIN, [fix(AT_PIN, t(2026, 9, 3, 9))], null, LAGOS);
     expect(r.enterAt).toBe(t(2026, 9, 3, 9));
     expect(r.observations).toEqual([]);
-    // A later inside fix within the check-in interval does not re-stamp:
-    // the stay began at the first one.
-    const again = applyLocationSamples(PIN, [fix(AT_PIN, t(2026, 9, 3, 11))], r.enterAt, LAGOS);
+    expect(r.stayStart).toBe(t(2026, 9, 3, 9));
+    // A later inside fix within the first check-in interval does not
+    // re-stamp: the stay began at the first one.
+    const again = applyLocationSamples(PIN, [fix(AT_PIN, t(2026, 9, 3, 9, 20))], r.enterAt, LAGOS, r.stayStart);
     expect(again.enterAt).toBe(t(2026, 9, 3, 9));
     expect(again.observations).toEqual([]);
+  });
+
+  it('records a new stay at its first check-in, then waits three hours', () => {
+    const start = t(2026, 9, 3, 9);
+    const first = applyLocationSamples(PIN, [fix(AT_PIN, t(2026, 9, 3, 9, 40))], start, LAGOS, start);
+    expect(first.enterAt).toBe(t(2026, 9, 3, 9, 40));
+    expect(first.stayStart).toBe(start);
+    expect(first.observations).toEqual([
+      { day: '2026-09-03', dwellMinutes: 40, nightPresent: false, source: 'geofence', samples: 1 },
+    ]);
+    const soon = applyLocationSamples(PIN, [fix(AT_PIN, t(2026, 9, 3, 11))], first.enterAt, LAGOS, first.stayStart);
+    expect(soon.enterAt).toBe(first.enterAt);
+    expect(soon.observations).toEqual([]);
   });
 
   it('checks in on a long stay: folds it so far and restarts it at the reading', () => {
@@ -68,7 +82,7 @@ describe('applyLocationSamples', () => {
 
   it('is absence-blind: outside fixes with no open stay produce nothing', () => {
     const r = applyLocationSamples(PIN, [fix(FAR, t(2026, 9, 3, 9)), fix(FAR, t(2026, 9, 3, 18))], null, LAGOS);
-    expect(r).toEqual({ enterAt: null, observations: [] });
+    expect(r).toEqual({ enterAt: null, stayStart: null, observations: [] });
   });
 
   it('sorts a batch by time before applying it', () => {

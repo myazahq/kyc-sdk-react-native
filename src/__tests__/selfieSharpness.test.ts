@@ -216,8 +216,15 @@ describe('wiring', () => {
   it('the liveness step measures the still it shows and hands the verdict to the review', () => {
     const step = read('screens/LivenessStep.tsx');
     expect(step).toContain('measureSelfieSharpness(compressed)');
-    expect(step).toContain('soft={!!selfieUri && softSelfieUri === selfieUri}');
+    // One verdict, handed to whichever review renders: the full-screen one
+    // (a photo to show) or the sheet's (a restored session).
+    expect(step).toContain('soft: !!selfieUri && softSelfieUri === selfieUri');
     expect(read('screens/liveness/LivenessOutcome.tsx')).toContain('soft={soft}');
+    expect(read('screens/liveness/LivenessReview.tsx')).toContain('This photo looks blurry');
+  });
+
+  it('the full-screen review never gates Continue on it either', () => {
+    expect(read('screens/liveness/LivenessReview.tsx')).not.toMatch(/disabled=\{[^}]*soft/);
   });
 
   it('the notice never gates Continue', () => {

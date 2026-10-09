@@ -157,7 +157,7 @@ function HoldStill({
   /** Dark on the colours, light on the black pause (flashOverlayPaint). */
   color: string;
 }): React.ReactElement {
-  const belowHole = hole ? hole.y + hole.size + spacing.xl : 0;
+  const belowHole = hole ? hole.y + (hole.height ?? hole.size) + spacing.xl : 0;
   const top = Math.min(Math.max(belowHole, height * 0.78), height - spacing.xl * 2);
   return (
     <View style={{ position: 'absolute', top, left: 0, width, alignItems: 'center' }}>

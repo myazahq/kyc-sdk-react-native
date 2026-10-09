@@ -116,6 +116,8 @@ export interface FlashResult {
   inconclusive: number;
   /** The colours emitted, in order — the claim the server checks the video against. */
   sequence: string[];
+  /** When each colour came on, ms from the start of the recording (flashTimeline.ts). */
+  onsets?: number[];
 }
 
 /**

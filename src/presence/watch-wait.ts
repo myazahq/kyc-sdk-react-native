@@ -27,12 +27,37 @@ export function pinIsFresh(pin: { savedAt: string }, nowMs: number = Date.now())
   return !Number.isNaN(saved) && nowMs - saved <= FRESH_PIN_MS;
 }
 
+/** What the server says about the user's watch. */
+export interface WatchState {
+  status: string;
+  /** The organisation (or Myaza) stopped monitoring and nothing has started since. */
+  stopped: boolean;
+}
+
+/**
+ * Whether the phone should stop its own side of monitoring: the server says
+ * it was stopped, and the pin is not fresh. A fresh pin belongs to a flow
+ * that has just submitted, whose new watch is still being minted, so the
+ * status read is still describing the one before it.
+ */
+export function shouldStandDown(state: WatchState | null, fresh: boolean): boolean {
+  return !fresh && state?.stopped === true;
+}
+
 /** The server's public status for the user's watch, or null when it could not be read. */
 export async function fetchWatchStatus(
   apiKey: string,
   devUrl: string | undefined,
   externalUserId: string,
 ): Promise<string | null> {
+  return (await fetchWatchState(apiKey, devUrl, externalUserId))?.status ?? null;
+}
+
+export async function fetchWatchState(
+  apiKey: string,
+  devUrl: string | undefined,
+  externalUserId: string,
+): Promise<WatchState | null> {
   try {
     const base = resolveBaseUrl(apiKey, devUrl);
     const response = await fetch(
@@ -40,8 +65,10 @@ export async function fetchWatchStatus(
       { headers: { Authorization: `Bearer ${apiKey}` } },
     );
     if (!response.ok) return null;
-    const body = (await response.json()) as { status?: unknown };
-    return typeof body.status === 'string' ? body.status : null;
+    const body = (await response.json()) as { status?: unknown; stopped?: unknown };
+    if (typeof body.status !== 'string') return null;
+    // An older server sends no flag: a revoked check is the one stop it reports.
+    return { status: body.status, stopped: body.stopped === true || body.status === 'revoked' };
   } catch {
     return null;
   }

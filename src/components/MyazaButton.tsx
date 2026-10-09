@@ -1,10 +1,11 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { radius, sizing, spacing } from '../config/theme';
 import { useTheme } from './runtime';
 import { MyazaText } from './Typography';
 import { Icon, type IconName } from './Icon';
+import { Spinner } from './Spinner';
 
 // Branded button — 1:1 with the Flutter SDK's MyazaButton:
 //   • primary     — solid primary fill, onPrimary label
@@ -92,7 +93,7 @@ export function MyazaButton({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={effectiveFg} size="small" />
+        <Spinner color={effectiveFg} size="small" />
       ) : (
         // `flexShrink: 1` on the ROW and the label: a Text in a row that cannot
         // shrink does not wrap, it OVERFLOWS and gets clipped. That was

@@ -16,6 +16,8 @@ import {
 } from '../config/supportingDocuments';
 import { useBusinessDocumentAttach } from './useBusinessDocumentAttach';
 import { useText } from '../i18n/useText';
+import { KYCApiError } from '../services/api';
+import { hasSignature, type SignatureDrawing } from '../lib/signature';
 
 // ---------------------------------------------------------------------------
 // Supporting documents — artefacts the organisation keeps ON FILE.
@@ -33,6 +35,10 @@ import { useText } from '../i18n/useText';
 // a card per document naming what it is being taken FOR, over the same source
 // sheet and the same Continue rule as the business-documents screen.
 // ---------------------------------------------------------------------------
+
+const SIGNATURE_EMPTY = 'Please sign in the box first.';
+const SIGNATURE_FAILED =
+  'Your signature could not be saved. Please check your connection and try again.';
 
 export function SupportingDocumentsStep(): React.ReactElement {
   const config = useKycConfig();
@@ -82,12 +88,42 @@ export function SupportingDocumentsStep(): React.ReactElement {
           type: slot.key,
           mediaId,
           fileName: name,
+          method: 'uploaded' as const,
           // Seeing the file back is how somebody catches the wrong photo from
           // the camera roll before submitting. A PDF has no preview to show.
           ...(isPdf ? { isPdf: true } : { previewUri: finalUri }),
         });
       } catch {
         setError(`We could not upload ${slot.label.toLowerCase()}. Please try again.`);
+        setErrorSlot(slot.key);
+      } finally {
+        setBusySlot(null);
+      }
+    },
+    [store],
+  );
+
+  const sign = useCallback(
+    async (slot: RequestedSupportingDocument, drawing: SignatureDrawing) => {
+      setError(null);
+      setErrorSlot(null);
+      if (!hasSignature(drawing)) {
+        setError(SIGNATURE_EMPTY);
+        setErrorSlot(slot.key);
+        return;
+      }
+      setBusySlot(slot.key);
+      try {
+        const mediaId = await withRetry(() => store.getState().api.uploadSignature(drawing));
+        store.getState().setSupportingDocument({
+          type: slot.key,
+          mediaId,
+          fileName: slot.label,
+          method: 'drawn',
+        });
+      } catch (err) {
+        const empty = err instanceof KYCApiError && err.code === 'signature_empty';
+        setError(empty ? SIGNATURE_EMPTY : SIGNATURE_FAILED);
         setErrorSlot(slot.key);
       } finally {
         setBusySlot(null);
@@ -126,7 +162,11 @@ export function SupportingDocumentsStep(): React.ReactElement {
             description={slot.description}
             required={slot.required}
             reads={slot.reads}
-            fileName={doc?.fileName ?? null}
+            // A restored upload carries no file name; the mediaId says it is there.
+            fileName={doc ? (doc.fileName ?? slot.label) : null}
+            capture={slot.capture}
+            drawn={doc?.method === 'drawn'}
+            onSign={(drawing) => void sign(slot, drawing)}
             uploading={busySlot === slot.key}
             previewUri={doc?.previewUri ?? null}
             isPdf={doc?.isPdf ?? false}

@@ -203,7 +203,14 @@ export function KycFlow({
         // own tree: an early-returned tree changed the step's parent MID-STEP,
         // so React remounted it and wiped the acknowledged primer. Scoped to
         // the step as well as the flag so the next step cannot inherit it.
-        immersive={immersiveCapture && currentStep === 'document-capture'}
+        //
+        // The liveness camera takes it the same way, but keeps the flow's
+        // colours and has the sheet draw its back and close.
+        immersive={
+          immersiveCapture &&
+          (currentStep === 'document-capture' || currentStep === 'liveness')
+        }
+        immersiveControls={currentStep === 'liveness'}
       >
         <StepView step={currentStep} onClose={onClose} />
       </KycSheet>

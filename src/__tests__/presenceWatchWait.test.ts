@@ -1,6 +1,6 @@
 // The reporter reads its module's real dependencies only through resolveUrl;
 // the rule under test is pure over the injected reader and clock.
-import { awaitWatch, FRESH_PIN_MS, pinIsFresh, WATCH_POLL_MS, WATCH_WAIT_MS } from '../presence/watch-wait';
+import { awaitWatch, FRESH_PIN_MS, pinIsFresh, shouldStandDown, WATCH_POLL_MS, WATCH_WAIT_MS } from '../presence/watch-wait';
 
 // ─── A submit-time report waits for its watch ───────────────────────────────
 //
@@ -69,5 +69,25 @@ describe('pinIsFresh', () => {
 
   it('an unparseable stamp is never fresh', () => {
     expect(pinIsFresh({ savedAt: 'yesterday' }, now)).toBe(false);
+  });
+});
+
+// The organisation can stop monitoring; the phone then stops its own side.
+// A port lives in the Flutter SDK (presence_watch_wait_test.dart).
+describe('shouldStandDown', () => {
+  it('stands down when monitoring was stopped and the pin is not fresh', () => {
+    expect(shouldStandDown({ status: 'revoked', stopped: true }, false)).toBe(true);
+    // An always-on arrangement ended between checks keeps its last verdict.
+    expect(shouldStandDown({ status: 'verified', stopped: true }, false)).toBe(true);
+  });
+
+  it('never on a fresh pin: its own check is still being started', () => {
+    expect(shouldStandDown({ status: 'revoked', stopped: true }, true)).toBe(false);
+  });
+
+  it('never on a running, finished or unreadable status', () => {
+    expect(shouldStandDown({ status: 'in_progress', stopped: false }, false)).toBe(false);
+    expect(shouldStandDown({ status: 'verified', stopped: false }, false)).toBe(false);
+    expect(shouldStandDown(null, false)).toBe(false);
   });
 });

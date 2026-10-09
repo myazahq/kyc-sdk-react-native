@@ -11,9 +11,13 @@ jest.mock('../presence/background-store', () => {
   const state: Record<string, unknown> = {};
   return {
     __state: state,
-    loadEnterAt: (u: string) => (state[`enter:${u}`] as number | undefined) ?? null,
-    saveEnterAt: (u: string, v: number | null) => {
-      state[`enter:${u}`] = v ?? undefined;
+    loadStay: (u: string) => ({
+      enterAt: (state[`enter:${u}`] as number | undefined) ?? null,
+      stayStart: (state[`start:${u}`] as number | undefined) ?? null,
+    }),
+    saveStay: (u: string, v: { enterAt: number | null; stayStart: number | null }) => {
+      state[`enter:${u}`] = v.enterAt ?? undefined;
+      state[`start:${u}`] = v.stayStart ?? undefined;
     },
     loadReporterConfig: (u: string) => state[`cfg:${u}`] ?? null,
     loadFenceUser: () => state.fenceUser ?? null,
@@ -71,6 +75,26 @@ describe('recordCheckIn', () => {
   it('opens a stay the fence never stamped', async () => {
     await recordCheckIn(USER, inside(at(2026, 9, 3, 12)));
     expect(store.__state[`enter:${USER}`]).toBe(at(2026, 9, 3, 12));
+    expect(store.__state[`start:${USER}`]).toBe(at(2026, 9, 3, 12));
+    expect(postObservations).not.toHaveBeenCalled();
+  });
+
+  it('records a new stay at its first check-in, well before three hours', async () => {
+    store.__state[`enter:${USER}`] = at(2026, 9, 3, 9);
+    store.__state[`start:${USER}`] = at(2026, 9, 3, 9);
+    await recordCheckIn(USER, inside(at(2026, 9, 3, 10)));
+    expect(store.__state[`enter:${USER}`]).toBe(at(2026, 9, 3, 10));
+    expect(store.__state[`start:${USER}`]).toBe(at(2026, 9, 3, 9));
+    expect(postObservations).toHaveBeenCalledWith('pk_test_x', undefined, USER, [
+      expect.objectContaining({ day: '2026-09-03', dwellMinutes: 60, source: 'geofence' }),
+    ]);
+  });
+
+  it('waits three hours once the stay has been recorded', async () => {
+    store.__state[`enter:${USER}`] = at(2026, 9, 3, 10);
+    store.__state[`start:${USER}`] = at(2026, 9, 3, 9);
+    await recordCheckIn(USER, inside(at(2026, 9, 3, 12)));
+    expect(store.__state[`enter:${USER}`]).toBe(at(2026, 9, 3, 10));
     expect(postObservations).not.toHaveBeenCalled();
   });
 

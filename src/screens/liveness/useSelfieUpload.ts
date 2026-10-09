@@ -57,6 +57,7 @@ export function useSelfieUpload(): SelfieUpload {
   const setLivenessVideoReport = useKyc((s) => s.setLivenessVideoReport);
   const storedPreview = useKyc((s) => s.selfiePreviewUri);
   const storedSelfieId = useKyc((s) => s.mediaIds.selfie);
+  const storedUpload = useKyc((s) => s.selfieUpload);
 
   // Hydrated from the STORE so leaving the step and returning lands on the
   // review screen with the same selfie, exactly as document captures do. The
@@ -74,6 +75,15 @@ export function useSelfieUpload(): SelfieUpload {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const selfieIdRef = useRef<string | null>(storedSelfieId ?? null);
   const videoPathRef = useRef<string | null>(null);
+  // An upload begun on an EARLIER visit to the step keeps running after the
+  // step unmounts (the step hands over without waiting for it) and reports to
+  // the store. Coming back mid-flight, this hook's own state is fresh, so the
+  // step read "nothing uploaded, nothing uploading" and began the same upload
+  // again from the start. The store's report is the truth across visits: adopt
+  // the id when it lands, and count that upload as in flight until it does.
+  if (storedSelfieId && !selfieIdRef.current) selfieIdRef.current = storedSelfieId;
+  const uploadingElsewhere =
+    !uploading && storedUpload.status === 'uploading' && !selfieIdRef.current;
 
   const uploadSelfieAndVideo = useCallback(
     async (
@@ -136,7 +146,7 @@ export function useSelfieUpload(): SelfieUpload {
   return {
     selfieUri,
     setSelfieUri,
-    uploading,
+    uploading: uploading || uploadingElsewhere,
     retryInfo,
     uploadError,
     setUploadError,

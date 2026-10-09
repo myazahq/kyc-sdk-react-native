@@ -20,6 +20,8 @@ namespace margelo::nitro::myazakyc { struct EmrtdTagInfo; }
 namespace margelo::nitro::myazakyc { struct FaceResult; }
 // Forward declaration of `HybridFrameSpec` to properly resolve imports.
 namespace margelo::nitro::camera { class HybridFrameSpec; }
+// Forward declaration of `HybridMyazaBackdropBlurSpec` to properly resolve imports.
+namespace margelo::nitro::myazakyc { class HybridMyazaBackdropBlurSpec; }
 // Forward declaration of `HybridMyazaDeviceIntelSpec` to properly resolve imports.
 namespace margelo::nitro::myazakyc { class HybridMyazaDeviceIntelSpec; }
 // Forward declaration of `HybridMyazaEmrtdSpec` to properly resolve imports.
@@ -30,12 +32,16 @@ namespace margelo::nitro::myazakyc { class HybridMyazaFaceDetectorSpec; }
 namespace margelo::nitro::myazakyc { class HybridMyazaRectDetectorSpec; }
 // Forward declaration of `HybridMyazaTextRecognizerSpec` to properly resolve imports.
 namespace margelo::nitro::myazakyc { class HybridMyazaTextRecognizerSpec; }
+// Forward declaration of `HybridMyazaTouchGuardSpec` to properly resolve imports.
+namespace margelo::nitro::myazakyc { class HybridMyazaTouchGuardSpec; }
 // Forward declaration of `TextResult` to properly resolve imports.
 namespace margelo::nitro::myazakyc { struct TextResult; }
 
 // Forward declarations of Swift defined types
 // Forward declaration of `HybridFrameSpec_cxx` to properly resolve imports.
 namespace VisionCamera { class HybridFrameSpec_cxx; }
+// Forward declaration of `HybridMyazaBackdropBlurSpec_cxx` to properly resolve imports.
+namespace KycSdkReactNative { class HybridMyazaBackdropBlurSpec_cxx; }
 // Forward declaration of `HybridMyazaDeviceIntelSpec_cxx` to properly resolve imports.
 namespace KycSdkReactNative { class HybridMyazaDeviceIntelSpec_cxx; }
 // Forward declaration of `HybridMyazaEmrtdSpec_cxx` to properly resolve imports.
@@ -46,6 +52,8 @@ namespace KycSdkReactNative { class HybridMyazaFaceDetectorSpec_cxx; }
 namespace KycSdkReactNative { class HybridMyazaRectDetectorSpec_cxx; }
 // Forward declaration of `HybridMyazaTextRecognizerSpec_cxx` to properly resolve imports.
 namespace KycSdkReactNative { class HybridMyazaTextRecognizerSpec_cxx; }
+// Forward declaration of `HybridMyazaTouchGuardSpec_cxx` to properly resolve imports.
+namespace KycSdkReactNative { class HybridMyazaTouchGuardSpec_cxx; }
 
 // Include C++ defined types
 #include "AppAttestKey.hpp"
@@ -53,11 +61,13 @@ namespace KycSdkReactNative { class HybridMyazaTextRecognizerSpec_cxx; }
 #include "EmrtdApduResponse.hpp"
 #include "EmrtdTagInfo.hpp"
 #include "FaceResult.hpp"
+#include "HybridMyazaBackdropBlurSpec.hpp"
 #include "HybridMyazaDeviceIntelSpec.hpp"
 #include "HybridMyazaEmrtdSpec.hpp"
 #include "HybridMyazaFaceDetectorSpec.hpp"
 #include "HybridMyazaRectDetectorSpec.hpp"
 #include "HybridMyazaTextRecognizerSpec.hpp"
+#include "HybridMyazaTouchGuardSpec.hpp"
 #include "TextResult.hpp"
 #include <NitroModules/Promise.hpp>
 #include <NitroModules/PromiseHolder.hpp>
@@ -75,6 +85,18 @@ namespace KycSdkReactNative { class HybridMyazaTextRecognizerSpec_cxx; }
  */
 namespace margelo::nitro::myazakyc::bridge::swift {
 
+  // pragma MARK: std::shared_ptr<HybridMyazaBackdropBlurSpec>
+  /**
+   * Specialized version of `std::shared_ptr<HybridMyazaBackdropBlurSpec>`.
+   */
+  using std__shared_ptr_HybridMyazaBackdropBlurSpec_ = std::shared_ptr<HybridMyazaBackdropBlurSpec>;
+  std::shared_ptr<HybridMyazaBackdropBlurSpec> create_std__shared_ptr_HybridMyazaBackdropBlurSpec_(void* NON_NULL swiftUnsafePointer) noexcept;
+  void* NON_NULL get_std__shared_ptr_HybridMyazaBackdropBlurSpec_(std__shared_ptr_HybridMyazaBackdropBlurSpec_ cppType);
+  
+  // pragma MARK: std::weak_ptr<HybridMyazaBackdropBlurSpec>
+  using std__weak_ptr_HybridMyazaBackdropBlurSpec_ = std::weak_ptr<HybridMyazaBackdropBlurSpec>;
+  inline std__weak_ptr_HybridMyazaBackdropBlurSpec_ weakify_std__shared_ptr_HybridMyazaBackdropBlurSpec_(const std::shared_ptr<HybridMyazaBackdropBlurSpec>& strong) noexcept { return strong; }
+  
   // pragma MARK: std::vector<std::string>
   /**
    * Specialized version of `std::vector<std::string>`.
@@ -568,5 +590,17 @@ namespace margelo::nitro::myazakyc::bridge::swift {
   inline Result_std__shared_ptr_Promise_TextResult___ create_Result_std__shared_ptr_Promise_TextResult___(const std::exception_ptr& error) noexcept {
     return Result<std::shared_ptr<Promise<TextResult>>>::withError(error);
   }
+  
+  // pragma MARK: std::shared_ptr<HybridMyazaTouchGuardSpec>
+  /**
+   * Specialized version of `std::shared_ptr<HybridMyazaTouchGuardSpec>`.
+   */
+  using std__shared_ptr_HybridMyazaTouchGuardSpec_ = std::shared_ptr<HybridMyazaTouchGuardSpec>;
+  std::shared_ptr<HybridMyazaTouchGuardSpec> create_std__shared_ptr_HybridMyazaTouchGuardSpec_(void* NON_NULL swiftUnsafePointer) noexcept;
+  void* NON_NULL get_std__shared_ptr_HybridMyazaTouchGuardSpec_(std__shared_ptr_HybridMyazaTouchGuardSpec_ cppType);
+  
+  // pragma MARK: std::weak_ptr<HybridMyazaTouchGuardSpec>
+  using std__weak_ptr_HybridMyazaTouchGuardSpec_ = std::weak_ptr<HybridMyazaTouchGuardSpec>;
+  inline std__weak_ptr_HybridMyazaTouchGuardSpec_ weakify_std__shared_ptr_HybridMyazaTouchGuardSpec_(const std::shared_ptr<HybridMyazaTouchGuardSpec>& strong) noexcept { return strong; }
 
 } // namespace margelo::nitro::myazakyc::bridge::swift

@@ -2,6 +2,8 @@
 // randomUUID when available, falling back to a Math.random()-based v4 (good
 // enough for a request correlation id — not used for anything security-sensitive).
 
+import { nativeModulePresent } from '../lib/native-module-present';
+
 interface ExpoCryptoModule {
   randomUUID?: () => string;
 }
@@ -17,7 +19,9 @@ function fallbackUuid(): string {
 export function uuid(): string {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const crypto = require('expo-crypto') as ExpoCryptoModule;
+    const crypto = nativeModulePresent('ExpoCrypto')
+      ? (require('expo-crypto') as ExpoCryptoModule)
+      : null;
     if (crypto?.randomUUID) return crypto.randomUUID();
   } catch {
     /* expo-crypto not installed — fall through */

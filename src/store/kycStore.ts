@@ -636,6 +636,8 @@ export function createKycStore(
           emitStepChange(step);
           return;
         }
+        // A finished liveness step is landed on like any other: it opens on
+        // its "already taken" screen, never on the camera again.
         const prev = previousStepBefore(get().currentStep, get());
         if (prev !== get().currentStep) {
           set({ currentStep: prev, immersiveCapture: false, navDirection: 'back' });

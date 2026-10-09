@@ -44,3 +44,26 @@ describe('holePath', () => {
     expect(holePath(390, 844, hole).match(/A/g)?.length).toBe(2);
   });
 });
+
+describe('holePath for the full-screen window', () => {
+  const hole = { x: 55, y: 237, size: 280, height: 370 };
+
+  it('cuts a tall window with round ends, not a circle', () => {
+    const d = holePath(390, 844, hole);
+    expect(d.match(/M/g)?.length).toBe(2);
+    // Two half-circles of the window's half-width, joined by a straight side.
+    expect(d.match(/A140 140/g)?.length).toBe(2);
+    expect(d).toContain('V467'); // 237 + 370 - 140: where the bottom arc starts
+  });
+
+  it('starts and ends on the window, edge to edge', () => {
+    const d = holePath(390, 844, hole);
+    expect(d).toContain('M55 377'); // left edge, where the top arc begins
+    expect(d).toContain('335 377'); // right edge
+  });
+
+  it('a box no taller than wide is still the circle', () => {
+    const d = holePath(390, 844, { x: 40, y: 100, size: 200, height: 200 });
+    expect(d).toContain('M40 200 A100 100');
+  });
+});

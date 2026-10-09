@@ -111,6 +111,7 @@ export function buildVerifyRequest(
         supportingDocuments: state.supportingDocuments.map((d) => ({
           type: d.type,
           mediaId: d.mediaId,
+          ...(d.method ? { method: d.method } : {}),
         })),
       }
     : {}),

@@ -110,7 +110,15 @@ export function useWorkflowMount(config: MyazaKYCConfig): WorkflowMount {
     // `attempt` re-runs this on Retry.
   }, [workflowId, apiKey, devUrl, attempt]);
 
-  const bump = useCallback(() => setAttempt((n) => n + 1), []);
+  // Marks the state `resolving` in the SAME update as the re-run, not one
+  // commit later from the effect. A caller opens with `refresh()` and its own
+  // "want open" flag together; with the previous answer still `ready` for that
+  // one commit, the modal mounted, was torn down for the re-fetch and mounted
+  // again, and iOS reported the teardown as a dismissal that closed the flow.
+  const bump = useCallback(() => {
+    if (configRef.current.workflowId) setState({ status: 'resolving' });
+    setAttempt((n) => n + 1);
+  }, []);
 
   return { state, retry: bump, refresh: bump };
 }

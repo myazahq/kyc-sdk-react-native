@@ -109,7 +109,7 @@ export function restoreAttemptProgress(
   // restoring less, never to breaking the flow.
   const restoredDocs = Array.isArray(d['supportingDocuments'])
     ? (d['supportingDocuments'] as unknown[]).filter(
-        (doc): doc is { type: string; mediaId: string } =>
+        (doc): doc is { type: string; mediaId: string; method?: 'drawn' | 'uploaded' } =>
           !!doc &&
           typeof doc === 'object' &&
           typeof (doc as { type?: unknown }).type === 'string' &&
@@ -211,7 +211,11 @@ export function progressFromState(s: ReturnType<KycStore['getState']>): Record<s
       // slot as uploaded, which is what the mediaId is for.
       supportingDocuments:
         s.supportingDocuments.length > 0
-          ? s.supportingDocuments.map((d) => ({ type: d.type, mediaId: d.mediaId }))
+          ? s.supportingDocuments.map((d) => ({
+              type: d.type,
+              mediaId: d.mediaId,
+              ...(d.method ? { method: d.method } : {}),
+            }))
           : undefined,
       contact: s.contact,
       questionnaireAnswers: s.questionnaireAnswers,

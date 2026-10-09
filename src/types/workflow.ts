@@ -52,6 +52,11 @@ export interface SupportingDocumentRequest {
    * it from everybody else, which is the default.
    */
   alwaysAsk?: boolean;
+  /**
+   * How it is provided: a file (`upload`, the default), a signature drawn on
+   * screen (`draw`), or either (`draw_or_upload`).
+   */
+  capture?: 'upload' | 'draw' | 'draw_or_upload';
 }
 
 export interface SupportingDocumentsConfig {

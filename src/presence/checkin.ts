@@ -31,21 +31,23 @@ import { postObservations } from './post';
 import { applyLocationSamples, mergeObservations, type SampleFix } from './sampler';
 import { loadPresencePin } from './store';
 import {
-  loadEnterAt,
   loadFenceUser,
+  loadStay,
   loadReporterConfig,
   pendingObservations,
   queueObservations,
   replacePending,
-  saveEnterAt,
+  saveStay,
 } from './background-store';
+import { nativeModulePresent } from '../lib/native-module-present';
 
 export const PRESENCE_CHECKIN_TASK = 'myaza-kyc-presence-checkin';
 
-/** Ask the OS for a check-in about every two hours; it decides the real
- *  cadence. Below the three-hour check-in interval on purpose, so a run that
- *  arrives on time always has a stay long enough to record. */
-const CHECKIN_INTERVAL_MINUTES = 120;
+/** Ask the OS for a check-in about every 40 minutes; it decides the real
+ *  cadence and usually runs later. Just past the 35-minute first check-in, so
+ *  a run that arrives on time records a stay soon after the person gets home;
+ *  a run that finds nothing due costs one low-power fix and sends nothing. */
+const CHECKIN_INTERVAL_MINUTES = 40;
 const FIX_TIMEOUT_MS = 20_000;
 const LAST_KNOWN_MAX_AGE_MS = 15 * 60 * 1000;
 
@@ -60,6 +62,9 @@ interface TaskManagerLike {
 }
 
 function backgroundTask(): BackgroundTaskLike | null {
+  // Asked first: loading the package without its native module is fatal in a
+  // release build (see native-module-present.ts).
+  if (!nativeModulePresent('ExpoBackgroundTask')) return null;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const mod = require('expo-background-task') as Partial<BackgroundTaskLike>;
@@ -88,8 +93,9 @@ export async function recordCheckIn(userId: string, fix: SampleFix): Promise<voi
     if (!loadReporterConfig(userId)) return;
     const pin = loadPresencePin(userId);
     if (!pin) return;
-    const result = applyLocationSamples(pin, [fix], loadEnterAt(userId));
-    saveEnterAt(userId, result.enterAt);
+    const stay = loadStay(userId);
+    const result = applyLocationSamples(pin, [fix], stay.enterAt, undefined, stay.stayStart);
+    saveStay(userId, result);
     if (result.observations.length > 0) {
       queueObservations(userId, result.observations, mergeObservations);
     }

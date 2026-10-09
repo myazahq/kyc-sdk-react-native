@@ -24,8 +24,9 @@ describe('the liveness camera and its Android wrapper', () => {
     expect(source).not.toMatch(/borderWidth\s*:/);
   });
 
-  it('the step mounts LivenessCamera rather than a bare Camera in its bordered circle', () => {
-    const source = read('screens/LivenessStep.tsx');
+  it('the live view mounts LivenessCamera rather than a bare Camera', () => {
+    // The full-screen camera (liveness/LivenessLive) is what the step renders.
+    const source = read('screens/liveness/LivenessLive.tsx');
     expect(source).toContain('<LivenessCamera');
     // A JSX <Camera on its own line is a mount; the prose mention in a comment
     // is followed by other words on the same line.

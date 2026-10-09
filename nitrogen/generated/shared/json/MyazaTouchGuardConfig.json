@@ -1,0 +1,10 @@
+{
+  "uiViewClassName": "MyazaTouchGuard",
+  "supportsRawText": false,
+  "bubblingEventTypes": {},
+  "directEventTypes": {},
+  "validAttributes": {
+    "guarding": true,
+    "hybridRef": true
+  }
+}

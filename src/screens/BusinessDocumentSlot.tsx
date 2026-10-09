@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, Image, Pressable, View } from 'react-native';
+import { Image, Pressable, View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { UPLOAD_HINT } from '../config/uploadLimits';
@@ -7,6 +7,7 @@ import { useTheme } from '../components/runtime';
 import { MyazaText } from '../components/Typography';
 import { Icon } from '../components/Icon';
 import { DashedBorder } from '../components/DashedBorder';
+import { Spinner } from '../components/Spinner';
 
 // ---------------------------------------------------------------------------
 // One business-document upload slot — mirrors the web SDK's
@@ -164,7 +165,7 @@ export function BusinessDocumentSlot({
     >
       <DashedBorder color={colors.border} radius={radius.sm} />
       {uploading ? (
-        <ActivityIndicator size="small" color={colors.primary} />
+        <Spinner size="small" color={colors.primary} />
       ) : (
         <Icon name="upload" size={20} color={colors.textMuted} />
       )}

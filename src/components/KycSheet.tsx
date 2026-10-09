@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Platform, ScrollView, StatusBar, View } from "react-native";
 import { StatusBarController } from "./StatusBarController";
 import { initialWindowMetrics } from "react-native-safe-area-context";
@@ -18,7 +18,9 @@ import { GlassSurface } from "./glass/GlassSurface";
 import { SandboxBanner, useSandboxBannerVisible } from "./SandboxBanner";
 import { GlassGroup } from "./glass/GlassGroup";
 import { FlashOverlay } from "./FlashOverlay";
+import { ImmersiveSheetControls } from "./ImmersiveSheetControls";
 import { BrightScreen } from "./BrightScreen";
+import { ScrollLockContext } from "./ScrollLock";
 
 // Full-screen sheet shell — 1:1 with the Flutter SDK's KycBottomSheet:
 //   • a tinted header block (Liquid Glass on iOS 26) with a bottom border:
@@ -62,6 +64,13 @@ export interface KycSheetProps {
    * camera. Keeping one stable tree is the whole point.
    */
   immersive?: boolean;
+  /**
+   * With `immersive`: the step keeps the flow's own colours (the liveness
+   * camera, whose surround is tinted with them) rather than a black camera
+   * surface, and the sheet draws back and close over it, since there is no
+   * header left to hold them.
+   */
+  immersiveControls?: boolean;
 }
 
 export function KycSheet({
@@ -76,6 +85,7 @@ export function KycSheet({
   hideBrand,
   fillsViewport,
   immersive = false,
+  immersiveControls = false,
 }: KycSheetProps): React.ReactElement {
   const { colors, mode, toggle, forced: themeForced } = useTheme();
   const config = useKycConfig();
@@ -84,6 +94,9 @@ export function KycSheet({
   // so the keyboard height is added to the scroll padding by hand.
   const keyboardInset = useKeyboardInset();
 
+  const [bannerHeight, setBannerHeight] = useState(0);
+  // A control being dragged (the signature pad) holds the scroll still.
+  const [scrollLocked, setScrollLocked] = useState(false);
   const tint = headerSurface(colors, mode);
   // Decides who absorbs the status-bar inset: the banner sits above the header,
   // so when it renders it is the topmost element and takes it instead.
@@ -144,7 +157,8 @@ export function KycSheet({
     <View
       style={{
         flex: 1,
-        backgroundColor: immersive ? "#000000" : colors.background,
+        backgroundColor:
+          immersive && !immersiveControls ? "#000000" : colors.background,
       }}
     >
       {/* The SDK theme drives the status-bar glyph colour so it stays readable on
@@ -166,7 +180,9 @@ export function KycSheet({
             capture step that hides the chrome still says it is not live. It is
             then the topmost element, so it — not the header — absorbs the
             status-bar inset. */}
-        <SandboxBanner topInset={topInset} />
+        <View onLayout={(e) => setBannerHeight(e.nativeEvent.layout.height)}>
+          <SandboxBanner topInset={topInset} />
+        </View>
         {/* Header block (glass on iOS 26, tinted surface otherwise) — dropped
             entirely when the step owns the display. */}
         {immersive ? null : (
@@ -293,7 +309,7 @@ export function KycSheet({
           // bounced the user straight back to it. Same element, different
           // props: scrolling off and the padding dropped.
           <ScrollView
-            scrollEnabled={!immersive}
+            scrollEnabled={!immersive && !scrollLocked}
             contentContainerStyle={
               immersive
                 ? { flexGrow: 1 }
@@ -313,7 +329,9 @@ export function KycSheet({
               Platform.OS === "ios" && !immersive
             }
           >
-            {children}
+            <ScrollLockContext.Provider value={setScrollLocked}>
+              {children}
+            </ScrollLockContext.Provider>
           </ScrollView>
         )}
 
@@ -321,6 +339,18 @@ export function KycSheet({
             while a long step scrolls under it. It now owns the bottom safe-area
             inset that the scroll padding used to carry. */}
         {immersive ? null : <PoweredBy bottomInset={bottomInset} />}
+
+        {/* Back and close for a step that has the whole sheet. After the
+            body, so they sit over it; under the banner, which is in flow
+            above. A sibling of the body, never its parent: wrapping the body
+            would remount the step (see the note on the ScrollView). */}
+        {immersive && immersiveControls ? (
+          <ImmersiveSheetControls
+            top={bannerHeight + (bannerVisible ? 0 : topInset) + 8}
+            onBack={onBack ?? undefined}
+            onClose={config.disableClose ? undefined : onClose}
+          />
+        ) : null}
       </View>
 
       {/* The flash paints over the WHOLE sheet — header, body and footer — but

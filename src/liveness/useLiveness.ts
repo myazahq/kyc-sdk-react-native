@@ -48,6 +48,7 @@ import {
   pickChallenges,
   pickFallbackGestures,
 } from './challengeManager';
+import { faceWindowGuidance, type FaceWindow } from '../lib/faceWindow';
 import { HoldTimer, faceCentred } from './holdDetector';
 import { FlashReadyGate } from './flashReadyGate';
 import { FaceContinuityGuard } from './faceContinuity';
@@ -315,13 +316,31 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
   );
 
   // ── Position check (every frame; mirrors Flutter _checkFacePosition) ────────
-  const checkPosition = useCallback((ratio: number) => {
+  const faceWindowRef = useRef<FaceWindow | null>(null);
+  const setFaceWindow = useCallback((window: FaceWindow | null) => {
+    faceWindowRef.current = window;
+  }, []);
+
+  const checkPosition = useCallback((data: LivenessFaceData) => {
+    const ratio = data.faceSizeRatio;
     setState((s) => {
       if (s.phase === 'challenge_passed' || isSettled(s.phase) || isTerminal(s.phase)) {
         return s;
       }
       let next: PositionGuidance | null;
-      if (ratio < FACE_TOO_FAR_RATIO) next = POSITION_TOO_FAR;
+      const window = faceWindowRef.current;
+      if (window) {
+        // Full screen: the face has to sit INSIDE the window, not merely be a
+        // sensible size somewhere in the frame.
+        next = faceWindowGuidance(window, {
+          width: ratio,
+          centreX: data.faceCenterX,
+          centreY: data.faceCenterY,
+          moving:
+            s.phase === 'challenge' &&
+            (s.activeChallenge === 'turn' || s.activeChallenge === 'nod'),
+        });
+      } else if (ratio < FACE_TOO_FAR_RATIO) next = POSITION_TOO_FAR;
       else if (ratio > FACE_TOO_CLOSE_RATIO) next = POSITION_TOO_CLOSE;
       else next = null;
       return next === s.positionGuidance ? s : { ...s, positionGuidance: next };
@@ -453,7 +472,7 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
         return;
       }
 
-      checkPosition(data.faceSizeRatio);
+      checkPosition(data);
 
       const s = stateRef.current;
       if (s.phase === 'positioning') {
@@ -725,6 +744,7 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
       awaitFreshFace,
       setLighting,
       markComplete,
+      setFaceWindow,
       reset,
       shouldCapture: state.phase === 'capturing',
       shouldFlash: state.phase === 'flash',
@@ -755,7 +775,7 @@ export function useLiveness(opts: UseLivenessOptions = {}): UseLivenessReturn {
       isCompromised: () => integrityBrokenRef.current,
       reportIntegrityFailure,
     }),
-    [state, onFace, onNoFace, awaitFreshFace, setLighting, markComplete, reset, reportIntegrityFailure, flash, completeFlash, flashAttempt, fellBack, config?.mode],
+    [state, onFace, onNoFace, awaitFreshFace, setLighting, markComplete, setFaceWindow, reset, reportIntegrityFailure, flash, completeFlash, flashAttempt, fellBack, config?.mode],
   );
 }
 

@@ -1,5 +1,96 @@
 # Changelog
 
+## 3.5.0
+
+A full-screen liveness camera, signing on screen, and no selfie review by default.
+
+**This version needs a native rebuild.** It adds two native views (the blur around the liveness camera's face window, and a guard that keeps the page still while signing on iPhone) and the `expo-haptics` dependency, so run `pod install` on iOS and rebuild both apps.
+
+### The liveness camera is full screen
+
+While the liveness camera is live it now takes the whole sheet. The camera fills the screen, sharp inside a tall window for the face and blurred everywhere around it, with the instruction above the window and the step count below. A check that runs out of time stays on the camera, with the reason and Try Again under the window, and the review shows the photo in the same window.
+
+The blur is drawn by the SDK itself, with no new dependency. On Android it needs Android 12 or later; older phones show a plain tint around the window instead.
+
+No change to your code.
+
+### People already being checked get background monitoring
+
+The SDK switches background monitoring on right after a verification. People verified before it did that, and people on always-on monitoring, never pass that step again, so their checks collected app-open reports only. `reportAddressPresence()`, the call your app already makes when it opens, now does it for them: when the person's check is still running (or their always-on monitoring is between two checks) and background monitoring is not on, the report switches it on.
+
+- The person sees the system's "allow all the time" prompt once. The SDK never asks again from a report, whatever they answer.
+- If they already allowed it in Settings, it is switched on with no prompt.
+- Nothing happens when the check has finished, monitoring was stopped, the server cannot be reached, the workflow has background monitoring off, or `registerBackgroundPresence()` was never called.
+- The result carries `background` when the report tried, with the same reasons `enableBackgroundPresence()` gives.
+
+Your app still needs the background location setup, as before. To show your own explanation first, pass `autoBackground: false` and call `enableBackgroundPresence()` when you are ready.
+
+### A stay is reported sooner
+
+The background tier recorded a stay when the person left, or at a "still here" check-in once it had run three hours. Someone who came home and stayed in therefore showed nothing for three hours. The first check-in of a stay now comes after 35 minutes; later ones stay at three hours. With `expo-background-task` installed the SDK asks the OS for a check-in about every 40 minutes instead of every two hours. The OS still decides when one runs.
+
+`presenceStay(externalUserId)` returns the stay the phone has open (`since` and `nextReportAt`, epoch milliseconds), or `null`, so your app can tell the person a report is on its way.
+
+### The app no longer closes when an optional package is half installed
+
+Switching background presence on closed the app in a release build when `expo-background-task` was installed as JavaScript but its native module was not in the app build (a monorepo that hoists it, or a package added without a rebuild). Loading such a package fails while it starts up, and a release build treats that as fatal even inside a `try`.
+
+The SDK now asks Expo whether the native module is there before loading any optional package: `expo-background-task`, `expo-task-manager`, `expo-brightness`, `expo-document-picker`, `expo-haptics` and `expo-crypto`. A missing one is skipped, as an uninstalled one always was.
+
+### Reading the check's status
+
+`fetchPresenceWatchStatus({ apiKey, externalUserId })` returns where the check stands on the server: its status, progress from 0 to 1, nights and days counted, and when it ends. It never throws; `null` means the server could not be reached. No native rebuild is needed.
+
+### No selfie review unless you ask for one
+
+**This changes existing integrations.** After the liveness capture the SDK used to show the selfie with Retake and Continue. It now hands straight on to the next step. A liveness selfie is evidence, not a portrait, and the capture already waits for a face that is in the window and still.
+
+Switch the review back on with `selfieReview` on the config, or with the switch on the workflow's Presence Intelligence step. On a biometric workflow its own setting wins. A selfie that fails to upload still shows the review, which is where the retry is.
+
+### Going back to a finished liveness step
+
+Going back to the liveness step after the selfie is taken now shows "Selfie already taken" with the photo and Continue. There is no Retake, so the check runs once per session.
+
+### Sign a supporting document on screen
+
+A supporting document in a workflow can now be signed on screen. The workflow sets `capture` on the document: `upload` (the default, as before), `draw` (a signature drawn on screen) or `draw_or_upload` (either). The person signs in a box with Clear and an Expand button for more room, and "Use this signature" stays disabled until there is real ink. With `draw_or_upload` they can switch to "Upload a photo of your signature instead".
+
+After saving, the card shows the signature with an Edit action that reopens the box with the signature in it. A session picked up later shows a mark that it was signed, not the drawing itself.
+
+Existing workflows are unchanged: a document with no `capture` is uploaded as before. The server must be on a version that accepts drawn signatures.
+
+On iPhone, signing no longer scrolls the page or drags the sheet down.
+
+### Taps in the hand, not a buzz
+
+Each liveness step that passes now gives a light tap, and a finished capture or chip read a firmer one: the same two taps as the Flutter SDK. They come from `expo-haptics`, which is now a dependency, so they need a native rebuild. An iPhone app not yet rebuilt feels nothing rather than the phone's long buzz; Android gives a short tick.
+
+### The SDK stands down when monitoring is stopped
+
+When your organisation stops address monitoring for a user, the next `reportAddressPresence()` switches background location off and the Android foreground service for that user, forgets the stored address and answers the new reason `'stopped'`. Before this the phone kept reporting to a check that no longer existed.
+
+`standDownPresence(externalUserId)` does the same on request.
+
+### The footer reads "Protected by"
+
+The footer under every step now reads "Protected by" with the Myaza mark, as the web SDK does. It read "Powered by". A custom footer logo already read "Protected by".
+
+### One spinner everywhere
+
+Every loading state now shows the same spinner as the web SDK, in place of the platform's own. The pulsing loader is that spinner too.
+
+### The flash check tells the server when each colour came on
+
+The submission now carries the time each flash colour came on, measured from the start of the recording, so the server's own check of the recording looks in the right place. Exposure and white balance are held still for the sequence where the phone supports it. No change to your code, and an older server ignores the new field.
+
+### The hosted map gets longer to load
+
+The SDK waited 8 seconds for the hosted map before falling back to the built-in one. It now waits 20 seconds, which a slow connection needs.
+
+### Opening the flow with a refresh no longer closes it on iPhone
+
+Opening the flow while refreshing its workflow mounted the sheet, took it down and mounted it again, which iOS showed as the flow closing. The two now happen in one update.
+
 ## 3.4.0
 
 Device integrity and app attestation signals, and a screen for a cancelled verification.

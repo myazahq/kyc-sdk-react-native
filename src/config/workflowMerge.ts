@@ -32,6 +32,7 @@ export const WORKFLOW_KEYS = [
   // The light theme and full brightness while the liveness camera is on
   // (lib/bright-screen).
   'livenessBrightScreen',
+  'selfieReview',
   'biometric',
   'deviceIntelligence',
   'keyPeopleLinkRecovery',
@@ -136,6 +137,7 @@ const APPLICANT_LEG_KEYS = [
   'livenessMode',
   'flashSequenceLength',
   'livenessBrightScreen',
+  'selfieReview',
   'nfc',
 ] as const;
 

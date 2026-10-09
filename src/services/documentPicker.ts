@@ -8,9 +8,12 @@
  * degrades to photo-only where it is unavailable, matching the null-degrade
  * posture the platform uses for every other optional native dependency.
  */
+import { nativeModulePresent } from '../lib/native-module-present';
+
 export type DocumentPickerModule = typeof import('expo-document-picker');
 
 export function loadDocumentPicker(): DocumentPickerModule | null {
+  if (!nativeModulePresent('ExpoDocumentPicker')) return null;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require('expo-document-picker') as DocumentPickerModule;

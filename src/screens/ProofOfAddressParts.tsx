@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, Image, Pressable, View } from 'react-native';
+import { Image, Pressable, View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { UPLOAD_HINT } from '../config/uploadLimits';
@@ -9,6 +9,7 @@ import { Icon } from '../components/Icon';
 import { DashedBorder } from '../components/DashedBorder';
 import { CountryFlag } from '../components/CountryFlag';
 import { useText } from '../i18n/useText';
+import { Spinner } from '../components/Spinner';
 
 // ---------------------------------------------------------------------------
 // Proof of Address — the two states of the attachment area, split out of the
@@ -134,7 +135,7 @@ export function PoaDropzone({
     >
       <DashedBorder color={colors.border} radius={radius.md} strokeWidth={1.5} />
       {busy ? (
-        <ActivityIndicator size="small" color={colors.primary} />
+        <Spinner size="small" color={colors.primary} />
       ) : (
         <Icon name="upload" size={30} color={colors.textSecondary} />
       )}

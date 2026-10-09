@@ -1,6 +1,9 @@
 import React from 'react';
-import { ActivityIndicator, View } from 'react-native';
-import { Camera, type CameraDevice, type CameraViewProps } from 'react-native-vision-camera';
+import { View } from 'react-native';
+import { Camera, type CameraDevice, type CameraRef, type CameraViewProps } from 'react-native-vision-camera';
+
+import { registerLivenessCamera } from '../../liveness/cameraSteady';
+import { Spinner } from '../../components/Spinner';
 
 // ─── The front camera inside the liveness circle ────────────────────────────
 //
@@ -32,30 +35,53 @@ interface LivenessCameraProps {
   device: CameraDevice | undefined;
   active: boolean;
   outputs: NonNullable<CameraViewProps['outputs']>;
-  /** Diameter of the circle, for the Camera's own rounded clip. */
-  circle: number;
+  /**
+   * The Camera's own rounded clip: the diameter of the sheet's circle, or the
+   * WIDTH of the full-screen camera's tall window (whose ends are half its
+   * width round). Absent fills the box square-cornered.
+   */
+  circle?: number;
+  /**
+   * Android: draw the preview in a TextureView, not the default SurfaceView.
+   * Needed wherever the preview is blurred (components/BackdropBlur): a
+   * SurfaceView sits behind the app's window, where nothing can blur it.
+   */
+  texture?: boolean;
 }
 
-export function LivenessCamera({ device, active, outputs, circle }: LivenessCameraProps): React.ReactElement {
+export function LivenessCamera({ device, active, outputs, circle, texture }: LivenessCameraProps): React.ReactElement {
+  // The flash holds this camera's exposure and white balance still while it
+  // runs (liveness/cameraSteady.ts), so it needs to reach the controller.
+  const cameraRef = React.useRef<CameraRef>(null);
+  React.useEffect(() => {
+    registerLivenessCamera(() => cameraRef.current?.controller);
+    return () => registerLivenessCamera(null);
+  }, []);
   return (
     <View style={{ flex: 1 }} collapsable={false}>
       {device ? (
         <Camera
+          ref={cameraRef}
           // borderRadius repeated on the Camera — iOS does not reliably clip
           // a native child to a rounded parent, so the preview's square
           // corners showed through the circle. Same fix the selfie preview
           // and the header brand bar already carry.
-          style={{ flex: 1, borderRadius: circle / 2, overflow: 'hidden' }}
+          style={
+            circle == null
+              ? { flex: 1 }
+              : { flex: 1, borderRadius: circle / 2, overflow: 'hidden' }
+          }
           device={device}
           isActive={active}
           outputs={outputs}
+          implementationMode={texture ? 'compatible' : undefined}
           // Mirror the front-camera preview + capture so it reads like a
           // mirror (matches the web SDK's scaleX(-1) video).
           mirrorMode="on"
         />
       ) : (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color="#FFFFFF" />
+          <Spinner color="#FFFFFF" />
         </View>
       )}
     </View>

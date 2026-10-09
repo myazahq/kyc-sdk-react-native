@@ -1,11 +1,12 @@
 import React from 'react';
-import { ActivityIndicator, Image, View } from 'react-native';
+import { Image, View } from 'react-native';
 
 import { spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
 import { MyazaText } from '../../components/Typography';
 import { MyazaPulseLoader } from '../../components/MyazaPulseLoader';
 import { StyleAbsFill } from './constants';
+import { Spinner } from '../../components/Spinner';
 
 // ---------------------------------------------------------------------------
 // The captured selfie, shown back while it uploads.

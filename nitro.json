@@ -62,6 +62,22 @@
         "language": "kotlin",
         "implementationClassName": "HybridMyazaDeviceIntel"
       }
+    },
+    "MyazaBackdropBlur": {
+      "ios": {
+        "language": "swift",
+        "implementationClassName": "HybridMyazaBackdropBlur"
+      },
+      "android": {
+        "language": "kotlin",
+        "implementationClassName": "HybridMyazaBackdropBlur"
+      }
+    },
+    "MyazaTouchGuard": {
+      "ios": {
+        "language": "swift",
+        "implementationClassName": "HybridMyazaTouchGuard"
+      }
     }
   },
   "ignorePaths": [

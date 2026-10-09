@@ -6,8 +6,9 @@
 // cooperate on one state rather than double-counting a stay:
 //
 //   inside,  no open stay  → open one (stamp enterAt)
-//   inside,  open stay     → check in: once it has run CHECKPOINT_MS, fold it
-//                            so far and restart it here (checkpointStay)
+//   inside,  open stay     → check in: once it has run its interval (35
+//                            minutes the first time, then three hours),
+//                            fold it so far and restart it (checkpointStay)
 //   outside, open stay     → close it: fold the span into per-day aggregates
 //   outside, no open stay  → nothing (absence is never evidence)
 //   mocked                 → report the day FLAGGED, never open a stay
@@ -36,6 +37,8 @@ export interface SampleFix {
 export interface SamplerResult {
   /** The open stay after these samples (null = none open). */
   enterAt: number | null;
+  /** When that stay began (null = none open); check-ins leave it alone. */
+  stayStart: number | null;
   /** Per-day aggregates to queue (same-day entries already merged). */
   observations: WireObservation[];
 }
@@ -71,8 +74,10 @@ export function applyLocationSamples(
   samples: ReadonlyArray<SampleFix>,
   enterAt: number | null,
   offsetMinutes?: number,
+  stayStart: number | null = null,
 ): SamplerResult {
   let open = enterAt;
+  let start = enterAt == null ? null : stayStart;
   let observations: WireObservation[] = [];
   const ordered = [...samples]
     .filter((s) => Number.isFinite(s.timestamp))
@@ -97,8 +102,9 @@ export function applyLocationSamples(
     if (inside) {
       // A person who never leaves never produces an exit, so their stay is
       // recorded here, at each confirmed-inside reading, instead.
-      const checked = checkpointStay(open, fix.timestamp, offsetMinutes);
+      const checked = checkpointStay(open, fix.timestamp, offsetMinutes, start);
       open = checked.enterAt;
+      start = checked.stayStart;
       if (checked.days.length > 0) {
         observations = mergeObservations(
           observations,
@@ -110,11 +116,12 @@ export function applyLocationSamples(
     if (open == null) continue;
     const days = foldSpanIntoDays(open, fix.timestamp, offsetMinutes);
     open = null;
+    start = null;
     if (days.length === 0) continue;
     observations = mergeObservations(
       observations,
       days.map((d) => ({ ...d, source: 'geofence' as const, samples: 1 })),
     );
   }
-  return { enterAt: open, observations };
+  return { enterAt: open, stayStart: start, observations };
 }

@@ -8,17 +8,35 @@
 #include "KycSdkReactNative-Swift-Cxx-Bridge.hpp"
 
 // Include C++ implementation defined types
+#include "HybridMyazaBackdropBlurSpecSwift.hpp"
 #include "HybridMyazaDeviceIntelSpecSwift.hpp"
 #include "HybridMyazaEmrtdSpecSwift.hpp"
 #include "HybridMyazaFaceDetectorSpecSwift.hpp"
 #include "HybridMyazaRectDetectorSpecSwift.hpp"
 #include "HybridMyazaTextRecognizerSpecSwift.hpp"
+#include "HybridMyazaTouchGuardSpecSwift.hpp"
 #include "KycSdkReactNative-Swift-Cxx-Umbrella.hpp"
 #include <NitroModules/NitroDefines.hpp>
 #include <VisionCamera/VisionCamera-Swift-Cxx-Bridge.hpp>
 
 namespace margelo::nitro::myazakyc::bridge::swift {
 
+  // pragma MARK: std::shared_ptr<HybridMyazaBackdropBlurSpec>
+  std::shared_ptr<HybridMyazaBackdropBlurSpec> create_std__shared_ptr_HybridMyazaBackdropBlurSpec_(void* NON_NULL swiftUnsafePointer) noexcept {
+    KycSdkReactNative::HybridMyazaBackdropBlurSpec_cxx swiftPart = KycSdkReactNative::HybridMyazaBackdropBlurSpec_cxx::fromUnsafe(swiftUnsafePointer);
+    return std::make_shared<margelo::nitro::myazakyc::HybridMyazaBackdropBlurSpecSwift>(swiftPart);
+  }
+  void* NON_NULL get_std__shared_ptr_HybridMyazaBackdropBlurSpec_(std__shared_ptr_HybridMyazaBackdropBlurSpec_ cppType) {
+    std::shared_ptr<margelo::nitro::myazakyc::HybridMyazaBackdropBlurSpecSwift> swiftWrapper = std::dynamic_pointer_cast<margelo::nitro::myazakyc::HybridMyazaBackdropBlurSpecSwift>(cppType);
+    #ifdef NITRO_DEBUG
+    if (swiftWrapper == nullptr) [[unlikely]] {
+      throw std::runtime_error("Class \"HybridMyazaBackdropBlurSpec\" is not implemented in Swift!");
+    }
+    #endif
+    KycSdkReactNative::HybridMyazaBackdropBlurSpec_cxx& swiftPart = swiftWrapper->getSwiftPart();
+    return swiftPart.toUnsafe();
+  }
+  
   // pragma MARK: std::function<void(const std::vector<std::string>& /* result */)>
   Func_void_std__vector_std__string_ create_Func_void_std__vector_std__string_(void* NON_NULL swiftClosureWrapper) noexcept {
     auto swiftClosure = KycSdkReactNative::Func_void_std__vector_std__string_::fromUnsafe(swiftClosureWrapper);
@@ -178,6 +196,22 @@ namespace margelo::nitro::myazakyc::bridge::swift {
     }
     #endif
     KycSdkReactNative::HybridMyazaTextRecognizerSpec_cxx& swiftPart = swiftWrapper->getSwiftPart();
+    return swiftPart.toUnsafe();
+  }
+  
+  // pragma MARK: std::shared_ptr<HybridMyazaTouchGuardSpec>
+  std::shared_ptr<HybridMyazaTouchGuardSpec> create_std__shared_ptr_HybridMyazaTouchGuardSpec_(void* NON_NULL swiftUnsafePointer) noexcept {
+    KycSdkReactNative::HybridMyazaTouchGuardSpec_cxx swiftPart = KycSdkReactNative::HybridMyazaTouchGuardSpec_cxx::fromUnsafe(swiftUnsafePointer);
+    return std::make_shared<margelo::nitro::myazakyc::HybridMyazaTouchGuardSpecSwift>(swiftPart);
+  }
+  void* NON_NULL get_std__shared_ptr_HybridMyazaTouchGuardSpec_(std__shared_ptr_HybridMyazaTouchGuardSpec_ cppType) {
+    std::shared_ptr<margelo::nitro::myazakyc::HybridMyazaTouchGuardSpecSwift> swiftWrapper = std::dynamic_pointer_cast<margelo::nitro::myazakyc::HybridMyazaTouchGuardSpecSwift>(cppType);
+    #ifdef NITRO_DEBUG
+    if (swiftWrapper == nullptr) [[unlikely]] {
+      throw std::runtime_error("Class \"HybridMyazaTouchGuardSpec\" is not implemented in Swift!");
+    }
+    #endif
+    KycSdkReactNative::HybridMyazaTouchGuardSpec_cxx& swiftPart = swiftWrapper->getSwiftPart();
     return swiftPart.toUnsafe();
   }
 

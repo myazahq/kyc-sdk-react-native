@@ -1,11 +1,12 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
 import { Icon } from '../../components/Icon';
 import { MyazaText } from '../../components/Typography';
 import { useText } from '../../i18n/useText';
+import { Spinner } from '../../components/Spinner';
 
 /**
  * "Use my current location" as a proper row, not a button pretending to be two:
@@ -55,7 +56,7 @@ export function CurrentLocationRow({
         }}
       >
         {locating && !hint ? (
-          <ActivityIndicator size="small" color={colors.primary} />
+          <Spinner size="small" color={colors.primary} />
         ) : (
           <Icon
             name={hint ? 'map-pin' : 'locate'}
@@ -125,7 +126,7 @@ export function LocateChip({
         })}
       >
         {locating ? (
-          <ActivityIndicator size="small" color={colors.textSecondary} />
+          <Spinner size="small" color={colors.textSecondary} />
         ) : (
           <Icon name="locate" size={16} color={colors.primary} />
         )}

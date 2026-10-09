@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, Image, Pressable, View } from 'react-native';
+import { Image, Pressable, View } from 'react-native';
 
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
@@ -8,6 +8,7 @@ import { Icon } from '../../components/Icon';
 import { OverlayPill, pillSurface } from './EntrancePills';
 import { MyazaText } from '../../components/Typography';
 import { useText } from '../../i18n/useText';
+import { Spinner } from '../../components/Spinner';
 
 const FRAME_HEIGHT = 300;
 
@@ -140,7 +141,7 @@ export function EntranceDropzone({
         }}
       >
         {uploading ? (
-          <ActivityIndicator size="small" color={colors.primary} />
+          <Spinner size="small" color={colors.primary} />
         ) : (
           <Icon name="camera" size={24} color={colors.primary} />
         )}

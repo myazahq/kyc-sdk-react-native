@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
 
 import { radius } from '../config/theme';
 import { loadWebView, type WebViewLike } from '../lib/webview-available';
@@ -13,6 +13,7 @@ import {
   samePin,
 } from '../lib/map-frame';
 import type { LatLng } from '../lib/map-tiles';
+import { Spinner } from './Spinner';
 
 // Google Maps on mobile, via OUR hosted /embed/map page in a WebView (the OkHi
 // model — the map runs on the hosted origin, on Myaza's own key; the host app
@@ -114,7 +115,7 @@ export function FramedMapPicker({ frameUrl, value, onChange, defaultCenter, defa
       />
       {!ready ? (
         <View pointerEvents="none" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator size="small" color={colors.primary} />
+          <Spinner size="small" color={colors.primary} />
         </View>
       ) : null}
     </View>

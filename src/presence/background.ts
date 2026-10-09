@@ -39,6 +39,7 @@ import {
   saveFenceUser,
   saveReporterConfig,
 } from './background-store';
+import { nativeModulePresent } from '../lib/native-module-present';
 
 // Kept exported from here for hosts (and status.ts) that imported it before
 // the primitive moved to geofence.ts.
@@ -51,6 +52,7 @@ interface TaskManagerLike {
 }
 
 function taskManager(): TaskManagerLike | null {
+  if (!nativeModulePresent('ExpoTaskManager')) return null;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const mod = require('expo-task-manager') as Partial<TaskManagerLike>;

@@ -20,6 +20,8 @@ namespace margelo::nitro::myazakyc { struct EmrtdTagInfo; }
 namespace margelo::nitro::myazakyc { struct FaceResult; }
 // Forward declaration of `HybridFrameSpec` to properly resolve imports.
 namespace margelo::nitro::camera { class HybridFrameSpec; }
+// Forward declaration of `HybridMyazaBackdropBlurSpec` to properly resolve imports.
+namespace margelo::nitro::myazakyc { class HybridMyazaBackdropBlurSpec; }
 // Forward declaration of `HybridMyazaDeviceIntelSpec` to properly resolve imports.
 namespace margelo::nitro::myazakyc { class HybridMyazaDeviceIntelSpec; }
 // Forward declaration of `HybridMyazaEmrtdSpec` to properly resolve imports.
@@ -30,6 +32,8 @@ namespace margelo::nitro::myazakyc { class HybridMyazaFaceDetectorSpec; }
 namespace margelo::nitro::myazakyc { class HybridMyazaRectDetectorSpec; }
 // Forward declaration of `HybridMyazaTextRecognizerSpec` to properly resolve imports.
 namespace margelo::nitro::myazakyc { class HybridMyazaTextRecognizerSpec; }
+// Forward declaration of `HybridMyazaTouchGuardSpec` to properly resolve imports.
+namespace margelo::nitro::myazakyc { class HybridMyazaTouchGuardSpec; }
 // Forward declaration of `TextResult` to properly resolve imports.
 namespace margelo::nitro::myazakyc { struct TextResult; }
 
@@ -39,11 +43,13 @@ namespace margelo::nitro::myazakyc { struct TextResult; }
 #include "EmrtdApduResponse.hpp"
 #include "EmrtdTagInfo.hpp"
 #include "FaceResult.hpp"
+#include "HybridMyazaBackdropBlurSpec.hpp"
 #include "HybridMyazaDeviceIntelSpec.hpp"
 #include "HybridMyazaEmrtdSpec.hpp"
 #include "HybridMyazaFaceDetectorSpec.hpp"
 #include "HybridMyazaRectDetectorSpec.hpp"
 #include "HybridMyazaTextRecognizerSpec.hpp"
+#include "HybridMyazaTouchGuardSpec.hpp"
 #include "TextResult.hpp"
 #include <NitroModules/Promise.hpp>
 #include <NitroModules/Result.hpp>
@@ -65,6 +71,8 @@ namespace margelo::nitro::myazakyc { struct TextResult; }
 // Forward declarations of Swift defined types
 // Forward declaration of `HybridFrameSpec_cxx` to properly resolve imports.
 namespace VisionCamera { class HybridFrameSpec_cxx; }
+// Forward declaration of `HybridMyazaBackdropBlurSpec_cxx` to properly resolve imports.
+namespace KycSdkReactNative { class HybridMyazaBackdropBlurSpec_cxx; }
 // Forward declaration of `HybridMyazaDeviceIntelSpec_cxx` to properly resolve imports.
 namespace KycSdkReactNative { class HybridMyazaDeviceIntelSpec_cxx; }
 // Forward declaration of `HybridMyazaEmrtdSpec_cxx` to properly resolve imports.
@@ -75,6 +83,8 @@ namespace KycSdkReactNative { class HybridMyazaFaceDetectorSpec_cxx; }
 namespace KycSdkReactNative { class HybridMyazaRectDetectorSpec_cxx; }
 // Forward declaration of `HybridMyazaTextRecognizerSpec_cxx` to properly resolve imports.
 namespace KycSdkReactNative { class HybridMyazaTextRecognizerSpec_cxx; }
+// Forward declaration of `HybridMyazaTouchGuardSpec_cxx` to properly resolve imports.
+namespace KycSdkReactNative { class HybridMyazaTouchGuardSpec_cxx; }
 
 // Include Swift defined types
 #if __has_include("KycSdkReactNative-Swift.h")

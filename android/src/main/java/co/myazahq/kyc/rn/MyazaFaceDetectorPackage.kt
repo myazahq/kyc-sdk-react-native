@@ -5,6 +5,7 @@ import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.uimanager.ViewManager
 import com.margelo.nitro.myazakyc.KycSdkReactNativeOnLoad
+import com.margelo.nitro.myazakyc.views.HybridMyazaBackdropBlurManager
 
 /**
  * Loads the SDK's Nitro C++ library (`libKycSdkReactNative.so`) at app startup.
@@ -18,7 +19,9 @@ import com.margelo.nitro.myazakyc.KycSdkReactNativeOnLoad
  * processor. It exists only so RN CLI autolinking (`react-native.config.js`)
  * instantiates it on the host app's PackageList, triggering the library load
  * (and therefore the HybridObject registration) before the liveness screen runs.
- * It exposes no React Native modules or views.
+ *
+ * It also registers the SDK's one native VIEW, the blur around the liveness
+ * face window (a Nitro view, so a real Fabric component).
  */
 class MyazaFaceDetectorPackage : ReactPackage {
   init {
@@ -32,5 +35,5 @@ class MyazaFaceDetectorPackage : ReactPackage {
     listOf(MyazaStatusBarModule(reactContext))
 
   override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> =
-    emptyList()
+    listOf(HybridMyazaBackdropBlurManager())
 }

@@ -15,6 +15,8 @@
 #include <fbjni/fbjni.h>
 #include <NitroModules/HybridObjectRegistry.hpp>
 
+#include "JHybridMyazaBackdropBlurSpec.hpp"
+#include "views/JHybridMyazaBackdropBlurStateUpdater.hpp"
 #include "JHybridMyazaDeviceIntelSpec.hpp"
 #include "JHybridMyazaEmrtdSpec.hpp"
 #include "JHybridMyazaFaceDetectorSpec.hpp"
@@ -70,12 +72,22 @@ struct JHybridMyazaDeviceIntelSpecImpl: public jni::JavaClass<JHybridMyazaDevice
     return javaPart->getJHybridMyazaDeviceIntelSpec();
   }
 };
+struct JHybridMyazaBackdropBlurSpecImpl: public jni::JavaClass<JHybridMyazaBackdropBlurSpecImpl, JHybridMyazaBackdropBlurSpec::JavaPart> {
+  static constexpr auto kJavaDescriptor = "Lcom/margelo/nitro/myazakyc/HybridMyazaBackdropBlur;";
+  static std::shared_ptr<JHybridMyazaBackdropBlurSpec> create() {
+    static const auto constructorFn = javaClassStatic()->getConstructor<JHybridMyazaBackdropBlurSpecImpl::javaobject()>();
+    jni::local_ref<JHybridMyazaBackdropBlurSpec::JavaPart> javaPart = javaClassStatic()->newObject(constructorFn);
+    return javaPart->getJHybridMyazaBackdropBlurSpec();
+  }
+};
 
 void registerAllNatives() {
   using namespace margelo::nitro;
   using namespace margelo::nitro::myazakyc;
 
   // Register native JNI methods
+  margelo::nitro::myazakyc::JHybridMyazaBackdropBlurSpec::CxxPart::registerNatives();
+  margelo::nitro::myazakyc::views::JHybridMyazaBackdropBlurStateUpdater::registerNatives();
   margelo::nitro::myazakyc::JHybridMyazaDeviceIntelSpec::CxxPart::registerNatives();
   margelo::nitro::myazakyc::JHybridMyazaEmrtdSpec::CxxPart::registerNatives();
   margelo::nitro::myazakyc::JHybridMyazaFaceDetectorSpec::CxxPart::registerNatives();
@@ -111,6 +123,12 @@ void registerAllNatives() {
     "MyazaDeviceIntel",
     []() -> std::shared_ptr<HybridObject> {
       return JHybridMyazaDeviceIntelSpecImpl::create();
+    }
+  );
+  HybridObjectRegistry::registerHybridObjectConstructor(
+    "MyazaBackdropBlur",
+    []() -> std::shared_ptr<HybridObject> {
+      return JHybridMyazaBackdropBlurSpecImpl::create();
     }
   );
 }

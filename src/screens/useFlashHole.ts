@@ -43,7 +43,8 @@ function same(a: FlashHole | null, b: FlashHole): boolean {
     a !== null &&
     Math.abs(a.x - b.x) < EPSILON &&
     Math.abs(a.y - b.y) < EPSILON &&
-    Math.abs(a.size - b.size) < EPSILON
+    Math.abs(a.size - b.size) < EPSILON &&
+    Math.abs((a.height ?? a.size) - (b.height ?? b.size)) < EPSILON
   );
 }
 
@@ -65,7 +66,13 @@ export function useFlashHole(active: boolean): {
       if (!width || !height) return;
       // The preview is a circle in a square box, so the smaller side is the
       // diameter — guards against a reading taken mid-layout.
-      const next = { x, y, size: Math.min(width, height) };
+      //
+      // The full-screen camera's window is meant to be taller than wide (by a
+      // third); a box that much taller is that window, not a circle mid-layout.
+      const next: FlashHole =
+        height > width * 1.15
+          ? { x, y, size: width, height }
+          : { x, y, size: Math.min(width, height) };
       if (same(latest.current, next)) {
         onSettled();
         return;

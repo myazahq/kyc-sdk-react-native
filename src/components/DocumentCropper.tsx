@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Image, LayoutChangeEvent, Modal, PanResponder, Platform, Pressable, StatusBar, StyleSheet, View } from 'react-native';
+import { Image, LayoutChangeEvent, Modal, PanResponder, Platform, Pressable, StatusBar, StyleSheet, View } from 'react-native';
 import Svg, { Line, Rect } from 'react-native-svg';
 
 import { headerSurface, spacing } from '../config/theme';
@@ -9,6 +9,7 @@ import { MyazaButton } from './MyazaButton';
 import { Icon } from './Icon';
 import { useTheme } from './runtime';
 import { useText } from '../i18n/useText';
+import { Spinner } from './Spinner';
 
 // Interactive ID-card cropper — a 1:1 RN port of the Flutter SDK's
 // _DocumentCropperScreen. Shown after picking a document photo from the gallery:
@@ -244,8 +245,8 @@ export function DocumentCropper({ uri, onCancel, onConfirm }: DocumentCropperPro
         {/* Image + crop overlay */}
         <View style={{ flex: 1 }} onLayout={onContainerLayout}>
           {!natural ? (
-            <View style={StyleSheet.absoluteFill}>
-              <ActivityIndicator color="#FFFFFF" style={{ flex: 1 }} />
+            <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
+              <Spinner color="#FFFFFF" />
             </View>
           ) : (
             <>
