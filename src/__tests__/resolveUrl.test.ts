@@ -11,7 +11,7 @@ describe('detectEnvironment', () => {
   });
 
   it('throws on an unrecognized / malformed key', () => {
-    expect(() => detectEnvironment('nope')).toThrow(/Invalid Myaza API key/);
+    expect(() => detectEnvironment('nope')).toThrow(/Invalid Toden API key/);
     expect(() => detectEnvironment('pk_prod_abc')).toThrow();
     expect(() => detectEnvironment('')).toThrow();
   });

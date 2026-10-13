@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, View } from 'react-native';
 
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 import { MilestoneTrack, type Milestone } from './MilestoneTrack';
 import { useReduceMotion } from './StaggerIn';
 import { radius, spacing } from '../config/theme';
@@ -81,7 +81,7 @@ export function PresenceExpectations(): React.ReactElement {
           }}
         >
           <LiveDot />
-          <MyazaText
+          <UiText
             variant="bodySmall"
             color={colors.primary}
             style={{
@@ -92,14 +92,14 @@ export function PresenceExpectations(): React.ReactElement {
             }}
           >
             {t('address.presence.badge')}
-          </MyazaText>
+          </UiText>
         </View>
-        <MyazaText variant="bodyMedium" style={{ fontWeight: '600', marginTop: spacing.sm }}>
+        <UiText variant="bodyMedium" style={{ fontWeight: '600', marginTop: spacing.sm }}>
           {t('address.presence.title')}
-        </MyazaText>
-        <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 2 }}>
+        </UiText>
+        <UiText variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 2 }}>
           {t('address.presence.description')}
-        </MyazaText>
+        </UiText>
       </View>
 
       {/* Web's h-8 nodes here, against the primer's h-10. */}

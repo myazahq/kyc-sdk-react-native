@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { radius, spacing } from '../config/theme';
 import { Icon } from './Icon';
 import { useTheme } from './runtime';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 
 /**
  * "Required: <document>" — which document this step expects, on the screens
@@ -70,12 +70,12 @@ export function RequiredDocumentPill({
         }}
       >
         <Icon name="credit-card" size={16} color={colors.primary} />
-        <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '600' }}>
+        <UiText variant="bodySmall" color={colors.primary} style={{ fontWeight: '600' }}>
           Required:
-        </MyazaText>
-        <MyazaText variant="bodySmall" color={colors.primary} style={{ flexShrink: 1 }}>
+        </UiText>
+        <UiText variant="bodySmall" color={colors.primary} style={{ flexShrink: 1 }}>
           {idTypeLabel}
-        </MyazaText>
+        </UiText>
       </View>
       {/* Side and progress travel TOGETHER. They are one thought — which half
           of a two-sided document this is — and on a narrow screen they drop to
@@ -97,15 +97,15 @@ export function RequiredDocumentPill({
                 backgroundColor: colors.primary100,
               }}
             >
-              <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '600' }}>
+              <UiText variant="bodySmall" color={colors.primary} style={{ fontWeight: '600' }}>
                 {sideBadge}
-              </MyazaText>
+              </UiText>
             </View>
           ) : null}
           {stepLabel ? (
-            <MyazaText variant="bodySmall" color={colors.textSecondary}>
+            <UiText variant="bodySmall" color={colors.textSecondary}>
               {stepLabel}
-            </MyazaText>
+            </UiText>
           ) : null}
         </View>
       ) : null}

@@ -51,8 +51,34 @@ describe('brand font weight resolution', () => {
   });
 
   it('still uses the bundled families when no brand font is set', () => {
-    expect(fontFamilyFor(false, '400', true, {})).toBe('Karla_400Regular');
-    expect(fontFamilyFor(true, '700', true, {})).toBe('SpaceGrotesk_700Bold');
+    // Body and interface text is Geist; headings are Bricolage Grotesque.
+    expect(fontFamilyFor(false, '400', true, {})).toBe('Geist_400Regular');
+    expect(fontFamilyFor(true, '700', true, {})).toBe('BricolageGrotesque_700Bold');
+  });
+
+  it('sets body text at 16px and up in Bricolage at its own weight, and leaves an org font alone', () => {
+    expect(fontFamilyFor(false, '400', true, {}, true)).toBe('BricolageGrotesque_400Regular');
+    expect(fontFamilyFor(false, '500', true, {}, true)).toBe('BricolageGrotesque_500Medium');
+    expect(fontFamilyFor(false, '600', true, {}, true)).toBe('BricolageGrotesque_600SemiBold');
+    expect(fontFamilyFor(false, 'bold', true, {}, true)).toBe('BricolageGrotesque_700Bold');
+    // Small text keeps Geist, and an org's body font wins at every size.
+    expect(fontFamilyFor(false, '400', true, {}, false)).toBe('Geist_400Regular');
+    expect(fontFamilyFor(false, '400', true, { body: 'Inter' }, true)).toBe('Inter');
+    expect(fontFamilyFor(false, '400', false, {}, true)).toBeUndefined();
+  });
+
+  it('resolves every body weight to a bundled Geist face and every heading weight to Bricolage', () => {
+    const body: Array<[string, string]> = [
+      ['400', 'Geist_400Regular'],
+      ['500', 'Geist_500Medium'],
+      ['600', 'Geist_600SemiBold'],
+      ['700', 'Geist_700Bold'],
+      ['bold', 'Geist_700Bold'],
+    ];
+    for (const [weight, expected] of body) expect(fontFamilyFor(false, weight as never, true, {})).toBe(expected);
+    for (const w of ['400', '500', '600', '700'] as const) {
+      expect(fontFamilyFor(true, w, true, {})).toMatch(/^BricolageGrotesque_/);
+    }
   });
 
   it('renders nothing custom until the bundled fonts are loaded', () => {
@@ -63,11 +89,11 @@ describe('brand font weight resolution', () => {
 describe('the footer wordmark is immune to the org font', () => {
   const ORG = { body: 'Poppins', heading: 'Fraunces' };
 
-  it('renders TRUST in bundled Karla even when the workflow sets a font', () => {
+  it('renders TRUST in bundled Bricolage Grotesque even when the workflow sets a font', () => {
     // "TRUST" is part of a wordmark. Taking the customer's typeface would
     // redraw someone else's logo — and it is what RN was doing while web and
     // Flutter pinned the brand face.
-    expect(markFamilyName('600', true)).toBe('Karla_600SemiBold');
+    expect(markFamilyName('600', true)).toBe('BricolageGrotesque_600SemiBold');
     // The very same inputs, through the normal path, DO take the org font —
     // which is the behaviour the mark has to opt out of.
     expect(fontFamilyFor(false, '600', true, ORG)).toBe('Poppins__600');
@@ -75,11 +101,11 @@ describe('the footer wordmark is immune to the org font', () => {
 
   it('ignores the org font at every weight', () => {
     const cases: Array<[string, string]> = [
-      ['400', 'Karla_400Regular'],
-      ['500', 'Karla_500Medium'],
-      ['600', 'Karla_600SemiBold'],
-      ['700', 'Karla_700Bold'],
-      ['bold', 'Karla_700Bold'],
+      ['400', 'BricolageGrotesque_400Regular'],
+      ['500', 'BricolageGrotesque_500Medium'],
+      ['600', 'BricolageGrotesque_600SemiBold'],
+      ['700', 'BricolageGrotesque_700Bold'],
+      ['bold', 'BricolageGrotesque_700Bold'],
     ];
     for (const [weight, expected] of cases) {
       expect(markFamilyName(weight as never, true)).toBe(expected);
@@ -100,7 +126,7 @@ describe('the footer wordmark is immune to the org font', () => {
     for (const w of ['400', '500', '600', '700'] as const) {
       const family = markFamilyName(w, true);
       expect(family).toBeDefined();
-      expect(family).toMatch(/^Karla_(400Regular|500Medium|600SemiBold|700Bold)$/);
+      expect(family).toMatch(/^BricolageGrotesque_(400Regular|500Medium|600SemiBold|700Bold)$/);
     }
   });
 });

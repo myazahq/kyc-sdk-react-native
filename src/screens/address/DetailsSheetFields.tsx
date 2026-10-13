@@ -4,8 +4,8 @@ import { View } from 'react-native';
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
 import { CountryFlag } from '../../components/CountryFlag';
-import { MyazaText } from '../../components/Typography';
-import { MyazaInput } from '../../components/MyazaInput';
+import { UiText } from '../../components/Typography';
+import { UiInput } from '../../components/UiInput';
 import type { AddressFieldMode } from '../../lib/address-field-modes';
 
 // The edit-details form primitives (200-line split from DetailsSheet).
@@ -50,7 +50,7 @@ export function EditField({
   onChange: (value: string) => void;
 }): React.ReactElement {
   return (
-    <MyazaInput
+    <UiInput
       value={value}
       onChangeText={onChange}
       label={label}
@@ -66,13 +66,13 @@ export function EditField({
 export function SectionHeading({ children }: { children: React.ReactNode }): React.ReactElement {
   const { colors } = useTheme();
   return (
-    <MyazaText
+    <UiText
       variant="bodySmall"
       color={colors.textSecondary}
       style={{ fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 11, marginBottom: spacing.sm }}
     >
       {children}
-    </MyazaText>
+    </UiText>
   );
 }
 
@@ -89,12 +89,12 @@ export function CountryRow({ country }: { country: string | null }): React.React
   }
   return (
     <View>
-      {/* The SAME label treatment MyazaInput gives its own fields (web: one
+      {/* The SAME label treatment UiInput gives its own fields (web: one
           `text-sm font-medium` for both), so the tile's box lines up with the
           input beside it and the two labels read as one row. */}
-      <MyazaText variant="label" style={{ marginBottom: spacing.sm }}>
+      <UiText variant="label" style={{ marginBottom: spacing.sm }}>
         Country
-      </MyazaText>
+      </UiText>
       <View
         style={{
           flexDirection: 'row',
@@ -109,13 +109,13 @@ export function CountryRow({ country }: { country: string | null }): React.React
         }}
       >
         <CountryFlag country={country} size={20} />
-        <MyazaText variant="bodyMedium" style={{ fontWeight: '600', flexShrink: 1 }} numberOfLines={1}>
+        <UiText variant="bodyMedium" style={{ fontWeight: '600', flexShrink: 1 }} numberOfLines={1}>
           {name}
-        </MyazaText>
+        </UiText>
       </View>
-      <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 4 }}>
+      <UiText variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 4 }}>
         From your verification
-      </MyazaText>
+      </UiText>
     </View>
   );
 }

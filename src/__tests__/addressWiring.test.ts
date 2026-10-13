@@ -8,7 +8,7 @@ import {
 import { addressFlowFor } from '../config/addressCollection';
 import { isAddressStep } from '../lib/address-flow';
 import { addressExitStep, recoverAddressStep } from '../lib/address-step-recovery';
-import type { KYCStep } from '../types/config';
+import type { VerificationStep } from '../types/config';
 
 // ─── The address flow inside the SDK's ONE ordered step list ──────────────────
 //
@@ -84,7 +84,7 @@ describe('the address flow in the individual order', () => {
 
   it('counts every screen towards progress', () => {
     const seen = new Set(
-      (['address-search', 'address-collection', 'address-entrance', 'address-review'] as KYCStep[]).map(
+      (['address-search', 'address-collection', 'address-entrance', 'address-review'] as VerificationStep[]).map(
         (s) => getStepProgress(s, o),
       ),
     );
@@ -137,7 +137,7 @@ describe('an attempt resumed onto a step this flow no longer has', () => {
   // Session progress restores the step it was saved on before the flow's shape
   // is known: `searchAvailable` is a SERVER flag that lands after the restore,
   // and a republish can drop the entrance photo.
-  const recover = (o: StepOrderOptions, current: KYCStep): KYCStep | null => {
+  const recover = (o: StepOrderOptions, current: VerificationStep): VerificationStep | null => {
     const order = buildStepOrder(o);
     const exit = addressExitStep(buildStepOrder({ ...o, hasAddressCollection: true }));
     return recoverAddressStep(current, order.filter(isAddressStep), exit);

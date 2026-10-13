@@ -18,7 +18,7 @@ import { WORKFLOW_KEYS } from '../config/workflowMerge';
 
 /** The web list, read from source — the thing RN claims to mirror. */
 function webWorkflowKeys(): string[] {
-  const source = read('kyc-sdk-react/src/lib/workflow-merge.ts');
+  const source = read('sdk-react/src/lib/workflow-merge.ts');
   const list = source.slice(
     source.indexOf('const WORKFLOW_KEYS'),
     source.indexOf('] as const'),

@@ -9,7 +9,7 @@ import {
   offeredPhoneChannels,
 } from '../config/contact';
 import { attemptsRemaining, describeCheckError, describeSendError } from '../services/contactErrors';
-import { KYCApiError } from '../services/api';
+import { VerificationApiError } from '../services/api';
 
 // ─── Contact verification ─────────────────────────────────────────────────────
 //
@@ -129,19 +129,19 @@ describe('phone shape', () => {
 
 describe('failure copy', () => {
   it('says what to do about an expired code', () => {
-    const msg = describeCheckError(new KYCApiError('x', 400, 'challenge_expired'));
+    const msg = describeCheckError(new VerificationApiError('x', 400, 'challenge_expired'));
     expect(msg).toMatch(/expired/i);
     expect(msg).toMatch(/new one/i);
   });
 
   it('distinguishes a wrong code from a dead one', () => {
-    expect(describeCheckError(new KYCApiError('x', 400, 'invalid_code'))).not.toBe(
-      describeCheckError(new KYCApiError('x', 400, 'challenge_expired')),
+    expect(describeCheckError(new VerificationApiError('x', 400, 'invalid_code'))).not.toBe(
+      describeCheckError(new VerificationApiError('x', 400, 'challenge_expired')),
     );
   });
 
   it('names a rate limit rather than blaming the code', () => {
-    expect(describeSendError(new KYCApiError('x', 429, 'send_rate_limited'))).toMatch(/wait/i);
+    expect(describeSendError(new VerificationApiError('x', 429, 'send_rate_limited'))).toMatch(/wait/i);
   });
 
   it('calls a network failure a network failure', () => {
@@ -149,7 +149,7 @@ describe('failure copy', () => {
   });
 
   it('still says something useful for a code it has never seen', () => {
-    expect(describeCheckError(new KYCApiError('x', 500, 'brand_new_code'))).toMatch(/try again/i);
+    expect(describeCheckError(new VerificationApiError('x', 500, 'brand_new_code'))).toMatch(/try again/i);
   });
 });
 
@@ -157,12 +157,12 @@ describe('attempts remaining', () => {
   it('reads the count the server reports', () => {
     // Without it the user has no signal that the code is about to die, and
     // burns the whole budget guessing.
-    const err = new KYCApiError('x', 400, 'invalid_code', { attemptsRemaining: 2 });
+    const err = new VerificationApiError('x', 400, 'invalid_code', { attemptsRemaining: 2 });
     expect(attemptsRemaining(err)).toBe(2);
   });
 
   it('is absent when the server did not say', () => {
-    expect(attemptsRemaining(new KYCApiError('x', 400, 'invalid_code'))).toBeUndefined();
+    expect(attemptsRemaining(new VerificationApiError('x', 400, 'invalid_code'))).toBeUndefined();
     expect(attemptsRemaining(new Error('boom'))).toBeUndefined();
   });
 });

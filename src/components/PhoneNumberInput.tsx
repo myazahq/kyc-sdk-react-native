@@ -10,8 +10,8 @@ import {
 
 import { radius, sizing, spacing } from '../config/theme';
 import { useTheme } from './runtime';
-import { MyazaText } from './Typography';
-import { MyazaInput } from './MyazaInput';
+import { UiText } from './Typography';
+import { UiInput } from './UiInput';
 import { Icon } from './Icon';
 import { CountryFlag } from './CountryFlag';
 import { DialCodePicker, type DialCodeOption } from './DialCodePicker';
@@ -161,12 +161,12 @@ export function PhoneNumberInput({
           }}
         >
           <CountryFlag country={country} size={22} />
-          <MyazaText variant="body">{selected?.dialCode ?? ''}</MyazaText>
+          <UiText variant="body">{selected?.dialCode ?? ''}</UiText>
           <Icon name="chevron-down" size={14} color={colors.textMuted} />
         </Pressable>
 
         <View style={{ flex: 1 }}>
-          <MyazaInput
+          <UiInput
             value={national}
             onChangeText={onTyped}
             placeholder="803 123 4567"

@@ -2,7 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
-import { MyazaButton } from '../components/MyazaButton';
+import { UiButton } from '../components/UiButton';
 import { ContactFooterNote } from './ContactFooterNote';
 import { useText } from '../i18n/useText';
 
@@ -35,7 +35,7 @@ export function ContactActions({
   return (
     <>
       <View style={{ height: spacing.md }} />
-      <MyazaButton
+      <UiButton
         label={hasChallenge ? t('contact.verifyCode') : t('contact.sendCode')}
         loading={busy}
         disabled={disabled}
@@ -45,7 +45,7 @@ export function ContactActions({
       {!required ? (
         <>
           <View style={{ height: spacing.sm }} />
-          <MyazaButton label={t('contact.skip')} variant="ghost" disabled={busy} onPress={onSkip} />
+          <UiButton label={t('contact.skip')} variant="ghost" disabled={busy} onPress={onSkip} />
         </>
       ) : null}
 

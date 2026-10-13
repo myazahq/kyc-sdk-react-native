@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, View } from 'react-native';
 
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 import { Icon, type IconName } from '../../components/Icon';
-import { useKyc, useKycStore, useTheme } from '../../components/runtime';
+import { useFlowState, useVerificationStore, useTheme } from '../../components/runtime';
 import { DashedBorder } from '../../components/DashedBorder';
 import { spacing } from '../../config/theme';
 
@@ -64,10 +64,10 @@ const OPTIONS: Array<{
 ];
 
 export function AddressSandboxTabs(): React.ReactElement | null {
-  const store = useKycStore();
+  const store = useVerificationStore();
   const { colors, mode } = useTheme();
-  const environment = useKyc((s) => s.serverConfig.environment);
-  const picked = useKyc((s) => s.addressSandboxOutcome);
+  const environment = useFlowState((s) => s.serverConfig.environment);
+  const picked = useFlowState((s) => s.addressSandboxOutcome);
   const shown = picked ?? 'address_attested';
   const index = Math.max(0, OPTIONS.findIndex((o) => o.key === shown));
   const [trackWidth, setTrackWidth] = useState(0);
@@ -90,7 +90,7 @@ export function AddressSandboxTabs(): React.ReactElement | null {
   return (
     <View style={{ borderRadius: 12, padding: 12 }}>
       <DashedBorder color={colors.border} radius={12} strokeWidth={1} />
-      <MyazaText variant="label">Test result</MyazaText>
+      <UiText variant="label">Test result</UiText>
       <View style={{ height: spacing.sm }} />
       <View
         onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
@@ -150,9 +150,9 @@ export function AddressSandboxTabs(): React.ReactElement | null {
         })}
       </View>
       <View style={{ height: spacing.sm }} />
-      <MyazaText variant="bodySmall" color={colors.textSecondary}>
+      <UiText variant="bodySmall" color={colors.textSecondary}>
         {OPTIONS[index]!.label} is returned instead of judging the pin.
-      </MyazaText>
+      </UiText>
     </View>
   );
 }

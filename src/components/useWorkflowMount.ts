@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { KYCError } from '../types/verification';
-import type { MyazaKYCConfig, ResolvedKYCConfig } from '../types/config';
+import { VerificationError } from '../types/verification';
+import type { VerificationConfig, ResolvedVerificationConfig } from '../types/config';
 import type { ServerConfigState } from '../store/serverConfig';
 import { requireCountry, resolveWorkflow } from '../services/workflowGate';
 
@@ -25,7 +25,7 @@ import { requireCountry, resolveWorkflow } from '../services/workflowGate';
 // ---------------------------------------------------------------------------
 
 export interface ResolvedMount {
-  config: ResolvedKYCConfig;
+  config: ResolvedVerificationConfig;
   /** Preloaded server config when a workflow supplied one; else undefined. */
   serverConfig?: ServerConfigState;
 }
@@ -33,7 +33,7 @@ export interface ResolvedMount {
 export type MountState =
   | { status: 'resolving' }
   | { status: 'ready'; mount: ResolvedMount }
-  | { status: 'error'; error: KYCError };
+  | { status: 'error'; error: VerificationError };
 
 export interface WorkflowMount {
   state: MountState;
@@ -53,18 +53,18 @@ export interface WorkflowMount {
 }
 
 /** Synchronous settle for a props-only mount — no network, no barrier. */
-export function settleWithoutWorkflow(config: MyazaKYCConfig): MountState {
+export function settleWithoutWorkflow(config: VerificationConfig): MountState {
   try {
     return { status: 'ready', mount: { config: requireCountry(config) } };
   } catch (err) {
     return {
       status: 'error',
-      error: err instanceof KYCError ? err : new KYCError('unknown', String(err)),
+      error: err instanceof VerificationError ? err : new VerificationError('unknown', String(err)),
     };
   }
 }
 
-export function useWorkflowMount(config: MyazaKYCConfig): WorkflowMount {
+export function useWorkflowMount(config: VerificationConfig): WorkflowMount {
   // A props-only mount settles synchronously, so the common case never reports
   // `resolving` for even one frame and the modal opens with no added latency.
   const initial = useRef<MountState | null>(null);
@@ -99,7 +99,7 @@ export function useWorkflowMount(config: MyazaKYCConfig): WorkflowMount {
         if (!live || controller.signal.aborted) return;
         setState({
           status: 'error',
-          error: err instanceof KYCError ? err : new KYCError('unknown', String(err)),
+          error: err instanceof VerificationError ? err : new VerificationError('unknown', String(err)),
         });
       });
 

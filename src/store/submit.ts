@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // Building the /verify request.
 //
-// Split from kycStore.ts (200-line rule). Pure: state in, request out — so what
+// Split from verificationStore.ts (200-line rule). Pure: state in, request out — so what
 // the SDK actually sends can be reasoned about (and tested) without a store, a
 // network, or a running flow.
 //
@@ -23,12 +23,12 @@ import { silentCaptureSubmission } from '../lib/silentCapture';
 import { businessSubmission, effectiveCountry } from './derive';
 import type { ClientFingerprint } from '../services/fingerprint';
 import type { VerifyRequest } from '../services/api';
-import type { KycState } from './state';
+import type { VerificationState } from './state';
 
 /** The chip payload as the wire wants it. One builder, so a slot's chip and a
  *  single-ID run's are byte-identical to the server. */
 export function nfcPayload(
-  chip: NonNullable<KycState['chipData']>,
+  chip: NonNullable<VerificationState['chipData']>,
 ): NonNullable<VerifyRequest['nfc']> {
   return {
     dg1: chip.dg1,
@@ -52,7 +52,7 @@ export function nfcPayload(
 }
 
 export function buildVerifyRequest(
-  state: KycState,
+  state: VerificationState,
   fingerprint: ClientFingerprint | undefined,
 ): VerifyRequest {
   // A KYB flow submits registry details instead of an ID: a different country

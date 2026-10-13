@@ -3,7 +3,7 @@ import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
+import { UiText } from '../components/Typography';
 import { useText } from '../i18n/useText';
 import { AwaitCard } from './KeyPeopleAwaitCard';
 import { StaggerIn } from '../components/StaggerIn';
@@ -85,23 +85,23 @@ export function KeyPeopleAwaitList({ rows }: { rows: AwaitRow[] }): React.ReactE
 
   return (
     <View style={{ width: '100%', marginTop: spacing.lg }}>
-      <MyazaText
+      <UiText
         variant="bodySmall"
         color={colors.textMuted}
         style={{ textAlign: 'center', marginBottom: spacing.md }}
       >
         {outstanding === 0 ? t('keyPeople.await.allDone') : t('keyPeople.await.intro')}
-      </MyazaText>
+      </UiText>
 
       {groups.map((group) => (
         <View key={group.label} style={{ marginBottom: spacing.sm }}>
-          <MyazaText
+          <UiText
             variant="bodySmall"
             color={colors.textMuted}
             style={{ fontWeight: '600', letterSpacing: 1.2, marginBottom: spacing.xs + 2 }}
           >
             {group.label}
-          </MyazaText>
+          </UiText>
           {group.rows.map((row, i) => (
             <StaggerIn key={`${group.label}-${i}`} delayMs={Math.min(entranceIndex++, 8) * 45}>
               <AwaitCard row={row} />
@@ -111,7 +111,7 @@ export function KeyPeopleAwaitList({ rows }: { rows: AwaitRow[] }): React.ReactE
       ))}
 
       {outstanding > 0 ? (
-        <MyazaText
+        <UiText
           variant="bodySmall"
           color={colors.textMuted}
           // Clear air below: this caption is the list's last element and the
@@ -119,7 +119,7 @@ export function KeyPeopleAwaitList({ rows }: { rows: AwaitRow[] }): React.ReactE
           style={{ textAlign: 'center', marginTop: spacing.xs, marginBottom: spacing.lg }}
         >
           {t('keyPeople.await.linkValidity')}
-        </MyazaText>
+        </UiText>
       ) : null}
     </View>
   );

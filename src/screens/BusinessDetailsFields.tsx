@@ -1,7 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 
-import { MyazaInput } from '../components/MyazaInput';
+import { UiInput } from '../components/UiInput';
 import { spacing } from '../config/theme';
 import { CompanyInfoFields } from './CompanyInfoFields';
 import { isValidContactEmail } from '../config/contact';
@@ -53,7 +53,7 @@ export function BusinessDetailsFields({
     contactEmail.trim() !== '' && !isValidContactEmail(contactEmail.trim());
   return (
     <View>
-      <MyazaInput
+      <UiInput
         label={
           productDef.inputLabel === 'TIN'
             ? productDef.inputLabel
@@ -77,7 +77,7 @@ export function BusinessDetailsFields({
       />
 
       <View style={{ height: spacing.md }} />
-      <MyazaInput
+      <UiInput
         label={`${t('business.details.nameLabel')}${requireName ? '' : ' (optional)'}`}
         value={business.registrationName}
         onChangeText={(text) => onChange('registrationName', text)}
@@ -101,7 +101,7 @@ export function BusinessDetailsFields({
       {showContactEmail ? (
         <>
           <View style={{ height: spacing.md }} />
-          <MyazaInput
+          <UiInput
             label={`${t('business.contactEmail.label')} (optional)`}
             value={contactEmail}
             onChangeText={(text) => onChange('contactEmail', text)}

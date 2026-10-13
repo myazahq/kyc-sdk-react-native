@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { radius, spacing } from '../config/theme';
 import { useTheme } from './runtime';
 import { Icon, type IconName } from './Icon';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 
 // ---------------------------------------------------------------------------
 // The presence story's three-node track, shared by the intro gate (the promise)
@@ -110,13 +110,13 @@ export function MilestoneTrack({
                     justifyContent: 'center',
                   }}
                 >
-                  <MyazaText
+                  <UiText
                     variant="bodySmall"
                     color={active ? colors.primary : colors.textSecondary}
                     style={{ fontSize: 9, fontWeight: '700', lineHeight: 11 }}
                   >
                     {i + 1}
-                  </MyazaText>
+                  </UiText>
                 </View>
               ) : null}
             </View>
@@ -124,7 +124,7 @@ export function MilestoneTrack({
             <View style={{ flex: 1, paddingTop: 2 }}>
               {/* Uppercased by STYLE, not by the string: a screen reader
                   should hear the words, not shouted initials. */}
-              <MyazaText
+              <UiText
                 variant="bodySmall"
                 color={active ? colors.primary : colors.textSecondary}
                 style={{
@@ -135,17 +135,17 @@ export function MilestoneTrack({
                 }}
               >
                 {m.stage}
-              </MyazaText>
-              <MyazaText variant="bodyMedium" style={{ fontWeight: '600', marginTop: 1 }}>
+              </UiText>
+              <UiText variant="bodyMedium" style={{ fontWeight: '600', marginTop: 1 }}>
                 {m.title}
-              </MyazaText>
-              <MyazaText
+              </UiText>
+              <UiText
                 variant="bodySmall"
                 color={colors.textSecondary}
                 style={{ marginTop: 2 }}
               >
                 {m.caption}
-              </MyazaText>
+              </UiText>
             </View>
           </View>
         );

@@ -2,8 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
-import { useKyc, useKycConfig, useKycStore } from '../components/runtime';
-import { MyazaButton } from '../components/MyazaButton';
+import { useFlowState, useVerificationConfig, useVerificationStore } from '../components/runtime';
+import { UiButton } from '../components/UiButton';
 import { useText } from '../i18n/useText';
 import { BusinessRegistryPickers } from './BusinessRegistryPickers';
 import { BusinessSearch } from './BusinessSearch';
@@ -33,15 +33,15 @@ import { businessDetailsValid, checkPanelVisible } from '../config/businessDetai
 // ---------------------------------------------------------------------------
 
 export function BusinessDetailsStep(): React.ReactElement {
-  const config = useKycConfig();
+  const config = useVerificationConfig();
   const t = useText();
-  const store = useKycStore();
-  const business = useKyc((s) => s.business);
-  const check = useKyc((s) => s.businessCheck);
+  const store = useVerificationStore();
+  const business = useFlowState((s) => s.business);
+  const check = useFlowState((s) => s.businessCheck);
   const [phase, setPhase] = useState<'pick' | 'details'>('pick');
   // Production never shows the test-result toggle, and never honours a pin.
-  const isSandbox = useKyc((s) => s.serverConfig.environment) !== 'PRODUCTION';
-  const geoCountry = useKyc((s) => s.serverConfig.geoCountry);
+  const isSandbox = useFlowState((s) => s.serverConfig.environment) !== 'PRODUCTION';
+  const geoCountry = useFlowState((s) => s.serverConfig.geoCountry);
 
   const workflowBusiness = config.business;
   const countries = useMemo(() => businessCountriesFor(workflowBusiness), [workflowBusiness]);
@@ -184,7 +184,7 @@ export function BusinessDetailsStep(): React.ReactElement {
       ) : null}
 
       <View style={{ height: spacing.lg }} />
-      <MyazaButton
+      <UiButton
         label={
           checking ? 'Checking…' : phase === 'details' ? t('business.details.confirm') : t('common.continue')
         }

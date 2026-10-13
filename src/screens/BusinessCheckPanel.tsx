@@ -3,8 +3,8 @@ import { View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
-import { MyazaAlert } from '../components/MyazaAlert';
+import { UiText } from '../components/Typography';
+import { UiAlert } from '../components/UiAlert';
 import type { BusinessCheckState } from '../store/state';
 
 // ---------------------------------------------------------------------------
@@ -38,7 +38,7 @@ export function BusinessCheckPanel({
 
   if (check.status === 'not_found') {
     return (
-      <MyazaAlert
+      <UiAlert
         variant="warning"
         title="We could not find this business on the register"
         message="Check the registration number and try again."
@@ -80,10 +80,10 @@ function NeutralPanel({ title, body }: { title: string; body: string }): React.R
         padding: spacing.md,
       }}
     >
-      <MyazaText variant="label">{title}</MyazaText>
-      <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 2 }}>
+      <UiText variant="label">{title}</UiText>
+      <UiText variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 2 }}>
         {body}
-      </MyazaText>
+      </UiText>
     </View>
   );
 }

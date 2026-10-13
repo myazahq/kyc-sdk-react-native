@@ -42,7 +42,7 @@ describe('the pin step holds its actions at the bottom of a filled viewport', ()
   });
 
   it('is listed among the steps the sheet lets fill the viewport', () => {
-    const flow = read('components/KycFlow.tsx');
+    const flow = read('components/VerificationFlow.tsx');
     expect(flow).toMatch(/currentStep === 'address-collection'/);
   });
 });

@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
-import { useKyc, useKycConfig, useKycStore } from '../components/runtime';
-import { MyazaButton } from '../components/MyazaButton';
+import { useFlowState, useVerificationConfig, useVerificationStore } from '../components/runtime';
+import { UiButton } from '../components/UiButton';
 import { currencyKeyFor, otherKeyFor, validateQuestionnaire } from '../config/questionnaire';
 import { QuestionnaireFieldView } from './QuestionnaireField';
 import type { QuestionnaireAnswerValue } from '../types/workflow';
@@ -17,15 +17,15 @@ import { useText } from '../i18n/useText';
 // re-validated server-side against the PUBLISHED definition, so what happens
 // here is purely about telling the user before they spend a round trip.
 //
-// The step's title/description live in the sheet header (KycFlow reads them),
+// The step's title/description live in the sheet header (VerificationFlow reads them),
 // matching every other step.
 // ---------------------------------------------------------------------------
 
 export function QuestionnaireStep(): React.ReactElement {
-  const config = useKycConfig();
+  const config = useVerificationConfig();
   const t = useText();
-  const store = useKycStore();
-  const answers = useKyc((s) => s.questionnaireAnswers);
+  const store = useVerificationStore();
+  const answers = useFlowState((s) => s.questionnaireAnswers);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const fields = config.questionnaire?.fields ?? [];
@@ -61,7 +61,7 @@ export function QuestionnaireStep(): React.ReactElement {
       ))}
 
       <View style={{ height: spacing.sm }} />
-      <MyazaButton label={t('common.continue')} onPress={handleContinue} />
+      <UiButton label={t('common.continue')} onPress={handleContinue} />
     </View>
   );
 }

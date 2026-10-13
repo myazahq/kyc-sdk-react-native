@@ -1,7 +1,7 @@
 import { configScope } from './scope';
 import { fillTokens } from '../utils/tokens';
 import type { BiometricCopy, BiometricCopyText } from '../config/biometricOptions';
-import type { MyazaKYCConfig } from '../types/config';
+import type { VerificationConfig } from '../types/config';
 
 // ─── The org's copy on the biometric screens, ready to render ───────────────
 //
@@ -25,7 +25,7 @@ export const NO_BIOMETRIC_COPY: ResolvedBiometricCopy = { waiting: null, verifie
 type CopyConfigLike = {
   scope?: string;
   biometric?: { copy?: BiometricCopy } | null;
-  userData?: MyazaKYCConfig['userData'];
+  userData?: VerificationConfig['userData'];
 };
 
 export function biometricCopyFor(config: CopyConfigLike): ResolvedBiometricCopy {

@@ -4,7 +4,7 @@
 // These are the parts of the flow an org authors in the dashboard's workflow
 // builder rather than in consumer code: extra steps (contact OTP, proof of
 // address, questionnaire, NFC), the KYB subject, and multi-region. They arrive
-// either as props or from `GET /api/kyc/workflows/:id`, and the flow always
+// either as props or from `GET /api/v1/workflows/:id`, and the flow always
 // wins over props (see `mergeWorkflowConfig`).
 //
 // Shapes mirror the web SDK's `types/config.ts` + `types/business.ts` exactly —

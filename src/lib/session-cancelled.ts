@@ -23,7 +23,7 @@ export const CANCELLED_TITLE = 'This verification was cancelled';
  * other things, such as a session already submitted).
  */
 export function cancelledRefusalOf(err: unknown): { message: string } | null {
-  // Read structurally (a KYCApiError carries `code` and `body`), so this never
+  // Read structurally (a VerificationApiError carries `code` and `body`), so this never
   // depends on which copy of the error class a caller holds.
   if (err === null || typeof err !== 'object') return null;
   const { code, body } = err as { code?: unknown; body?: { message?: unknown } | null };

@@ -2,7 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
-import { MyazaAlert } from '../components/MyazaAlert';
+import { UiAlert } from '../components/UiAlert';
 import { ContactDestinationField } from './ContactDestinationField';
 import { ContactChannelChoice } from './ContactChannelChoice';
 import type { PhoneOtpChannel } from '../config/contact';
@@ -46,7 +46,7 @@ export function ContactEntryPanel({
     <>
       {recovery && (
         <>
-          <MyazaAlert
+          <UiAlert
             variant="warning"
             title="Please verify again"
             message={`Your earlier confirmation has expired, so please verify ${isEmail ? 'your email' : 'your number'} once more. Everything else is saved, and we will submit again straight after.`}

@@ -3,8 +3,8 @@ import { Linking, Platform, View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from './runtime';
-import { MyazaText } from './Typography';
-import { MyazaButton } from './MyazaButton';
+import { UiText } from './Typography';
+import { UiButton } from './UiButton';
 import { Icon, type IconName } from './Icon';
 import { useText } from '../i18n/useText';
 
@@ -51,13 +51,13 @@ function CameraErrorScaffold({ icon, title, message, centered = true, tint, chil
         <Icon name={icon} size={38} color={accent} />
       </View>
       <View style={{ height: spacing.lg }} />
-      <MyazaText variant="heading2" style={{ textAlign: 'center' }}>
+      <UiText variant="heading2" style={{ textAlign: 'center' }}>
         {title}
-      </MyazaText>
+      </UiText>
       <View style={{ height: spacing.xs }} />
-      <MyazaText variant="bodyMedium" color={colors.textSecondary} style={{ textAlign: 'center' }}>
+      <UiText variant="bodyMedium" color={colors.textSecondary} style={{ textAlign: 'center' }}>
         {message}
-      </MyazaText>
+      </UiText>
       <View style={{ height: spacing.lg }} />
       <View style={{ width: '100%' }}>{children}</View>
     </View>
@@ -83,17 +83,17 @@ export function CameraPermissionView({ message, onRetry, onUpload, centered = tr
   const showRetry = Platform.OS !== 'ios';
   return (
     <CameraErrorScaffold icon="camera-off" title="Camera access needed" message={message ?? DEFAULT_PERMISSION_MESSAGE} centered={centered}>
-      <MyazaButton label="Open Settings" onPress={() => void Linking.openSettings()} />
+      <UiButton label="Open Settings" onPress={() => void Linking.openSettings()} />
       {showRetry ? (
         <>
           <View style={{ height: spacing.sm }} />
-          <MyazaButton label="Try Again" variant="outline" onPress={onRetry} />
+          <UiButton label="Try Again" variant="outline" onPress={onRetry} />
         </>
       ) : null}
       {onUpload ? (
         <>
           <View style={{ height: spacing.sm }} />
-          <MyazaButton label="Upload a photo instead" variant="ghost" leadingIcon="upload" onPress={onUpload} />
+          <UiButton label="Upload a photo instead" variant="ghost" leadingIcon="upload" onPress={onUpload} />
         </>
       ) : null}
     </CameraErrorScaffold>
@@ -127,7 +127,7 @@ export function CameraPermissionPrimingView({ message, onGrant, centered = true 
       centered={centered}
       tint={colors.primary}
     >
-      <MyazaButton label={t('primer.camera.button')} onPress={onGrant} />
+      <UiButton label={t('primer.camera.button')} onPress={onGrant} />
     </CameraErrorScaffold>
   );
 }
@@ -146,7 +146,7 @@ export interface CameraUnavailableViewProps {
 export function CameraUnavailableView({ message, onUpload, centered = true }: CameraUnavailableViewProps): React.ReactElement {
   return (
     <CameraErrorScaffold icon="video-off" title="Camera not available" message={message ?? DEFAULT_UNAVAILABLE_MESSAGE} centered={centered}>
-      {onUpload ? <MyazaButton label="Upload a photo instead" leadingIcon="upload" onPress={onUpload} /> : null}
+      {onUpload ? <UiButton label="Upload a photo instead" leadingIcon="upload" onPress={onUpload} /> : null}
     </CameraErrorScaffold>
   );
 }

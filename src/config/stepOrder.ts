@@ -19,7 +19,7 @@
 // ---------------------------------------------------------------------------
 
 import type { WorkflowBusinessConfig } from '../types/business';
-import type { KYCStep } from '../types/config';
+import type { VerificationStep } from '../types/config';
 import { applyResubmitSteps, type ResubmitConfig } from '../lib/resubmit';
 import { addressFlowSteps, type AddressFlowOptions } from '../lib/address-flow';
 import { businessSectionSteps, hasApplicantVerification } from './businessSteps';
@@ -73,16 +73,16 @@ export interface StepOrderOptions {
 
 // Contact-verification OTP steps sit right after consent (both flows) — a cheap
 // pre-filter before capture/registry spend; email before phone.
-function contactSteps(o: StepOrderOptions): KYCStep[] {
+function contactSteps(o: StepOrderOptions): VerificationStep[] {
   return [
-    ...(o.hasEmailVerification ? (['email-verification'] as KYCStep[]) : []),
-    ...(o.hasPhoneVerification ? (['phone-verification'] as KYCStep[]) : []),
+    ...(o.hasEmailVerification ? (['email-verification'] as VerificationStep[]) : []),
+    ...(o.hasPhoneVerification ? (['phone-verification'] as VerificationStep[]) : []),
   ];
 }
 
 /** The individual capture leg — shared by the KYC flow and the KYB applicant. */
-function captureLeg(o: StepOrderOptions): KYCStep[] {
-  const steps: KYCStep[] = [o.hasDocCapture ? 'document-capture' : 'id-input'];
+function captureLeg(o: StepOrderOptions): VerificationStep[] {
+  const steps: VerificationStep[] = [o.hasDocCapture ? 'document-capture' : 'id-input'];
   // The chip read follows the photo: the MRZ from that capture is what unlocks
   // the chip, so there is nothing to read before it.
   if (o.hasNfc && o.hasDocCapture) steps.push('nfc');
@@ -90,24 +90,24 @@ function captureLeg(o: StepOrderOptions): KYCStep[] {
   return steps;
 }
 
-export function buildStepOrder(o: StepOrderOptions): KYCStep[] {
+export function buildStepOrder(o: StepOrderOptions): VerificationStep[] {
   return applyResubmitSteps(fullStepOrder(o), o.resubmit);
 }
 
 /** The flow's opening screen: consent, unless the workflow switched it off. */
-function openingSteps(o: StepOrderOptions): KYCStep[] {
+function openingSteps(o: StepOrderOptions): VerificationStep[] {
   return o.hasConsent === false ? [] : ['consent'];
 }
 
 /** The flow as configured, before any reviewer narrowing. */
-function fullStepOrder(o: StepOrderOptions): KYCStep[] {
+function fullStepOrder(o: StepOrderOptions): VerificationStep[] {
   // Business (KYB) flow — the application section, then (when the workflow
   // requires applicant verification) the ordinary individual capture leg.
   if (o.isBusiness) {
     // The questionnaire sits INSIDE the business section (before key people) —
     // its questions are about the company, so it stays with the company form
     // rather than trailing the applicant's own capture leg.
-    const steps: KYCStep[] = [
+    const steps: VerificationStep[] = [
       ...openingSteps(o),
       ...contactSteps(o),
       ...businessSectionSteps(o.business, o.hasQuestionnaire, o.hasAddressCollection),
@@ -126,7 +126,7 @@ function fullStepOrder(o: StepOrderOptions): KYCStep[] {
 
   // Scoped flows: the scope's headline section IS the flow.
   if (o.scope === 'address') {
-    const steps: KYCStep[] = [...openingSteps(o), ...contactSteps(o)];
+    const steps: VerificationStep[] = [...openingSteps(o), ...contactSteps(o)];
     if (o.hasPoa) steps.push('proof-of-address');
     // Gated like the full flow, and like Flutter has always done it: an
     // address flow that asks only for proof of address never opens a map.
@@ -142,7 +142,7 @@ function fullStepOrder(o: StepOrderOptions): KYCStep[] {
     return steps;
   }
   if (o.scope === 'biometric-authentication' || o.scope === 'biometric-enrollment') {
-    const steps: KYCStep[] = [...openingSteps(o), ...contactSteps(o), 'liveness'];
+    const steps: VerificationStep[] = [...openingSteps(o), ...contactSteps(o), 'liveness'];
     if (o.hasQuestionnaire) steps.push('questionnaire');
     steps.push('submitted');
     return steps;
@@ -154,7 +154,7 @@ function fullStepOrder(o: StepOrderOptions): KYCStep[] {
     return [...openingSteps(o), ...contactSteps(o), 'submitted'];
   }
 
-  const middle: KYCStep[] = [...captureLeg(o)];
+  const middle: VerificationStep[] = [...captureLeg(o)];
   // Paperwork the org files comes BEFORE the address evidence the
   // verification is judged on (user decision 2026-09-22).
   if (o.hasSupportingDocuments) middle.push('supporting-documents');
@@ -178,7 +178,7 @@ function fullStepOrder(o: StepOrderOptions): KYCStep[] {
   return [
     ...openingSteps(o),
     ...contactSteps(o),
-    ...(o.hasCountrySelect ? (['country-select'] as KYCStep[]) : []),
+    ...(o.hasCountrySelect ? (['country-select'] as VerificationStep[]) : []),
     'id-type',
     ...middle,
     'submitted',
@@ -186,7 +186,7 @@ function fullStepOrder(o: StepOrderOptions): KYCStep[] {
 }
 
 /** Percentage complete for the progress bar. */
-export function getStepProgress(step: KYCStep, o: StepOrderOptions): number {
+export function getStepProgress(step: VerificationStep, o: StepOrderOptions): number {
   const order = buildStepOrder(o);
   const index = order.indexOf(step);
   if (index === -1) return 0;
@@ -201,7 +201,7 @@ export function getStepProgress(step: KYCStep, o: StepOrderOptions): number {
  * at — advancing from a step the flow does not contain has no correct answer,
  * and moving somewhere arbitrary is worse than standing still.
  */
-export function nextStepInOrder(step: KYCStep, o: StepOrderOptions): KYCStep {
+export function nextStepInOrder(step: VerificationStep, o: StepOrderOptions): VerificationStep {
   const order = buildStepOrder(o);
   const index = order.indexOf(step);
   if (index === -1) return step;
@@ -218,7 +218,7 @@ export function nextStepInOrder(step: KYCStep, o: StepOrderOptions): KYCStep {
  * by a single back-press, discarding everything they had done. Standing still
  * is recoverable; that was not.
  */
-export function previousStepInOrder(step: KYCStep, o: StepOrderOptions): KYCStep {
+export function previousStepInOrder(step: VerificationStep, o: StepOrderOptions): VerificationStep {
   const order = buildStepOrder(o);
   const index = order.indexOf(step);
   if (index < 0) return step;

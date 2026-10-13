@@ -3,8 +3,8 @@ import { useCallback, useRef, useState } from 'react';
 import { MAX_VIDEO_BYTES } from '../../config/captureSettings';
 import { compressVideo } from '../../services/mediaCompress';
 import { withRetry } from '../../services/retry';
-import { mapToKycError, safeReportError } from '../../services/errors';
-import { useKyc, useKycConfig } from '../../components/runtime';
+import { mapToVerificationError, safeReportError } from '../../services/errors';
+import { useFlowState, useVerificationConfig } from '../../components/runtime';
 import { useToast } from '../../components/toast';
 
 // ---------------------------------------------------------------------------
@@ -46,18 +46,18 @@ export interface SelfieUpload {
 
 export function useSelfieUpload(): SelfieUpload {
   const toast = useToast();
-  const config = useKycConfig();
-  const api = useKyc((s) => s.api);
-  const setMediaId = useKyc((s) => s.setMediaId);
-  const setSelfiePreview = useKyc((s) => s.setSelfiePreview);
+  const config = useVerificationConfig();
+  const api = useFlowState((s) => s.api);
+  const setMediaId = useFlowState((s) => s.setMediaId);
+  const setSelfiePreview = useFlowState((s) => s.setSelfiePreview);
   // The store-side progress report. The liveness step may hand over before
   // the upload lands (the biometric scopes hide the review), so the submitted
   // step waits on THIS rather than on this hook's local state.
-  const setSelfieUpload = useKyc((s) => s.setSelfieUpload);
-  const setLivenessVideoReport = useKyc((s) => s.setLivenessVideoReport);
-  const storedPreview = useKyc((s) => s.selfiePreviewUri);
-  const storedSelfieId = useKyc((s) => s.mediaIds.selfie);
-  const storedUpload = useKyc((s) => s.selfieUpload);
+  const setSelfieUpload = useFlowState((s) => s.setSelfieUpload);
+  const setLivenessVideoReport = useFlowState((s) => s.setLivenessVideoReport);
+  const storedPreview = useFlowState((s) => s.selfiePreviewUri);
+  const storedSelfieId = useFlowState((s) => s.mediaIds.selfie);
+  const storedUpload = useFlowState((s) => s.selfieUpload);
 
   // Hydrated from the STORE so leaving the step and returning lands on the
   // review screen with the same selfie, exactly as document captures do. The
@@ -133,11 +133,11 @@ export function useSelfieUpload(): SelfieUpload {
       } catch (err) {
         setRetryInfo(null);
         setUploading(false);
-        const kycError = mapToKycError(err, 'upload');
-        setUploadError(kycError.message);
-        setSelfieUpload({ status: 'failed', message: kycError.message });
-        toast.show({ variant: 'error', title: 'Upload failed', message: kycError.message });
-        safeReportError(config.onError, kycError);
+        const verificationError = mapToVerificationError(err, 'upload');
+        setUploadError(verificationError.message);
+        setSelfieUpload({ status: 'failed', message: verificationError.message });
+        toast.show({ variant: 'error', title: 'Upload failed', message: verificationError.message });
+        safeReportError(config.onError, verificationError);
       }
     },
     [api, setMediaId, setSelfieUpload, setLivenessVideoReport, config.onError, toast],

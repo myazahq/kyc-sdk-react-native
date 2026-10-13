@@ -1,13 +1,13 @@
 // ---------------------------------------------------------------------------
-// Design tokens — ported from the Flutter SDK's `theme.dart` (MyazaColorScheme)
+// Design tokens — ported from the Flutter SDK's `theme.dart` (UiColorScheme)
 // and the web SDK's `globals.css`. Token-based so `appearance` overrides cascade
 // (mirrors Flutter's `_applyAppearance`): set `primaryColor` and the whole tint
 // family follows.
 // ---------------------------------------------------------------------------
 
-import type { KYCAppearance } from '../types/config';
+import type { VerificationAppearance } from '../types/config';
 
-export interface MyazaColorScheme {
+export interface UiColorScheme {
   background: string;
   backgroundSecondary: string;
   textDark: string;
@@ -32,26 +32,26 @@ export interface MyazaColorScheme {
   infoBg: string;
 }
 
-export const LIGHT_COLORS: MyazaColorScheme = {
+export const LIGHT_COLORS: UiColorScheme = {
   background: '#FFFFFF',
-  backgroundSecondary: '#F6F5FE',
-  textDark: '#070330',
-  textSecondary: '#5A5775',
+  backgroundSecondary: '#F3F5F9',
+  textDark: '#121522',
+  textSecondary: '#646C7D',
   // React's muted-foreground, exactly. The mobile SDKs had invented a THIRD,
   // dimmer text tier that web does not have, and it failed WCAG AA in both
   // modes: 3.79:1 on white and 2.97:1 on the default dark, dropping to 2.45:1
   // on the dark backgrounds orgs actually brand with. Nothing is gained by a
   // tier nobody can read, so it takes the same value as the tier above it, the
   // way web does with one token for both.
-  textMuted: '#5A5775',
-  border: '#D3CFFC',
+  textMuted: '#646C7D',
+  border: '#DFE3EA',
   primary: '#5645F5',
   onPrimary: '#FFFFFF',
   primary50: '#F6F5FE',
   primary100: '#E9E7FE',
   primary200: '#D3CFFC',
-  gray300: '#CDCDD6',
-  gray400: '#ACABBA',
+  gray300: '#CDD2DC',
+  gray400: '#B8BDC8',
   success: '#0DA211',
   successBg: '#D8F4DC',
   error: '#BD1B09',
@@ -62,20 +62,20 @@ export const LIGHT_COLORS: MyazaColorScheme = {
   infoBg: '#C8E9FF',
 };
 
-export const DARK_COLORS: MyazaColorScheme = {
-  background: '#040218',
-  backgroundSecondary: '#0F0C2E',
+export const DARK_COLORS: UiColorScheme = {
+  background: '#080A12',
+  backgroundSecondary: '#191E2E',
   textDark: '#F6F5FE',
-  textSecondary: '#ACABBA',
-  textMuted: '#ACABBA',
-  border: '#302D53',
+  textSecondary: '#858B9F',
+  textMuted: '#858B9F',
+  border: '#262B3A',
   primary: '#7B6EF7',
   onPrimary: '#FFFFFF',
   primary50: '#1A1730',
   primary100: '#2A2651',
   primary200: '#3D3870',
-  gray300: '#302D53',
-  gray400: '#5A5775',
+  gray300: '#262B3A',
+  gray400: '#646C7D',
   success: '#0DA211',
   successBg: '#0B2B0C',
   error: '#BD1B09',
@@ -129,13 +129,13 @@ export const sizing = {
   cameraCircleSize: 260,
 } as const;
 
-/** Font families — registered via `expo-font` (see `loadMyazaFonts`). */
+/** Font families — registered via `expo-font` (see `loadUiFonts`). */
 export const fonts = {
-  heading: 'SpaceGrotesk_700Bold',
-  headingSemibold: 'SpaceGrotesk_600SemiBold',
-  body: 'Karla_400Regular',
-  bodyMedium: 'Karla_500Medium',
-  bodySemibold: 'Karla_600SemiBold',
+  heading: 'BricolageGrotesque_700Bold',
+  headingSemibold: 'BricolageGrotesque_600SemiBold',
+  body: 'Geist_400Regular',
+  bodyMedium: 'Geist_500Medium',
+  bodySemibold: 'Geist_600SemiBold',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -189,20 +189,20 @@ function alphaBlend(fg: string, bg: string, alpha: number): string {
 }
 
 // ---------------------------------------------------------------------------
-// Appearance mapping — overlay KYCAppearance onto a base scheme.
+// Appearance mapping — overlay VerificationAppearance onto a base scheme.
 // Mirrors Flutter's `_applyAppearance`: when `primaryColor` is set, derive the
 // 50/100/200 tint family from it (alpha-blended over the background); an explicit
 // `accentColor` overrides the 100 tint.
 // ---------------------------------------------------------------------------
 
 export function applyAppearance(
-  base: MyazaColorScheme,
-  appearance: KYCAppearance | undefined,
-): MyazaColorScheme {
+  base: UiColorScheme,
+  appearance: VerificationAppearance | undefined,
+): UiColorScheme {
   if (!appearance) return base;
 
   const background = appearance.backgroundColor ?? base.background;
-  const next: MyazaColorScheme = {
+  const next: UiColorScheme = {
     ...base,
     background,
     backgroundSecondary: appearance.surfaceColor ?? base.backgroundSecondary,
@@ -235,7 +235,7 @@ export function applyAppearance(
 }
 
 /** Resolves the active color scheme for a mode + appearance override. */
-export function resolveColors(mode: ThemeMode, appearance?: KYCAppearance): MyazaColorScheme {
+export function resolveColors(mode: ThemeMode, appearance?: VerificationAppearance): UiColorScheme {
   // The appearance is applied ON TOP of the active base scheme, so without the
   // dark overrides an org's LIGHT background simply overwrote the dark one and
   // the theme toggle stopped working for any branded flow.
@@ -245,10 +245,12 @@ export function resolveColors(mode: ThemeMode, appearance?: KYCAppearance): Myaz
 }
 
 /**
- * Surface tint for the KYC header chrome — mirrors Flutter's `kycHeaderSurface`.
- * Dark themes get a branded lift over the background; light themes use the
- * subtle secondary surface.
+ * Surface for the KYC header chrome — mirrors Flutter's `verificationHeaderSurface`.
+ * Both themes use the secondary surface, the colour the cards below it use.
+ * Dark themes used a wash of the brand colour over the background, which read
+ * as a pale purple band above grey cards. `mode` is kept so callers need not
+ * change.
  */
-export function headerSurface(colors: MyazaColorScheme, mode: ThemeMode): string {
-  return mode === 'dark' ? alphaBlend(colors.primary, colors.background, 0.18) : colors.backgroundSecondary;
+export function headerSurface(colors: UiColorScheme, _mode: ThemeMode): string {
+  return colors.backgroundSecondary;
 }

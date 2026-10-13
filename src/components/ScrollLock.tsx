@@ -10,7 +10,7 @@ import { createContext, useContext } from 'react';
 // finger. Switching the scroll view off for the length of the touch is the one
 // thing that holds on both platforms.
 //
-// The sheet provides it (KycSheet). Outside a sheet it does nothing.
+// The sheet provides it (VerificationSheet). Outside a sheet it does nothing.
 // ---------------------------------------------------------------------------
 
 export type SetScrollLocked = (locked: boolean) => void;

@@ -18,10 +18,10 @@ import { nfcPayload } from './submit';
 import { silentCaptureSubmission } from '../lib/silentCapture';
 import type { ClientFingerprint } from '../services/fingerprint';
 import type { VerifyRequest } from '../services/api';
-import type { KycState } from './state';
+import type { VerificationState } from './state';
 
 /** Whether the applicant capture leg actually produced something to submit. */
-export function applicantMediaCaptured(state: KycState): boolean {
+export function applicantMediaCaptured(state: VerificationState): boolean {
   return Boolean(
     state.selectedIdType &&
       (state.mediaIds.selfie || state.mediaIds.documentFront || (state.idNumber ?? '').trim() !== ''),
@@ -29,7 +29,7 @@ export function applicantMediaCaptured(state: KycState): boolean {
 }
 
 export function buildApplicantVerifyRequest(
-  state: KycState,
+  state: VerificationState,
   applicantKeyPersonId: string,
   fingerprint: ClientFingerprint | undefined,
 ): VerifyRequest {

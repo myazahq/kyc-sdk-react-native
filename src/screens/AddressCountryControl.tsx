@@ -2,8 +2,8 @@ import React, { useMemo } from 'react';
 import { View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
-import { useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
+import { useFlowState, useVerificationConfig, useVerificationStore, useTheme } from '../components/runtime';
+import { UiText } from '../components/Typography';
 import { CountryField } from '../components/CountryField';
 import { CountryFlag } from '../components/CountryFlag';
 import { ALL_REGION_CODES, regionCountryName } from '../config/regions';
@@ -35,11 +35,11 @@ export function poaOfferedCountries(configured: string[] | undefined): string[] 
 }
 
 export function AddressCountryControl(): React.ReactElement | null {
-  const config = useKycConfig();
-  const store = useKycStore();
+  const config = useVerificationConfig();
+  const store = useVerificationStore();
   const { colors } = useTheme();
-  const selected = useKyc((s) => s.selectedCountry);
-  const geo = useKyc((s) => s.serverConfig.geoCountry);
+  const selected = useFlowState((s) => s.selectedCountry);
+  const geo = useFlowState((s) => s.serverConfig.geoCountry);
 
   const scoped = configScope(config) === 'address';
   const offered = useMemo(
@@ -69,9 +69,9 @@ export function AddressCountryControl(): React.ReactElement | null {
     // without the chevron, so the settled and pickable states line up.
     return (
       <View style={{ marginBottom: spacing.lg }}>
-        <MyazaText variant="bodySmall" style={{ fontWeight: '600', marginBottom: spacing.xs }}>
+        <UiText variant="bodySmall" style={{ fontWeight: '600', marginBottom: spacing.xs }}>
           Country
-        </MyazaText>
+        </UiText>
         <View
           style={{
             flexDirection: 'row',
@@ -86,9 +86,9 @@ export function AddressCountryControl(): React.ReactElement | null {
         >
           <CountryFlag country={only} size={20} />
           <View style={{ width: spacing.sm }} />
-          <MyazaText variant="body" style={{ flex: 1 }} numberOfLines={1}>
+          <UiText variant="body" style={{ flex: 1 }} numberOfLines={1}>
             {regionCountryName(only)}
-          </MyazaText>
+          </UiText>
         </View>
       </View>
     );
@@ -96,9 +96,9 @@ export function AddressCountryControl(): React.ReactElement | null {
 
   return (
     <View style={{ marginBottom: spacing.lg }}>
-      <MyazaText variant="bodySmall" style={{ fontWeight: '600', marginBottom: spacing.xs }}>
+      <UiText variant="bodySmall" style={{ fontWeight: '600', marginBottom: spacing.xs }}>
         Country
-      </MyazaText>
+      </UiText>
       <CountryField
         value={value}
         options={options}

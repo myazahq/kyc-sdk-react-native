@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
+import { UiText } from '../components/Typography';
 import { BusinessDocumentSlot } from './BusinessDocumentSlot';
 import { SignedSignatureRow } from './SignedSignatureRow';
 import { SupportingDocumentSignature } from './SupportingDocumentSignature';
@@ -97,17 +97,17 @@ export function SupportingDocumentCard({
           <DocumentMarker done={done} position={position} total={total} />
           <View style={{ width: spacing.sm + 4 }} />
           <View style={{ flex: 1, minWidth: 0 }}>
-            <MyazaText variant="label" style={{ fontWeight: '600' }}>
+            <UiText variant="label" style={{ fontWeight: '600' }}>
               {label}
-            </MyazaText>
+            </UiText>
             {description ? (
-              <MyazaText
+              <UiText
                 variant="bodySmall"
                 color={colors.textDark}
                 style={{ marginTop: 4, opacity: 0.75 }}
               >
                 {description}
-              </MyazaText>
+              </UiText>
             ) : null}
           </View>
           <View style={{ width: spacing.sm }} />
@@ -172,19 +172,19 @@ export function SupportingDocumentCard({
               opacity: uploading ? 0.5 : pressed ? 0.7 : 1,
             })}
           >
-            <MyazaText variant="label" color={colors.primary}>
+            <UiText variant="label" color={colors.primary}>
               {'Sign on screen instead'}
-            </MyazaText>
+            </UiText>
           </Pressable>
         ) : null}
         {error ? (
-          <MyazaText
+          <UiText
             variant="bodySmall"
             color={colors.error}
             style={{ marginTop: spacing.sm }}
           >
             {error}
-          </MyazaText>
+          </UiText>
         ) : null}
       </View>
     </View>

@@ -8,14 +8,14 @@ import { GlassSurface, supportsLiquidGlass } from './glass/GlassSurface';
 // Branded card. Tappable + selectable (selection draws a brand border + tint).
 // On iOS 26 the surface is Liquid Glass; otherwise a token-filled panel.
 
-export interface MyazaCardProps {
+export interface UiCardProps {
   children: React.ReactNode;
   onPress?: () => void;
   selected?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
-export function MyazaCard({ children, onPress, selected = false, style }: MyazaCardProps): React.ReactElement {
+export function UiCard({ children, onPress, selected = false, style }: UiCardProps): React.ReactElement {
   const { colors } = useTheme();
 
   const container: ViewStyle = {

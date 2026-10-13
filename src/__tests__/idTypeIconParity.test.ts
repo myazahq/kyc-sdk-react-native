@@ -18,7 +18,7 @@ import { describeInMonorepo, readPackageFile as read } from './helpers/monorepo'
 // Each SDK is resolved through to the Hugeicons module it actually draws, so
 // the comparison survives the three naming conventions: web names components
 // (`IdCard`), this SDK names roles (`'id-card'`), Flutter names members
-// (`MyazaIcons.idCard`).
+// (`UiIcons.idCard`).
 
 function packExports(): Map<string, string> {
   const index = join(
@@ -43,8 +43,8 @@ function tableBody(source: string, marker: string): string {
 }
 
 function webIcons(pack: Map<string, string>): Record<string, string> {
-  const body = tableBody(read('kyc-sdk-react/src/steps/IdTypeStep.tsx'), 'ID_TYPE_ICONS');
-  const barrel = read('kyc-sdk-react/src/components/icons/index.ts');
+  const body = tableBody(read('sdk-react/src/steps/IdTypeStep.tsx'), 'ID_TYPE_ICONS');
+  const barrel = read('sdk-react/src/components/icons/index.ts');
   const alias = new Map([...barrel.matchAll(/(\w+) as (\w+),/g)].map(([, h, l]) => [l!, h!]));
   const component = new Map(
     [...barrel.matchAll(/export const (\w+) = createAppIcon\((\w+)/g)].map(([, name, local]) => [
@@ -61,8 +61,8 @@ function webIcons(pack: Map<string, string>): Record<string, string> {
 }
 
 function reactNativeIcons(): Record<string, string> {
-  const body = tableBody(read('kyc-sdk-react-native/src/screens/IdTypeStep.tsx'), 'const ICON_FOR');
-  const map = read('kyc-sdk-react-native/src/components/icons/map.ts');
+  const body = tableBody(read('sdk-react-native/src/screens/IdTypeStep.tsx'), 'const ICON_FOR');
+  const map = read('sdk-react-native/src/components/icons/map.ts');
   const mapBody = map.slice(map.indexOf('export const ICONS'));
   const role = new Map(
     [...mapBody.matchAll(/^ {2}'?([a-z0-9-]+)'?:\s*(\w+),/gm)].map(([, r, glyph]) => [r!, glyph!]),
@@ -76,19 +76,19 @@ function reactNativeIcons(): Record<string, string> {
 }
 
 function flutterIcons(pack: Map<string, string>): Record<string, string> {
-  const body = tableBody(read('kyc-sdk-flutter/lib/src/screens/id_type_screen.dart'), '_iconFor');
-  const icons = read('kyc-sdk-flutter/lib/src/widgets/icons/icons.dart');
+  const body = tableBody(read('sdk-flutter/lib/src/screens/id_type_screen.dart'), '_iconFor');
+  const icons = read('sdk-flutter/lib/src/widgets/icons/icons.dart');
   const member = new Map(
     [
       ...icons.matchAll(
-        /static const MyazaIconData (\w+)\s*=\s*\n?\s*HugeIcons\.strokeRounded(\w+);/g,
+        /static const UiIconData (\w+)\s*=\s*\n?\s*HugeIcons\.strokeRounded(\w+);/g,
       ),
     ].map(([, name, huge]) => [name!, `${huge!}Icon`]),
   );
   const out: Record<string, string> = {};
-  // `'a' || 'b' => MyazaIcons.x` — one arm can name several ID types.
+  // `'a' || 'b' => UiIcons.x` — one arm can name several ID types.
   for (const [, keys, name] of body.matchAll(
-    /((?:'[a-z0-9-]+'(?:\s*\|\|\s*)?)+)\s*=>\s*MyazaIcons\.(\w+)/g,
+    /((?:'[a-z0-9-]+'(?:\s*\|\|\s*)?)+)\s*=>\s*UiIcons\.(\w+)/g,
   )) {
     const file = pack.get(member.get(name!) ?? '');
     if (!file) continue;

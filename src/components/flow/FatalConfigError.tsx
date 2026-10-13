@@ -3,10 +3,10 @@ import { View } from 'react-native';
 
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../runtime';
-import { MyazaText } from '../Typography';
-import { MyazaButton } from '../MyazaButton';
+import { UiText } from '../Typography';
+import { UiButton } from '../UiButton';
 import { Icon } from '../Icon';
-import { KycSheet } from '../KycSheet';
+import { VerificationSheet } from '../VerificationSheet';
 
 /**
  * The flow cannot start — a bad API key, or a feature the org cannot use.
@@ -24,7 +24,7 @@ export function FatalConfigError({
 }): React.ReactElement {
   const { colors } = useTheme();
   return (
-    <KycSheet title="" onClose={onClose} hideBrand>
+    <VerificationSheet title="" onClose={onClose} hideBrand>
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <View
           style={{
@@ -39,18 +39,18 @@ export function FatalConfigError({
           <Icon name="alert" size={40} color={colors.error} />
         </View>
         <View style={{ height: spacing.lg }} />
-        <MyazaText variant="heading2" style={{ textAlign: 'center' }}>
+        <UiText variant="heading2" style={{ textAlign: 'center' }}>
           Unable to start verification
-        </MyazaText>
+        </UiText>
         <View style={{ height: spacing.xs }} />
-        <MyazaText variant="bodyMedium" color={colors.textSecondary} style={{ textAlign: 'center' }}>
+        <UiText variant="bodyMedium" color={colors.textSecondary} style={{ textAlign: 'center' }}>
           {message ?? 'Please check your API key and try again.'}
-        </MyazaText>
+        </UiText>
         <View style={{ height: spacing.lg }} />
         <View style={{ width: '100%' }}>
-          <MyazaButton label="Close" onPress={onClose} />
+          <UiButton label="Close" onPress={onClose} />
         </View>
       </View>
-    </KycSheet>
+    </VerificationSheet>
   );
 }

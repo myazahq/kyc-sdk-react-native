@@ -16,7 +16,7 @@ import { readPackageFile as read } from './helpers/monorepo';
 // compile, run, pass every other test, and fail only as a real person aiming a
 // phone at a passport that never reads.
 
-const GRADLE = 'kyc-sdk-react-native/android/build.gradle';
+const GRADLE = 'sdk-react-native/android/build.gradle';
 
 describe('the ML Kit artifacts are chosen together', () => {
   const gradle = read(GRADLE);
@@ -46,7 +46,7 @@ describe('the ML Kit artifacts are chosen together', () => {
     // perfectly offline — the exact case the bundled flag exists to serve.
     expect(gradle).toMatch(/buildConfigField "boolean", "BUNDLED_ML_KIT"/);
     const readiness = read(
-      'kyc-sdk-react-native/android/src/main/java/com/margelo/nitro/myazakyc/MlKitModelReadiness.kt',
+      'sdk-react-native/android/src/main/java/com/margelo/nitro/myazakyc/MlKitModelReadiness.kt',
     );
     expect(readiness).toMatch(/BuildConfig\.BUNDLED_ML_KIT/);
   });
@@ -56,7 +56,7 @@ describe('both detectors carry the readiness contract', () => {
   it.each(['MyazaFaceDetector', 'MyazaTextRecognizer'])(
     '%s declares isModelReady and prepareModel',
     (name) => {
-      const spec = read(`kyc-sdk-react-native/src/specs/${name}.nitro.ts`);
+      const spec = read(`sdk-react-native/src/specs/${name}.nitro.ts`);
       expect(spec).toMatch(/isModelReady\(\): boolean;/);
       expect(spec).toMatch(/prepareModel\(\): Promise<boolean>;/);
     },
@@ -66,7 +66,7 @@ describe('both detectors carry the readiness contract', () => {
     '%s.kt answers through the shared gate rather than its own copy',
     (cls) => {
       const source = read(
-        `kyc-sdk-react-native/android/src/main/java/com/margelo/nitro/myazakyc/${cls}.kt`,
+        `sdk-react-native/android/src/main/java/com/margelo/nitro/myazakyc/${cls}.kt`,
       );
       expect(source).toMatch(/MlKitModelReadiness\(/);
       expect(source).toMatch(/override fun isModelReady\(\): Boolean = readiness\.isReady\(\)/);
@@ -77,7 +77,7 @@ describe('both detectors carry the readiness contract', () => {
   it.each(['HybridMyazaFaceDetector', 'HybridMyazaTextRecognizer'])(
     '%s.swift answers ready unconditionally — Apple Vision ships with the OS',
     (cls) => {
-      const source = read(`kyc-sdk-react-native/ios/${cls}.swift`);
+      const source = read(`sdk-react-native/ios/${cls}.swift`);
       expect(source).toMatch(/func isModelReady\(\) throws -> Bool \{ true \}/);
       expect(source).toMatch(/Promise\.resolved\(withResult: true\)/);
     },
@@ -85,23 +85,23 @@ describe('both detectors carry the readiness contract', () => {
 });
 
 describe('the flow primes both models before either camera opens', () => {
-  it('MyazaKYC primes the face model and the text model at open', () => {
+  it('Verification primes the face model and the text model at open', () => {
     // Asserted through the shared hook rather than by finding the calls in
-    // MyazaKYC.tsx. That older form passed for months while the hook entry
+    // Verification.tsx. That older form passed for months while the hook entry
     // point primed NOTHING: the calls were present in the file, inside the
     // trigger component, and a file-level match cannot tell the two callers
     // apart. See "the head start reaches BOTH entry points" below.
-    const shared = read('kyc-sdk-react-native/src/lib/prime-models.ts');
+    const shared = read('sdk-react-native/src/lib/prime-models.ts');
     expect(shared).toMatch(/primeFaceModel\(\);/);
     expect(shared).toMatch(/primeTextModel\(\);/);
-    expect(read('kyc-sdk-react-native/src/MyazaKYC.tsx')).toMatch(/usePrimeModels\(/);
+    expect(read('sdk-react-native/src/Verification.tsx')).toMatch(/usePrimeModels\(/);
   });
 
   it('the MRZ scanner GATES on readiness — there a missing model is a dead end', () => {
     // Auto-capture deliberately does not gate: the manual shutter is live, so an
     // absent model costs convenience. The live MRZ scan has no such fallback —
     // the printed strip IS the chip key — so it must say what happened.
-    const source = read('kyc-sdk-react-native/src/screens/MrzScanView.tsx');
+    const source = read('sdk-react-native/src/screens/MrzScanView.tsx');
     expect(source).toMatch(/useTextModelReady\(\)/);
     expect(source).toMatch(/modelState === 'unavailable'/);
     expect(source).toMatch(/modelState === 'preparing'/);
@@ -109,8 +109,8 @@ describe('the flow primes both models before either camera opens', () => {
 
   it('both readiness hooks share one gate, so the rule cannot drift', () => {
     for (const rel of [
-      'kyc-sdk-react-native/src/liveness/useModelReady.ts',
-      'kyc-sdk-react-native/src/mrz/useTextModelReady.ts',
+      'sdk-react-native/src/liveness/useModelReady.ts',
+      'sdk-react-native/src/mrz/useTextModelReady.ts',
     ]) {
       expect(read(rel)).toMatch(/useNativeModelReady/);
     }
@@ -121,7 +121,7 @@ describe('the shared gate actually settles', () => {
   // Both of these shipped wrong once, and neither fails a build or a test: the
   // gate simply gave up on a model that was on its way.
   const readiness = read(
-    'kyc-sdk-react-native/android/src/main/java/com/margelo/nitro/myazakyc/MlKitModelReadiness.kt',
+    'sdk-react-native/android/src/main/java/com/margelo/nitro/myazakyc/MlKitModelReadiness.kt',
   );
 
   it('requests an URGENT install, never a deferred one', () => {
@@ -140,7 +140,7 @@ describe('the shared gate actually settles', () => {
 
 describe('the head start reaches BOTH entry points', () => {
   // Found on a freshly wiped emulator, 2026-09-20. The priming effect lived
-  // inside MyazaKYCTrigger, so a consumer using useMyazaKYC() — the hook this
+  // inside VerificationTrigger, so a consumer using useVerification() — the hook this
   // SDK's own example uses, and the one documented for programmatic control —
   // primed nothing at all. The face model was first requested when the liveness
   // step mounted, in front of a camera the user was already looking at.
@@ -151,7 +151,7 @@ describe('the head start reaches BOTH entry points', () => {
   //
   // A warm device cannot show this: isModelReady() answers true on the first
   // call and every path looks correct, which is exactly how it survived.
-  const entry = read('kyc-sdk-react-native/src/MyazaKYC.tsx');
+  const entry = read('sdk-react-native/src/Verification.tsx');
 
   it('both the trigger component and the hook prime', () => {
     expect((entry.match(/usePrimeModels\(/g) ?? []).length).toBe(2);
@@ -162,7 +162,7 @@ describe('the head start reaches BOTH entry points', () => {
     // never learns about.
     expect(entry).not.toMatch(/primeFaceModel\(\)/);
     expect(entry).not.toMatch(/primeLivenessAvatars\(/);
-    const shared = read('kyc-sdk-react-native/src/lib/prime-models.ts');
+    const shared = read('sdk-react-native/src/lib/prime-models.ts');
     for (const fn of ['primeFaceModel()', 'primeTextModel()', 'primeLivenessAvatars(']) {
       expect(shared).toContain(fn);
     }
@@ -179,7 +179,7 @@ describe('every screen behind a model gate can say it is waiting', () => {
     ['screens/LivenessStep.tsx', 'useFaceModelReady'],
     ['screens/MrzScanView.tsx', 'useTextModelReady'],
   ])('%s branches on preparing as well as unavailable', (file) => {
-    const source = read(`kyc-sdk-react-native/src/${file}`);
+    const source = read(`sdk-react-native/src/${file}`);
     expect(source).toMatch(/modelState === 'unavailable'/);
     expect(source).toMatch(/modelState === 'preparing'/);
   });
@@ -210,7 +210,7 @@ describe('nothing touches the camera Image after the detector goes async', () =>
     '%s reads frame dimensions before the first async listener',
     (cls) => {
       const source = read(
-        `kyc-sdk-react-native/android/src/main/java/com/margelo/nitro/myazakyc/${cls}.kt`,
+        `sdk-react-native/android/src/main/java/com/margelo/nitro/myazakyc/${cls}.kt`,
       );
       const firstListener = source.indexOf('.addOnSuccessListener');
       expect(firstListener).toBeGreaterThan(-1);

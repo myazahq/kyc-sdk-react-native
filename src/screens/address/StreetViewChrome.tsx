@@ -1,7 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 import { useText } from '../../i18n/useText';
 
 // The framing chrome over the Street View panorama: a dimmed surround, a
@@ -73,9 +73,9 @@ export function StreetViewChrome({
         }}
       >
         <View style={{ borderRadius: 999, backgroundColor: 'rgba(0, 0, 0, 0.65)', paddingHorizontal: 12, paddingVertical: 6 }}>
-          <MyazaText variant="bodySmall" color="#ffffff" style={{ fontWeight: '600' }}>
+          <UiText variant="bodySmall" color="#ffffff" style={{ fontWeight: '600' }}>
             {t('address.entrance.framePill')}
-          </MyazaText>
+          </UiText>
         </View>
       </View>
     </View>

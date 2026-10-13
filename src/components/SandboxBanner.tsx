@@ -2,10 +2,10 @@ import React from 'react';
 import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
-import type { KycState } from '../store/state';
-import { useKyc } from './runtime';
+import type { VerificationState } from '../store/state';
+import { useFlowState } from './runtime';
 import { Icon } from './Icon';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 
 /**
  * "You are not in production" strip, shown above the sheet's header.
@@ -33,7 +33,7 @@ import { MyazaText } from './Typography';
  * under the clock on Android's edge-to-edge modals.
  */
 export function useSandboxBannerVisible(): boolean {
-  const environment = useKyc((s: KycState) => s.serverConfig.environment);
+  const environment = useFlowState((s: VerificationState) => s.serverConfig.environment);
   return environment === 'SANDBOX' || environment === 'DEVELOPMENT';
 }
 
@@ -43,7 +43,7 @@ export function SandboxBanner({
   /** Safe-area top inset to absorb, when the banner is the topmost element. */
   topInset?: number;
 }): React.ReactElement | null {
-  const environment = useKyc((s: KycState) => s.serverConfig.environment);
+  const environment = useFlowState((s: VerificationState) => s.serverConfig.environment);
   if (environment !== 'SANDBOX' && environment !== 'DEVELOPMENT') return null;
 
   const sandbox = environment === 'SANDBOX';
@@ -72,16 +72,16 @@ export function SandboxBanner({
           Same lucide icon the web SDK uses; Flutter mirrors it with
           Icons.science_outlined. */}
       <Icon name="flask" size={13} color={AMBER_INK} />
-      <MyazaText
+      <UiText
         variant="bodySmall"
         color={AMBER_INK}
         style={{ fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' }}
       >
         {sandbox ? 'Sandbox' : 'Development'}
-      </MyazaText>
-      <MyazaText variant="bodySmall" color={AMBER_INK} style={{ fontSize: 11, flexShrink: 1 }}>
+      </UiText>
+      <UiText variant="bodySmall" color={AMBER_INK} style={{ fontSize: 11, flexShrink: 1 }}>
         {sandbox ? 'Test data only, no real checks run' : 'Test environment, results are not live'}
-      </MyazaText>
+      </UiText>
     </View>
   );
 }

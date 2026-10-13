@@ -3,7 +3,7 @@ import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
+import { UiText } from '../components/Typography';
 import { Icon } from '../components/Icon';
 import { useText } from '../i18n/useText';
 
@@ -26,9 +26,9 @@ export function ContactFooterNote({ isEmail }: { isEmail: boolean }): React.Reac
       }}
     >
       <Icon name={isEmail ? 'mail' : 'smartphone'} size={12} color={colors.textMuted} />
-      <MyazaText variant="bodySmall" color={colors.textMuted}>
+      <UiText variant="bodySmall" color={colors.textMuted}>
         {isEmail ? t('contact.email.footer') : t('contact.phone.footer')}
-      </MyazaText>
+      </UiText>
     </View>
   );
 }

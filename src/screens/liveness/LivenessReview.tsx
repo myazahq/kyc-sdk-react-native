@@ -4,9 +4,9 @@ import { Image, View } from 'react-native';
 import { spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
 import { useText } from '../../i18n/useText';
-import { MyazaText } from '../../components/Typography';
-import { MyazaButton } from '../../components/MyazaButton';
-import { MyazaPulseLoader } from '../../components/MyazaPulseLoader';
+import { UiText } from '../../components/Typography';
+import { UiButton } from '../../components/UiButton';
+import { UiPulseLoader } from '../../components/UiPulseLoader';
 import { Icon } from '../../components/Icon';
 import { PhotoBackdrop } from './Backdrop';
 import { StyleAbsFill } from './constants';
@@ -91,7 +91,7 @@ export function LivenessReview({
           </View>
           {busy ? (
             <View style={[StyleAbsFill, { backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }]}>
-              <MyazaPulseLoader size={64} />
+              <UiPulseLoader size={64} />
             </View>
           ) : null}
         </View>
@@ -101,9 +101,9 @@ export function LivenessReview({
           <Pill>
             <Icon name="circle-check" size={18} color={colors.success} />
             <View style={{ width: 8 }} />
-            <MyazaText variant="label" style={{ fontWeight: '600', flexShrink: 1 }}>
+            <UiText variant="label" style={{ fontWeight: '600', flexShrink: 1 }}>
               {title}
-            </MyazaText>
+            </UiText>
           </Pill>
         </View>
       )}
@@ -116,19 +116,19 @@ export function LivenessReview({
               needs: the note was cut off above the buttons. One line at a
               time: a retry in progress, else the note. */}
           {retryInfo && uploading ? (
-            <MyazaText variant="bodySmall" style={{ textAlign: 'center', marginBottom: spacing.sm }}>
+            <UiText variant="bodySmall" style={{ textAlign: 'center', marginBottom: spacing.sm }}>
               {`Upload failed, retrying (${retryInfo.attempt}/${retryInfo.total})`}
-            </MyazaText>
+            </UiText>
           ) : note ? (
             <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm }}>
               {soft ? <Icon name="alert" size={16} color={colors.textDark} /> : null}
-              <MyazaText variant="bodySmall" style={{ textAlign: soft ? 'left' : 'center', flex: 1 }}>
+              <UiText variant="bodySmall" style={{ textAlign: soft ? 'left' : 'center', flex: 1 }}>
                 {note}
-              </MyazaText>
+              </UiText>
             </View>
           ) : null}
           {uploadError ? (
-            <MyazaButton
+            <UiButton
               label="Try Again"
               disabled={uploading}
               onPress={() => void uploadSelfieAndVideo(selfieUri, videoPathRef.current)}
@@ -137,7 +137,7 @@ export function LivenessReview({
             <View style={{ flexDirection: 'row', gap: spacing.md }}>
               {done ? null : (
                 <View style={{ flex: 1 }}>
-                  <MyazaButton
+                  <UiButton
                     label={t('common.retake')}
                     variant="outline"
                     leadingIcon="refresh"
@@ -149,7 +149,7 @@ export function LivenessReview({
               <View style={{ flex: 1 }}>
                 {/* Disabled and quiet while the photo uploads, never spinning:
                     the one progress mark is in the window, where the work is. */}
-                <MyazaButton
+                <UiButton
                   label={t('common.continue')}
                   disabled={uploading || !selfieIdRef.current}
                   onPress={onContinue}

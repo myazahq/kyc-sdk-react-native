@@ -2,11 +2,11 @@ import React from 'react';
 import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
-import type { KYCError } from '../types/verification';
+import type { VerificationError } from '../types/verification';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
-import { MyazaButton } from '../components/MyazaButton';
-import { MyazaAlert } from '../components/MyazaAlert';
+import { UiText } from '../components/Typography';
+import { UiButton } from '../components/UiButton';
+import { UiAlert } from '../components/UiAlert';
 import { Icon } from '../components/Icon';
 import { Badge } from './SubmittedBadge';
 
@@ -34,7 +34,7 @@ export function SubmittedError({
   onClose,
   onGoBack = null,
 }: {
-  error: KYCError;
+  error: VerificationError;
   onRetry: (() => void) | null;
   onClose: () => void;
   onGoBack?: (() => void) | null;
@@ -49,32 +49,32 @@ export function SubmittedError({
           <Icon name="alert" size={44} color={colors.error} />
         </Badge>
         <View style={{ height: spacing.lg }} />
-        <MyazaText variant="heading1" style={{ textAlign: 'center' }}>
+        <UiText variant="heading1" style={{ textAlign: 'center' }}>
           {title}
-        </MyazaText>
+        </UiText>
         <View style={{ height: spacing.md }} />
         <View style={{ width: '100%', paddingHorizontal: spacing.md }}>
-          <MyazaAlert variant="error" title="What happened" message={error.message} />
+          <UiAlert variant="error" title="What happened" message={error.message} />
         </View>
       </View>
       <View style={{ flexDirection: 'row', gap: spacing.md }}>
         {onRetry ? (
           <View style={{ flex: 1 }}>
-            <MyazaButton label="Try Again" variant="outline" leadingIcon="refresh" onPress={onRetry} />
+            <UiButton label="Try Again" variant="outline" leadingIcon="refresh" onPress={onRetry} />
           </View>
         ) : null}
         {onGoBack ? (
           <>
             <View style={{ flex: 1 }}>
-              <MyazaButton label="Close" variant="outline" onPress={onClose} />
+              <UiButton label="Close" variant="outline" onPress={onClose} />
             </View>
             <View style={{ flex: 1 }}>
-              <MyazaButton label="Go back" leadingIcon="back" onPress={onGoBack} />
+              <UiButton label="Go back" leadingIcon="back" onPress={onGoBack} />
             </View>
           </>
         ) : (
           <View style={{ flex: 1 }}>
-            <MyazaButton label="Close" onPress={onClose} />
+            <UiButton label="Close" onPress={onClose} />
           </View>
         )}
       </View>

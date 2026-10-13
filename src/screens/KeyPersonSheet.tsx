@@ -3,8 +3,8 @@ import { Keyboard, Platform, Pressable, ScrollView, useWindowDimensions, View } 
 
 import { spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
-import { MyazaButton } from '../components/MyazaButton';
+import { UiText } from '../components/Typography';
+import { UiButton } from '../components/UiButton';
 import { FloatingSheet } from '../components/glass/FloatingSheet';
 import { KeyPersonForm } from './KeyPersonForm';
 import { isKeyPersonRowValid, type KeyPersonEntry } from '../config/keyPeople';
@@ -109,7 +109,7 @@ export function KeyPersonSheet({
       bottomOffset={keyboard}
       closeLabel="Close person editor"
     >
-      <MyazaText
+      <UiText
         variant="body"
         style={{
           fontWeight: '700',
@@ -120,7 +120,7 @@ export function KeyPersonSheet({
         }}
       >
         {mode === 'add' ? ADD_TITLES[section] : draft.isCorporate ? 'Edit company' : 'Edit person'}
-      </MyazaText>
+      </UiText>
 
       <ScrollView
         bounces={false}
@@ -139,7 +139,7 @@ export function KeyPersonSheet({
       </ScrollView>
 
       <View style={{ paddingHorizontal: spacing.md, paddingTop: spacing.sm }}>
-        <MyazaButton
+        <UiButton
           label={mode === 'add' ? (draft.isCorporate ? 'Add company' : 'Add person') : 'Save changes'}
           onPress={canSave ? () => onSave(draft) : undefined}
           disabled={!canSave}
@@ -157,9 +157,9 @@ export function KeyPersonSheet({
               opacity: pressed ? 0.7 : 1,
             })}
           >
-            <MyazaText variant="bodyMedium" color={colors.error} style={{ fontWeight: '600' }}>
+            <UiText variant="bodyMedium" color={colors.error} style={{ fontWeight: '600' }}>
               {draft.isCorporate ? 'Remove this company' : 'Remove this person'}
-            </MyazaText>
+            </UiText>
           </Pressable>
         ) : null}
       </View>

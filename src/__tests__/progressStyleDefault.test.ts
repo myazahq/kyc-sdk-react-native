@@ -7,15 +7,15 @@ import { describeInMonorepo, readPackageFile as read } from './helpers/monorepo'
 
 describeInMonorepo('the progress bar is the default indicator', () => {
   it('react native', () => {
-    expect(read('kyc-sdk-react-native/src/components/KycSheet.tsx')).toMatch(/config\.progressStyle \?\? "bar"/);
+    expect(read('sdk-react-native/src/components/VerificationSheet.tsx')).toMatch(/config\.progressStyle \?\? "bar"/);
   });
 
   it('web', () => {
-    expect(read('kyc-sdk-react/src/components/KYCModal.tsx')).toMatch(/config\.progressStyle \?\? 'bar'/);
+    expect(read('sdk-react/src/components/VerificationModal.tsx')).toMatch(/config\.progressStyle \?\? 'bar'/);
   });
 
   it('flutter', () => {
-    const src = read('kyc-sdk-flutter/lib/src/config/kyc_config.dart');
-    expect(src).toMatch(/this\.progressStyle = MyazaProgressStyle\.bar,/);
+    const src = read('sdk-flutter/lib/src/config/verification_config.dart');
+    expect(src).toMatch(/this\.progressStyle = VerificationProgressStyle\.bar,/);
   });
 });

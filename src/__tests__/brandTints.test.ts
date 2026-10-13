@@ -56,7 +56,7 @@ describe('a branded tint composites against its own surface', () => {
 
   it('draws exactly what the web SDK draws, which is the whole point', () => {
     // Web: `bg-primary/10` over `--secondary`, both the same values here.
-    expect(over(branded().primary100, DARK_COLORS.backgroundSecondary)).toBe('#161242');
+    expect(over(branded().primary100, DARK_COLORS.backgroundSecondary)).toBe('#1F2242');
   });
 
   it('is unchanged on the background it used to be blended against', () => {
@@ -64,8 +64,8 @@ describe('a branded tint composites against its own surface', () => {
     // an alpha byte cannot hold 0.1 exactly (0x1A is 0.1019…), which moves a
     // channel by at most 1/255. That is below anything a screen can show, and
     // the alternative - keeping the pre-blend - is the bug.
-    expect(distance(over(branded().primary100, DARK_COLORS.background), '#0C092E')).toBeLessThanOrEqual(1);
-    expect(distance(over(branded().primary50, DARK_COLORS.background), '#070521')).toBeLessThanOrEqual(1);
+    expect(distance(over(branded().primary100, DARK_COLORS.background), '#101029')).toBeLessThanOrEqual(1);
+    expect(distance(over(branded().primary50, DARK_COLORS.background), '#0B0C1B')).toBeLessThanOrEqual(1);
   });
 
   it('leaves the hand-tuned defaults alone when no brand colour is set', () => {

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
 import { multiIdPlan, type MultiIdPlan } from './multi-id';
-import { useEffectiveCountry, useKyc, useKycConfig } from '../components/runtime';
+import { useEffectiveCountry, useFlowState, useVerificationConfig } from '../components/runtime';
 
 /**
  * The active multi-ID plan for the current state, or null on an ordinary run.
@@ -11,11 +11,11 @@ import { useEffectiveCountry, useKyc, useKycConfig } from '../components/runtime
  * pick sequence, so two answers here means submissions it rejects.
  */
 export function useMultiIdPlan(): MultiIdPlan | null {
-  const config = useKycConfig();
+  const config = useVerificationConfig();
   const country = useEffectiveCountry();
-  const multiIdSlotIndex = useKyc((s) => s.multiIdSlotIndex);
-  const multiIdSlots = useKyc((s) => s.multiIdSlots);
-  const serverConfig = useKyc((s) => s.serverConfig);
+  const multiIdSlotIndex = useFlowState((s) => s.multiIdSlotIndex);
+  const multiIdSlots = useFlowState((s) => s.multiIdSlots);
+  const serverConfig = useFlowState((s) => s.serverConfig);
 
   return useMemo(
     () =>

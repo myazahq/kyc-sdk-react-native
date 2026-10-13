@@ -52,7 +52,7 @@ export function detectEnvironment(apiKey: string): SdkEnvironment {
   const match = typeof apiKey === 'string' ? apiKey.match(KEY_ENV_RE) : null;
   if (!match) {
     throw new Error(
-      'Invalid Myaza API key: expected a dev, test, or live key prefix ' +
+      'Invalid Toden API key: expected a dev, test, or live key prefix ' +
         '(e.g. pk_dev_…, pk_test_…, or pk_live_…).',
     );
   }
@@ -105,13 +105,15 @@ export function normalizeDevAssetUrl(url: string | undefined, baseUrl: string): 
   return path ? `${base}${path}` : url;
 }
 
-const SERVER_BRANDING_PATH = '/api/kyc/branding/';
+// The server issues these links under `/api/kyc` today and may issue them
+// under `/api/v1` later; the two prefixes serve the same route.
+const SERVER_BRANDING_PATHS = ['/api/kyc/branding/', '/api/v1/branding/'];
 
 /** The path and query of a server branding URL, or null for any other URL. */
 function serverBrandingPath(url: string): string | null {
   const match = /^https?:\/\/[^/]+(\/[^#]*)/i.exec(url);
   const rest = match?.[1];
-  return rest && rest.startsWith(SERVER_BRANDING_PATH) ? rest : null;
+  return rest && SERVER_BRANDING_PATHS.some((prefix) => rest.startsWith(prefix)) ? rest : null;
 }
 
 /**

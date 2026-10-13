@@ -4,7 +4,7 @@ import Svg, { Path } from 'react-native-svg';
 
 import { useTheme } from '../../components/runtime';
 import { useReduceMotion } from '../../components/StaggerIn';
-import { MyazaPulseLoader } from '../../components/MyazaPulseLoader';
+import { UiPulseLoader } from '../../components/UiPulseLoader';
 import type { Size } from '../../lib/livenessCutout';
 import type { LivenessPhase } from '../../liveness/types';
 import { StyleAbsFill } from './constants';
@@ -60,7 +60,7 @@ export function LivenessWindow({
       >
         {loading ? (
           <View style={[StyleAbsFill, { backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' }]}>
-            <MyazaPulseLoader size={64} />
+            <UiPulseLoader size={64} />
           </View>
         ) : null}
 

@@ -1,4 +1,4 @@
-import type { KYCStep } from '../../types/config';
+import type { VerificationStep } from '../../types/config';
 import { defaultText } from '../../i18n/translate';
 import type { TextFn } from '../../i18n/types';
 
@@ -12,7 +12,7 @@ import type { TextFn } from '../../i18n/types';
 // ---------------------------------------------------------------------------
 
 export function addressStepMeta(
-  step: KYCStep,
+  step: VerificationStep,
   isBusiness: boolean,
   /** The entrance step is framing street imagery, which describes THAT, not a camera. */
   opts: { framing?: boolean } = {},

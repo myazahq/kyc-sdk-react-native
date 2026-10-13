@@ -1,4 +1,4 @@
-import { useKyc, useKycConfig } from './runtime';
+import { useFlowState, useVerificationConfig } from './runtime';
 
 // Resolves the org logo + company name shown in the persistent header brand.
 // Mirrors the web SDK's `useBranding` and the Flutter logo-resolution logic:
@@ -12,8 +12,8 @@ export interface ResolvedBranding {
 }
 
 export function useBranding(): ResolvedBranding {
-  const config = useKycConfig();
-  const branding = useKyc((s) => s.serverConfig.branding);
+  const config = useVerificationConfig();
+  const branding = useFlowState((s) => s.serverConfig.branding);
 
   const appearanceLogo = config.appearance?.logo;
   const logoUri =
@@ -21,7 +21,7 @@ export function useBranding(): ResolvedBranding {
       ? branding?.logo ?? null
       : appearanceLogo ?? null;
 
-  const companyName = config.appearance?.companyName ?? branding?.companyName ?? 'Myaza';
+  const companyName = config.appearance?.companyName ?? branding?.companyName ?? 'Toden';
 
   return { logoUri, companyName };
 }

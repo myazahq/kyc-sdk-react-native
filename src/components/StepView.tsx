@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { View } from 'react-native';
 
-import { useKycStore } from './runtime';
-import type { KYCStep } from '../types/config';
+import { useVerificationStore } from './runtime';
+import type { VerificationStep } from '../types/config';
 import { ConsentStep } from '../screens/ConsentStep';
 import { IdTypeStep } from '../screens/IdTypeStep';
 import { IdInputStep } from '../screens/IdInputStep';
@@ -31,13 +31,13 @@ import { useMultiIdPlan } from '../lib/use-multi-id-plan';
 // ---------------------------------------------------------------------------
 // The step router — which screen a step renders.
 //
-// Split from KycFlow.tsx (200-line rule) so adding a step touches the router
+// Split from VerificationFlow.tsx (200-line rule) so adding a step touches the router
 // and the step order, and nothing else.
 // ---------------------------------------------------------------------------
 
 /** The steps a multi-ID run walks once PER ID — the ones whose screen is about
  *  one particular check and therefore needs the position strip above it. */
-const MULTI_ID_STEPS: readonly KYCStep[] = [
+const MULTI_ID_STEPS: readonly VerificationStep[] = [
   'id-type',
   'id-input',
   'document-capture',
@@ -46,7 +46,7 @@ const MULTI_ID_STEPS: readonly KYCStep[] = [
 ];
 
 /** Wraps a step's screen with the multi-ID position strip when a run is active. */
-export function StepView({ step, onClose }: { step: KYCStep; onClose: () => void }): React.ReactElement {
+export function StepView({ step, onClose }: { step: VerificationStep; onClose: () => void }): React.ReactElement {
   const plan = useMultiIdPlan();
   if (plan && MULTI_ID_STEPS.includes(step)) {
     return (
@@ -59,7 +59,7 @@ export function StepView({ step, onClose }: { step: KYCStep; onClose: () => void
   return stepScreen(step, onClose);
 }
 
-function stepScreen(step: KYCStep, onClose: () => void): React.ReactElement {
+function stepScreen(step: VerificationStep, onClose: () => void): React.ReactElement {
   switch (step) {
     case 'consent':
       return <ConsentStep />;
@@ -127,8 +127,8 @@ function stepScreen(step: KYCStep, onClose: () => void): React.ReactElement {
  * it off would do, and is recoverable. Logged so it surfaces in development
  * instead of only as a step that mysteriously never appears.
  */
-function UnimplementedStep({ step }: { step: KYCStep }): React.ReactElement {
-  const store = useKycStore();
+function UnimplementedStep({ step }: { step: VerificationStep }): React.ReactElement {
+  const store = useVerificationStore();
   useEffect(() => {
     console.warn(`[myaza-kyc] No screen for step "${step}" — skipping.`);
     store.getState().nextStep();

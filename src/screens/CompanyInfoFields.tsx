@@ -3,10 +3,10 @@ import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
+import { UiText } from '../components/Typography';
 import { useText } from '../i18n/useText';
-import { MyazaInput } from '../components/MyazaInput';
-import { MyazaDateField } from '../components/MyazaDateField';
+import { UiInput } from '../components/UiInput';
+import { UiDateField } from '../components/UiDateField';
 import { PhoneNumberInput } from '../components/PhoneNumberInput';
 import { isValidContactEmail } from '../config/contact';
 import { isValidWebsite } from '../config/website';
@@ -65,10 +65,10 @@ export function CompanyInfoFields({
 
   return (
     <View>
-      <MyazaText variant="label">{t('business.companyInfo.title')}</MyazaText>
-      <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 2 }}>
+      <UiText variant="label">{t('business.companyInfo.title')}</UiText>
+      <UiText variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 2 }}>
         {t('business.companyInfo.description')}
-      </MyazaText>
+      </UiText>
       {visible.map((f) => {
         const required = modes[f.key] === 'required';
         const value = values[f.key];
@@ -81,10 +81,10 @@ export function CompanyInfoFields({
         return (
           <View key={f.key} style={{ marginTop: spacing.md }}>
             {f.kind === 'phone' || f.kind === 'date' ? (
-              <MyazaText variant="label" style={{ marginBottom: spacing.sm }}>
+              <UiText variant="label" style={{ marginBottom: spacing.sm }}>
                 {f.label}
                 {required ? ' *' : ' (optional)'}
-              </MyazaText>
+              </UiText>
             ) : null}
             {f.kind === 'phone' ? (
               // The same control the phone-verification step uses: dial-code
@@ -101,13 +101,13 @@ export function CompanyInfoFields({
             ) : f.kind === 'date' ? (
               // A date gets the picker, not a text box — same control the
               // questionnaire uses; emits strict YYYY-MM-DD.
-              <MyazaDateField
+              <UiDateField
                 value={value || undefined}
                 placeholder={f.placeholder}
                 onChange={(iso) => onChange(f.key, iso)}
               />
             ) : (
-              <MyazaInput
+              <UiInput
                 label={`${f.label}${required ? ' *' : ' (optional)'}`}
                 value={value}
                 onChangeText={(text) => onChange(f.key, text)}

@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 
 import { DashedBorder } from '../components/DashedBorder';
 import { Icon } from '../components/Icon';
-import { MyazaText } from '../components/Typography';
+import { UiText } from '../components/Typography';
 import { useTheme } from '../components/runtime';
 import { radius, spacing } from '../config/theme';
 import { KEY_PERSON_ROLE_LABELS, type KeyPersonEntry } from '../config/keyPeople';
@@ -50,10 +50,10 @@ export function KeyPeopleSection({
   const { colors } = useTheme();
   return (
     <View>
-      <MyazaText variant="heading3">{title}</MyazaText>
-      <MyazaText variant="bodyMedium" color={colors.textSecondary} style={{ marginTop: 2 }}>
+      <UiText variant="heading3">{title}</UiText>
+      <UiText variant="bodyMedium" color={colors.textSecondary} style={{ marginTop: 2 }}>
         {description}
-      </MyazaText>
+      </UiText>
 
       {members.length > 0 ? (
         <View style={{ marginTop: spacing.sm + 4 }}>
@@ -74,13 +74,13 @@ export function KeyPeopleSection({
 
       {quickAdd.length > 0 && canAdd ? (
         <View style={{ marginTop: spacing.sm + 4 }}>
-          <MyazaText
+          <UiText
             variant="bodySmall"
             color={colors.textSecondary}
             style={{ textTransform: 'uppercase', letterSpacing: 0.6, fontWeight: '600' }}
           >
             Quick add from people you already entered
-          </MyazaText>
+          </UiText>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: spacing.sm }}>
             {quickAdd.map((index) => {
               const row = rows[index]!;
@@ -106,14 +106,14 @@ export function KeyPeopleSection({
                     size={16}
                     color={colors.textSecondary}
                   />
-                  <MyazaText
+                  <UiText
                     variant="bodyMedium"
                     color={colors.textDark}
                     numberOfLines={1}
                     style={{ fontWeight: '500', maxWidth: 160 }}
                   >
                     {row.name.trim()}
-                  </MyazaText>
+                  </UiText>
                   <View
                     style={{
                       width: 20,
@@ -150,9 +150,9 @@ export function KeyPeopleSection({
           {/* The same tight dashed language as the document slots. */}
           <DashedBorder color={colors.border} radius={radius.sm} />
           <Icon name="plus" size={16} color={colors.primary} />
-          <MyazaText variant="bodyMedium" color={colors.primary} style={{ fontWeight: '600' }}>
+          <UiText variant="bodyMedium" color={colors.primary} style={{ fontWeight: '600' }}>
             {addLabel}
-          </MyazaText>
+          </UiText>
         </Pressable>
       ) : null}
 

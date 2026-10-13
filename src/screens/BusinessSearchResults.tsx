@@ -3,8 +3,8 @@ import { Pressable, ScrollView, View } from 'react-native';
 
 import { CountryFlag } from '../components/CountryFlag';
 import { Icon } from '../components/Icon';
-import { MyazaInput } from '../components/MyazaInput';
-import { MyazaText } from '../components/Typography';
+import { UiInput } from '../components/UiInput';
+import { UiText } from '../components/Typography';
 import { useTheme } from '../components/runtime';
 import { radius } from '../config/theme';
 import type { BusinessSearchHit } from '../services/api';
@@ -46,17 +46,17 @@ export function BusinessSearchResults({
           marginTop: 12,
         }}
       >
-        <MyazaText variant="bodyMedium" color={colors.textSecondary}>
+        <UiText variant="bodyMedium" color={colors.textSecondary}>
           {shown.length === hits.length
             ? `${hits.length} results`
             : `${shown.length} of ${hits.length} results`}
-        </MyazaText>
+        </UiText>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <MyazaText variant="bodyMedium" color={colors.textSecondary}>
+          <UiText variant="bodyMedium" color={colors.textSecondary}>
             Filter
-          </MyazaText>
+          </UiText>
           <View style={{ width: 176 }}>
-            <MyazaInput
+            <UiInput
               value={filter}
               onChangeText={onFilter}
               placeholder="Name or number"
@@ -87,28 +87,28 @@ export function BusinessSearchResults({
           >
             <Icon name="building-2" size={16} color={colors.textSecondary} />
             <View style={{ flex: 1, minWidth: 0 }}>
-              <MyazaText variant="label" color={colors.textDark} numberOfLines={1}>
+              <UiText variant="label" color={colors.textDark} numberOfLines={1}>
                 {hit.name}
-              </MyazaText>
+              </UiText>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
                 <CountryFlag country={country} size={14} />
-                <MyazaText variant="bodySmall" color={colors.textSecondary}>
+                <UiText variant="bodySmall" color={colors.textSecondary}>
                   {hit.registrationNumber}
-                </MyazaText>
+                </UiText>
               </View>
             </View>
           </Pressable>
         ))}
       </ScrollView>
       {shown.length === 0 && (
-        <MyazaText variant="bodyMedium" color={colors.textSecondary} style={{ marginTop: 12 }}>
+        <UiText variant="bodyMedium" color={colors.textSecondary} style={{ marginTop: 12 }}>
           Nothing here matches "{filter.trim()}". Clear the filter to see all {hits.length}.
-        </MyazaText>
+        </UiText>
       )}
       {truncated && (
-        <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 6 }}>
+        <UiText variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 6 }}>
           Showing the first {hits.length}. Add more of the name to narrow it down.
-        </MyazaText>
+        </UiText>
       )}
     </>
   );

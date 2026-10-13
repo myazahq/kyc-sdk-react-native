@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 
-import { useKycConfig } from '../../components/runtime';
+import { useVerificationConfig } from '../../components/runtime';
 import { useText } from '../../i18n/useText';
 import { configScope } from '../../lib/scope';
 import { describeWaiting } from '../../lib/result-copy';
@@ -34,7 +34,7 @@ export function useSelfieAutoAdvance(opts: { enabled: boolean; ready: boolean; o
 }
 
 export function LivenessHandover(): React.ReactElement {
-  const config = useKycConfig();
+  const config = useVerificationConfig();
   const t = useText();
   const copy = describeWaiting(
     {

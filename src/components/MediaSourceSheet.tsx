@@ -4,7 +4,7 @@ import { Platform, Pressable, View } from 'react-native';
 import { radius, spacing } from '../config/theme';
 import { Icon, type IconName } from './Icon';
 import { useTheme } from './runtime';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 import { FloatingSheet } from './glass/FloatingSheet';
 
 /**
@@ -72,9 +72,9 @@ export function MediaSourceSheet({
       }}
     >
       <View style={{ padding: spacing.md, paddingTop: spacing.sm }}>
-          <MyazaText variant="heading3" style={{ textAlign: 'center', marginBottom: spacing.md }}>
+          <UiText variant="heading3" style={{ textAlign: 'center', marginBottom: spacing.md }}>
             {title}
-          </MyazaText>
+          </UiText>
 
           {options.map((o, i) => (
             <Pressable
@@ -108,10 +108,10 @@ export function MediaSourceSheet({
                 <Icon name={o.icon} size={20} color={colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <MyazaText variant="label">{o.label}</MyazaText>
-                <MyazaText variant="bodySmall" color={colors.textMuted}>
+                <UiText variant="label">{o.label}</UiText>
+                <UiText variant="bodySmall" color={colors.textMuted}>
                   {o.caption}
-                </MyazaText>
+                </UiText>
               </View>
               <Icon name="chevron-right" size={18} color={colors.textMuted} />
             </Pressable>
@@ -123,9 +123,9 @@ export function MediaSourceSheet({
             accessibilityLabel="Cancel"
             style={{ paddingVertical: spacing.md, alignItems: 'center', marginTop: spacing.xs }}
           >
-            <MyazaText variant="label" color={colors.textSecondary}>
+            <UiText variant="label" color={colors.textSecondary}>
               Cancel
-            </MyazaText>
+            </UiText>
           </Pressable>
       </View>
     </FloatingSheet>

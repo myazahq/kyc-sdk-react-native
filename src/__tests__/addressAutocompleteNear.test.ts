@@ -1,4 +1,4 @@
-import { createKYCApi } from '../services/api';
+import { createVerificationApi } from '../services/api';
 
 // ─── Autocomplete ranks like a ride-hailing app ──────────────────────────────
 //
@@ -25,12 +25,12 @@ describe('addressAutocomplete', () => {
     (globalThis as { fetch?: unknown }).fetch = realFetch;
   });
 
-  const api = createKYCApi('https://api.example', 'pk_test_x');
+  const api = createVerificationApi('https://api.example', 'pk_test_x');
 
   it('sends the fix as lat/lng beside the query, session and country', async () => {
     await api.addressAutocomplete('awolowo', 'sess-1', 'NG', { lat: 4.9757, lng: 8.3417 });
     const url = new URL(urls[0]!);
-    expect(url.pathname).toBe('/api/kyc/address/autocomplete');
+    expect(url.pathname).toBe('/api/v1/address/autocomplete');
     expect(url.searchParams.get('q')).toBe('awolowo');
     expect(url.searchParams.get('session')).toBe('sess-1');
     expect(url.searchParams.get('country')).toBe('NG');

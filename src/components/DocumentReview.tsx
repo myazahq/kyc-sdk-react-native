@@ -3,7 +3,7 @@ import { View } from 'react-native';
 
 import { useTheme } from './runtime';
 import { Icon } from './Icon';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 import { DocumentReviewThumb, type ReviewSide } from './DocumentReviewSide';
 import { DocumentReviewZoom } from './DocumentReviewZoom';
 import { documentReviewCopy, type DocumentCaptureMode } from './documentReviewCopy';
@@ -94,9 +94,9 @@ export function DocumentReview({
           <Icon name="check" size={13} color={colors.success} />
         </View>
         <View style={{ width: spacing.xs }} />
-        <MyazaText variant="bodySmall" style={{ fontWeight: '600' }}>
+        <UiText variant="bodySmall" style={{ fontWeight: '600' }}>
           {copy.status}
-        </MyazaText>
+        </UiText>
       </View>
 
       <View style={{ height: spacing.md }} />
@@ -126,9 +126,9 @@ export function DocumentReview({
       </View>
 
       <View style={{ height: spacing.xs }} />
-      <MyazaText variant="bodySmall" color={colors.textMuted} style={{ textAlign: 'center' }}>
+      <UiText variant="bodySmall" color={colors.textMuted} style={{ textAlign: 'center' }}>
         {t('uploadDocument.review.tapToEnlarge')}
-      </MyazaText>
+      </UiText>
 
       {/* Pushes the action bar to the bottom of the viewport so Continue can
           never end up below the fold. */}

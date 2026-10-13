@@ -1,4 +1,4 @@
-import { myazaProviderName, needsMyazaDisclosure } from '../../lib/trust-attribution';
+import { myazaProviderName, needsProcessorDisclosure } from '../../lib/trust-attribution';
 
 // ---------------------------------------------------------------------------
 // The consent notice above Continue, as one paragraph of text and link parts.
@@ -21,7 +21,7 @@ export type LegalPart = { kind: 'text'; text: string } | { kind: 'terms' } | { k
 const SENTENCE = {
   myaza: 'By tapping Continue, you agree to the {terms} and {privacy}, and consent to your {data} being processed to verify your identity.',
   custom:
-    'By tapping Continue, you agree to Myaza Trust’s {terms} and {privacy}, and consent to your {data} being processed to verify your identity.',
+    'By tapping Continue, you agree to Toden’s {terms} and {privacy}, and consent to your {data} being processed to verify your identity.',
 };
 
 export interface LegalNoticeInput {
@@ -37,15 +37,15 @@ export interface LegalNoticeInput {
 }
 
 export function consentLegalNotice(input: LegalNoticeInput): LegalPart[] {
-  const namesMyaza = needsMyazaDisclosure(input.attribution);
+  const namesMyaza = needsProcessorDisclosure(input.attribution);
   const org = namesMyaza
     ? myazaProviderName(input.attribution, input.workflowCompanyName, input.brandingCompanyName)
     : '';
   const lead = !namesMyaza
     ? ''
     : org
-      ? `Verification is processed by Myaza Trust for ${org}. `
-      : 'Verification is processed by Myaza Trust. ';
+      ? `Verification is processed by Toden for ${org}. `
+      : 'Verification is processed by Toden. ';
   const data = input.isBusiness ? 'business and personal data' : 'personal data';
   const extra = input.capturesFace
     ? ' This includes facial recognition and recording this session.'

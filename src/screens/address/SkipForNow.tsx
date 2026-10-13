@@ -3,7 +3,7 @@ import { Pressable } from 'react-native';
 
 import { spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 import { useText } from '../../i18n/useText';
 
 /**
@@ -33,13 +33,13 @@ export function SkipForNow({
       accessibilityLabel={t('address.skip')}
       style={{ alignItems: 'center', marginTop: spacing.md, paddingVertical: spacing.sm }}
     >
-      <MyazaText
+      <UiText
         variant="bodyMedium"
         color={colors.textSecondary}
         style={{ textDecorationLine: 'underline' }}
       >
         {t('address.skip')}
-      </MyazaText>
+      </UiText>
     </Pressable>
   );
 }

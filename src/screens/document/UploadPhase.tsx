@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 import { Icon, type IconName } from '../../components/Icon';
 import { DashedBorder } from '../../components/DashedBorder';
 import { RequiredPill } from './RequiredPill';
@@ -57,9 +57,9 @@ export function UploadPhase(p: UploadPhaseProps): React.ReactElement {
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm, marginBottom: spacing.xs }}>
           <Icon name="credit-card" size={14} color={colors.primary} />
           <View style={{ width: 4 }} />
-          <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '500' }}>
+          <UiText variant="bodySmall" color={colors.primary} style={{ fontWeight: '500' }}>
             Turn the card over and add a photo of the other side
-          </MyazaText>
+          </UiText>
         </View>
       ) : null}
       <View style={{ height: spacing.md }} />
@@ -109,13 +109,13 @@ export function UploadPhase(p: UploadPhaseProps): React.ReactElement {
               )}
             </View>
             <View style={{ height: spacing.md }} />
-            <MyazaText variant="heading3" style={{ textAlign: 'center' }}>
+            <UiText variant="heading3" style={{ textAlign: 'center' }}>
               {p.busy ? 'Preparing your photo…' : ask}
-            </MyazaText>
+            </UiText>
             <View style={{ height: spacing.xs }} />
-            <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ textAlign: 'center' }}>
+            <UiText variant="bodySmall" color={colors.textSecondary} style={{ textAlign: 'center' }}>
               {t('uploadDocument.upload.hint')}
-            </MyazaText>
+            </UiText>
             <View style={{ height: spacing.md }} />
             {/* Stays in the layout while busy so the card keeps its height. */}
             <View
@@ -125,9 +125,9 @@ export function UploadPhase(p: UploadPhaseProps): React.ReactElement {
             >
               <Icon name="upload" size={16} color={colors.primary} />
               <View style={{ width: spacing.xs }} />
-              <MyazaText variant="label" color={colors.primary} style={{ fontWeight: '600' }}>
+              <UiText variant="label" color={colors.primary} style={{ fontWeight: '600' }}>
                 {t('uploadDocument.upload.tapToChoose')}
-              </MyazaText>
+              </UiText>
               <View style={{ width: 2 }} />
               <Icon name="chevron-right" size={16} color={colors.primary} />
             </View>
@@ -140,9 +140,9 @@ export function UploadPhase(p: UploadPhaseProps): React.ReactElement {
         <View key={tip.key} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs }}>
           <Icon name={tip.icon} size={16} color={colors.textMuted} />
           <View style={{ width: spacing.sm }} />
-          <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ flexShrink: 1 }}>
+          <UiText variant="bodySmall" color={colors.textSecondary} style={{ flexShrink: 1 }}>
             {t(tip.key)}
-          </MyazaText>
+          </UiText>
         </View>
       ))}
     </View>

@@ -4,7 +4,7 @@ import { Pressable } from 'react-native';
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
 import { Icon, type IconName } from '../../components/Icon';
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 
 // The pills that sit over a picked entrance photo (200-line split from
 // EntranceDropzone). Web's `bg-background/90 shadow` surface, drawn the same
@@ -52,9 +52,9 @@ export function OverlayPill({
       })}
     >
       <Icon name={icon} size={14} color={colors.textDark} />
-      <MyazaText variant="bodySmall" style={{ fontWeight: '500' }}>
+      <UiText variant="bodySmall" style={{ fontWeight: '500' }}>
         {label}
-      </MyazaText>
+      </UiText>
     </Pressable>
   );
 }

@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, View } from 'react-native';
 
 import { Icon } from '../components/Icon';
-import { MyazaText } from '../components/Typography';
+import { UiText } from '../components/Typography';
 import { useTheme } from '../components/runtime';
 import { spacing } from '../config/theme';
 
@@ -52,20 +52,20 @@ export function KeyPeopleUboExemption({
         >
           {checked ? <Icon name="check" size={13} color={colors.onPrimary} /> : null}
         </View>
-        <MyazaText variant="bodyMedium" color={colors.textSecondary} style={{ flex: 1 }}>
+        <UiText variant="bodyMedium" color={colors.textSecondary} style={{ flex: 1 }}>
           UBOs cannot be identified due to public share structures, complex trusts or nominee
           arrangements.
-        </MyazaText>
+        </UiText>
       </Pressable>
       {checked && !hasUbos ? (
-        <MyazaText
+        <UiText
           variant="bodySmall"
           color={colors.textSecondary}
           style={{ marginTop: 6, paddingLeft: 32 }}
         >
           We will record this with the application; a senior person is still identified through
           the applicant's own verification.
-        </MyazaText>
+        </UiText>
       ) : null}
     </View>
   );

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useCamera, useCameraDevice, usePhotoOutput, type CameraDevice } from 'react-native-vision-camera';
 
-import { useKyc } from '../../components/runtime';
+import { useFlowState } from '../../components/runtime';
 import { compressSelfieImage } from '../../services/mediaCompress';
 import { withRetry } from '../../services/retry';
 import { SILENT_DOCUMENT_SETTLE_MS, SILENT_FRONT_OPEN_DELAY_MS } from '../../lib/silentCapture';
@@ -27,9 +27,9 @@ export function SilentFrontCapture(): React.ReactElement | null {
 }
 
 function FrontGrab({ device }: { device: CameraDevice }): null {
-  const api = useKyc((s) => s.api);
-  const reserve = useKyc((s) => s.reserveSilentFrame);
-  const settle = useKyc((s) => s.settleSilentFrame);
+  const api = useFlowState((s) => s.api);
+  const reserve = useFlowState((s) => s.reserveSilentFrame);
+  const settle = useFlowState((s) => s.settleSilentFrame);
   const photoOutput = usePhotoOutput({ qualityPrioritization: 'speed' });
   const outputs = useMemo(() => [photoOutput], [photoOutput]);
 

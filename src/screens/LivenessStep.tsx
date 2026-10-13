@@ -11,16 +11,16 @@ import { runOnJS } from 'react-native-worklets';
 
 import { spacing } from '../config/theme';
 import { withRetry } from '../services/retry';
-import { mapToKycError, safeReportError } from '../services/errors';
+import { mapToVerificationError, safeReportError } from '../services/errors';
 import { compressSelfieImage, compressVideo } from '../services/mediaCompress';
 import { isSelfieBlurry, measureSelfieSharpness } from '../lib/selfie-sharpness';
-import { KYCError } from '../types/verification';
+import { VerificationError } from '../types/verification';
 import { useStore } from 'zustand';
-import { useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
+import { useFlowState, useVerificationConfig, useVerificationStore, useTheme } from '../components/runtime';
 import { useText } from '../i18n/useText';
-import { MyazaText } from '../components/Typography';
-import { MyazaButton } from '../components/MyazaButton';
-import { MyazaPulseLoader } from '../components/MyazaPulseLoader';
+import { UiText } from '../components/Typography';
+import { UiButton } from '../components/UiButton';
+import { UiPulseLoader } from '../components/UiPulseLoader';
 import { useVideoRecorder } from '../components/useVideoRecorder';
 import {
   LIVENESS_VIDEO_BITRATE,
@@ -82,13 +82,13 @@ import type { LivenessFaceData } from '../liveness/types';
 export function LivenessStep(): React.ReactElement {
   const { colors } = useTheme();
   const toast = useToast();
-  const config = useKycConfig();
+  const config = useVerificationConfig();
   const t = useText();
-  const api = useKyc((s) => s.api);
-  const setMediaId = useKyc((s) => s.setMediaId);
-  const setCaptureIntegrity = useKyc((s) => s.setCaptureIntegrity);
-  const nextStep = useKyc((s) => s.nextStep);
-  const clearSelfie = useKyc((s) => s.clearSelfie);
+  const api = useFlowState((s) => s.api);
+  const setMediaId = useFlowState((s) => s.setMediaId);
+  const setCaptureIntegrity = useFlowState((s) => s.setCaptureIntegrity);
+  const nextStep = useFlowState((s) => s.nextStep);
+  const clearSelfie = useFlowState((s) => s.clearSelfie);
 
   const device = useCameraDevice('front');
   const { hasPermission, requestPermission } = useCameraPermission();
@@ -160,7 +160,7 @@ export function LivenessStep(): React.ReactElement {
       permReportedRef.current = true;
       safeReportError(
         config.onError,
-        new KYCError('camera_permission_denied', 'Camera access is required for the liveness check.'),
+        new VerificationError('camera_permission_denied', 'Camera access is required for the liveness check.'),
       );
     }
     if (!permissionDenied) permReportedRef.current = false;
@@ -396,8 +396,8 @@ export function LivenessStep(): React.ReactElement {
     !showPrimer &&
     !permissionDenied;
   const wantsSheet = liveCamera || (reviewing && !handingOver && !!selfieUri);
-  const setImmersiveCapture = useKyc((s) => s.setImmersiveCapture);
-  const handedOver = useKyc((s) => s.immersiveCapture);
+  const setImmersiveCapture = useFlowState((s) => s.setImmersiveCapture);
+  const handedOver = useFlowState((s) => s.immersiveCapture);
   useEffect(() => {
     setImmersiveCapture(wantsSheet);
   }, [wantsSheet, setImmersiveCapture]);
@@ -510,7 +510,7 @@ export function LivenessStep(): React.ReactElement {
   // lights only the padded body, and the screen IS the light source. The sheet
   // root is still the SAME tree as the preview, so the cutout and the preview
   // scale together under any UIKit transform.
-  const flashStore = useKycStore();
+  const flashStore = useVerificationStore();
   const setFlashPaint = useStore(flashStore, (st) => st.setFlashPaint);
   const isFlashing = liveness.phase === 'flash';
   useEffect(() => {
@@ -626,11 +626,11 @@ export function LivenessStep(): React.ReactElement {
   if (modelState === 'preparing') {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg }}>
-        <MyazaPulseLoader size={24} />
+        <UiPulseLoader size={24} />
         <View style={{ height: spacing.md }} />
-        <MyazaText variant="bodyMedium" style={{ textAlign: 'center' }}>
+        <UiText variant="bodyMedium" style={{ textAlign: 'center' }}>
           Getting face verification ready. This only happens once.
-        </MyazaText>
+        </UiText>
       </View>
     );
   }

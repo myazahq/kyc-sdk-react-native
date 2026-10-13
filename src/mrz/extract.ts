@@ -115,7 +115,7 @@ export function extractMrz(recognizedLines: string[], now: Date = new Date()): M
 // line as two text lines (seen on the Flutter SDK, 2026-09-15: a passport's
 // two-line band came back as three lines). Joining runs of adjacent pieces back
 // to line width recovers it; a wrong join is harmless, as above. Mirrored in
-// kyc-sdk-flutter's mrz_extract.dart.
+// sdk-flutter's mrz_extract.dart.
 // ---------------------------------------------------------------------------
 
 /** The longest run of pieces one printed line is ever split into. */

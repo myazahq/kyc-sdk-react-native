@@ -4,7 +4,7 @@ import { Pressable, View } from 'react-native';
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
 import { Icon } from '../../components/Icon';
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 import { useText } from '../../i18n/useText';
 import { Spinner } from '../../components/Spinner';
 
@@ -66,12 +66,12 @@ export function CurrentLocationRow({
         )}
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <MyazaText variant="bodyMedium" style={{ fontWeight: '600' }}>
+        <UiText variant="bodyMedium" style={{ fontWeight: '600' }}>
           {t('address.currentLocation.title')}
-        </MyazaText>
-        <MyazaText variant="bodySmall" color={colors.textSecondary} numberOfLines={1}>
+        </UiText>
+        <UiText variant="bodySmall" color={colors.textSecondary} numberOfLines={1}>
           {hint ?? (locating ? 'Finding your location…' : t('address.currentLocation.hint'))}
-        </MyazaText>
+        </UiText>
       </View>
       <Icon name="chevron-right" size={16} color={colors.textSecondary} />
     </Pressable>
@@ -130,9 +130,9 @@ export function LocateChip({
         ) : (
           <Icon name="locate" size={16} color={colors.primary} />
         )}
-        <MyazaText variant="bodySmall" style={{ fontWeight: '600' }}>
+        <UiText variant="bodySmall" style={{ fontWeight: '600' }}>
           {locating ? 'Finding you…' : t('address.locate.button')}
-        </MyazaText>
+        </UiText>
       </Pressable>
     </View>
   );

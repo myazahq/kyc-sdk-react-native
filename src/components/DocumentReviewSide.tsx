@@ -3,7 +3,7 @@ import { Image, Pressable, View, type ViewStyle } from 'react-native';
 
 import { useTheme } from './runtime';
 import { Icon } from './Icon';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 import { radius, spacing } from '../config/theme';
 import { CHROME_SCRIM, ChromeGlass } from './glass/ChromeGlass';
 import type { DocumentReviewCopy } from './documentReviewCopy';
@@ -67,9 +67,9 @@ export function DocumentReviewThumb({
             clipped. */}
         <View style={{ position: 'absolute', left: spacing.md, top: spacing.md }}>
           <Chip>
-            <MyazaText variant="bodySmall" color="#FFFFFF" style={CHIP_TEXT}>
+            <UiText variant="bodySmall" color="#FFFFFF" style={CHIP_TEXT}>
               {side.label}
-            </MyazaText>
+            </UiText>
           </Chip>
         </View>
         {/* Enlarging is a tap on the image, which nothing announces — so the
@@ -106,9 +106,9 @@ export function DocumentReviewThumb({
         }}>
         <Icon name="refresh" size={14} color={colors.primary} />
         <View style={{ width: 6 }} />
-        <MyazaText variant="bodySmall" color={colors.primary} style={{ flexShrink: 1 }}>
+        <UiText variant="bodySmall" color={colors.primary} style={{ flexShrink: 1 }}>
           {copy.redo}
-        </MyazaText>
+        </UiText>
       </Pressable>
     </View>
   );

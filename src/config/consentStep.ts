@@ -1,4 +1,4 @@
-import type { KYCStep } from '../types/config';
+import type { VerificationStep } from '../types/config';
 
 // ─── The consent screen switch (`consentStep`) ──────────────────────────────
 //
@@ -14,6 +14,6 @@ export function hasConsentStep(config: { consentStep?: boolean | null }): boolea
 
 /** The step a built order opens on; 'consent' for an empty order, which no
  *  flow produces. */
-export function openingStepOf(order: readonly KYCStep[]): KYCStep {
+export function openingStepOf(order: readonly VerificationStep[]): VerificationStep {
   return order[0] ?? 'consent';
 }

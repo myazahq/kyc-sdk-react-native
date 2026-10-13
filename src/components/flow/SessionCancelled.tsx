@@ -3,14 +3,14 @@ import { View } from 'react-native';
 
 import { spacing } from '../../config/theme';
 import { useTheme } from '../runtime';
-import { MyazaText } from '../Typography';
-import { MyazaButton } from '../MyazaButton';
+import { UiText } from '../Typography';
+import { UiButton } from '../UiButton';
 import { Icon } from '../Icon';
-import { KycSheet } from '../KycSheet';
+import { VerificationSheet } from '../VerificationSheet';
 import { Badge } from '../../screens/SubmittedBadge';
 import { CANCELLED_TITLE, DEFAULT_CANCELLED_MESSAGE } from '../../lib/session-cancelled';
 import { safeReportError } from '../../services/errors';
-import { KYCError } from '../../types/verification';
+import { VerificationError } from '../../types/verification';
 
 /**
  * Fire `onError` with `session_cancelled` ONCE, the first time the run is
@@ -19,13 +19,13 @@ import { KYCError } from '../../types/verification';
  */
 export function useReportCancellation(
   cancelled: { message: string } | null,
-  onError: ((error: KYCError) => void) | undefined,
+  onError: ((error: VerificationError) => void) | undefined,
 ): void {
   const reportedRef = useRef(false);
   useEffect(() => {
     if (!cancelled || reportedRef.current) return;
     reportedRef.current = true;
-    safeReportError(onError, new KYCError('session_cancelled', cancelled.message));
+    safeReportError(onError, new VerificationError('session_cancelled', cancelled.message));
   }, [cancelled, onError]);
 }
 
@@ -47,7 +47,7 @@ export function SessionCancelled({
 }): React.ReactElement {
   const { colors } = useTheme();
   return (
-    <KycSheet title="" onClose={onClose}>
+    <VerificationSheet title="" onClose={onClose}>
       <View style={{ flex: 1, justifyContent: 'space-between' }}>
         <View style={{ alignItems: 'center' }}>
           <View style={{ height: spacing.xl }} />
@@ -55,22 +55,22 @@ export function SessionCancelled({
             <Icon name="circle-x" size={44} color={colors.error} />
           </Badge>
           <View style={{ height: spacing.lg }} />
-          <MyazaText variant="heading1" style={{ textAlign: 'center' }} accessibilityRole="header">
+          <UiText variant="heading1" style={{ textAlign: 'center' }} accessibilityRole="header">
             {CANCELLED_TITLE}
-          </MyazaText>
+          </UiText>
           <View style={{ height: spacing.sm }} />
-          <MyazaText
+          <UiText
             variant="bodyMedium"
             color={colors.textSecondary}
             style={{ textAlign: 'center', paddingHorizontal: spacing.lg }}
           >
             {message || DEFAULT_CANCELLED_MESSAGE}
-          </MyazaText>
+          </UiText>
         </View>
         <View style={{ paddingTop: spacing.lg }}>
-          <MyazaButton label="Close" onPress={onClose} />
+          <UiButton label="Close" onPress={onClose} />
         </View>
       </View>
-    </KycSheet>
+    </VerificationSheet>
   );
 }

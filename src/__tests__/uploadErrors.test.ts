@@ -1,4 +1,4 @@
-import { KYCApiError } from '../services/api';
+import { VerificationApiError } from '../services/api';
 import { uploadFailureMessage } from '../services/uploadErrors';
 import { UPLOAD_HINT } from '../config/uploadLimits';
 
@@ -11,14 +11,14 @@ import { UPLOAD_HINT } from '../config/uploadLimits';
 
 describe('uploadFailureMessage', () => {
   it('names a size refusal and repeats the limits', () => {
-    const message = uploadFailureMessage(new KYCApiError('File too large (30.2MB > 25MB)', 413, 'file_too_large'));
+    const message = uploadFailureMessage(new VerificationApiError('File too large (30.2MB > 25MB)', 413, 'file_too_large'));
     expect(message).toContain('too large');
     expect(message).toContain(UPLOAD_HINT);
   });
 
   it('names an unsupported format', () => {
     const message = uploadFailureMessage(
-      new KYCApiError('mimeType one of image/jpeg, image/png, image/webp, application/pdf', 400),
+      new VerificationApiError('mimeType one of image/jpeg, image/png, image/webp, application/pdf', 400),
     );
     expect(message).toContain('not supported');
     expect(message).toContain(UPLOAD_HINT);
@@ -26,13 +26,13 @@ describe('uploadFailureMessage', () => {
 
   it('still blames the FILE on a 4xx it has no better words for', () => {
     // The applicant should try a different file rather than the same one twice.
-    expect(uploadFailureMessage(new KYCApiError('file is required', 400))).toContain('could not read');
+    expect(uploadFailureMessage(new VerificationApiError('file is required', 400))).toContain('could not read');
   });
 
   it('blames the CONNECTION on anything else', () => {
     // A 5xx or a thrown network error is not the file's fault, and telling
     // somebody to pick another photo would send them round a pointless loop.
-    const server = uploadFailureMessage(new KYCApiError('upstream unavailable', 502));
+    const server = uploadFailureMessage(new VerificationApiError('upstream unavailable', 502));
     const offline = uploadFailureMessage(new TypeError('Network request failed'));
     for (const message of [server, offline]) {
       expect(message).toContain('connection');

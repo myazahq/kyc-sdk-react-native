@@ -3,7 +3,7 @@ import { View } from 'react-native';
 
 import { spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 import { Icon } from '../../components/Icon';
 import { NFC_STAGE_ORDER, nfcStageLabel, type NfcReadStage } from '../../emrtd';
 import { useText } from '../../i18n/useText';
@@ -46,9 +46,9 @@ export function NfcReadProgress({ stage }: { stage: NfcReadStage }): React.React
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
         <Spinner size="small" color={colors.primary} />
         <View style={{ width: 8 }} />
-        <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '600' }}>
+        <UiText variant="bodySmall" color={colors.primary} style={{ fontWeight: '600' }}>
           {t('nfc.waiting')}
-        </MyazaText>
+        </UiText>
       </View>
     );
   }
@@ -85,13 +85,13 @@ export function NfcReadProgress({ stage }: { stage: NfcReadStage }): React.React
               )}
             </View>
             <View style={{ width: 10 }} />
-            <MyazaText
+            <UiText
               variant="bodySmall"
               color={complete || active ? colors.textDark : colors.textMuted}
               style={{ fontWeight: active ? '600' : '400', flex: 1 }}
             >
               {nfcStageLabel(step)}
-            </MyazaText>
+            </UiText>
           </View>
         );
       })}

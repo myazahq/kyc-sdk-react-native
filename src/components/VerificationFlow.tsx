@@ -4,25 +4,25 @@ import { View } from 'react-native';
 import { radius, spacing } from '../config/theme';
 import { buildStepOrder } from '../config/stepOrder';
 import { isAddressStep } from '../lib/address-flow';
-import { stepOrderOptions } from '../store/kycStore';
-import { KYCError } from '../types/verification';
+import { stepOrderOptions } from '../store/verificationStore';
+import { VerificationError } from '../types/verification';
 import { safeReportError } from '../services/errors';
-import type { KYCStep, SupportedCountry } from '../types/config';
-import { useEffectiveCountry, useKyc, useKycConfig, useKycStore, useTheme } from './runtime';
+import type { VerificationStep, SupportedCountry } from '../types/config';
+import { useEffectiveCountry, useFlowState, useVerificationConfig, useVerificationStore, useTheme } from './runtime';
 import { COUNTRY_SEARCH_THRESHOLD } from '../screens/CountrySelectStep';
-import { KycSheet } from './KycSheet';
+import { VerificationSheet } from './VerificationSheet';
 import { FatalConfigError } from './flow/FatalConfigError';
 import { SessionCancelled, useReportCancellation } from './flow/SessionCancelled';
 import { ToastProvider } from './toast';
-import { MyazaText } from './Typography';
-import { MyazaButton } from './MyazaButton';
+import { UiText } from './Typography';
+import { UiButton } from './UiButton';
 import { Icon } from './Icon';
 import { StepView } from './StepView';
 import { stepHeaderMeta } from './stepHeaderMeta';
 import { useText } from '../i18n/useText';
 import { countrySelectOptions } from '../store/derive';
 
-// The step router — 1:1 with the Flutter SDK's _KycFlowWidget. Computes per-step
+// The step router — 1:1 with the Flutter SDK's _VerificationFlowWidget. Computes per-step
 // header title/description, the 4-step indicator info, back/country, fetches the
 // server config on mount, and gates the flow on fatal auth failures.
 
@@ -34,7 +34,7 @@ import { countrySelectOptions } from '../store/derive';
  */
 export type BackResult = 'navigated' | 'blocked' | 'close';
 
-export function KycFlow({
+export function VerificationFlow({
   onClose,
   backRef,
 }: {
@@ -44,18 +44,18 @@ export function KycFlow({
   backRef?: React.MutableRefObject<(() => BackResult) | null>;
 }): React.ReactElement {
   const { colors } = useTheme();
-  const config = useKycConfig();
+  const config = useVerificationConfig();
   const country = useEffectiveCountry();
-  const store = useKycStore();
-  const currentStep = useKyc((s) => s.currentStep);
-  const selectedIdType = useKyc((s) => s.selectedIdType);
-  const documentCapturePhase = useKyc((s) => s.documentCapturePhase);
-  const contactChallenge = useKyc((s) => s.contactChallenge);
-  const serverConfig = useKyc((s) => s.serverConfig);
-  const immersiveCapture = useKyc((s) => s.immersiveCapture);
-  const addressIntroSeen = useKyc((s) => s.addressIntroSeen);
+  const store = useVerificationStore();
+  const currentStep = useFlowState((s) => s.currentStep);
+  const selectedIdType = useFlowState((s) => s.selectedIdType);
+  const documentCapturePhase = useFlowState((s) => s.documentCapturePhase);
+  const contactChallenge = useFlowState((s) => s.contactChallenge);
+  const serverConfig = useFlowState((s) => s.serverConfig);
+  const immersiveCapture = useFlowState((s) => s.immersiveCapture);
+  const addressIntroSeen = useFlowState((s) => s.addressIntroSeen);
   // Cancelled by the organisation (lib/session-cancelled.ts): terminal.
-  const cancelled = useKyc((s) => s.cancelled);
+  const cancelled = useFlowState((s) => s.cancelled);
   useReportCancellation(cancelled, config.onError);
 
   const startedRef = useRef(false);
@@ -79,7 +79,7 @@ export function KycFlow({
     if (isFatal && !reportedRef.current) {
       reportedRef.current = true;
       const code = serverConfig.statusCode === 401 ? 'invalid_api_key' : 'feature_disabled';
-      safeReportError(config.onError, new KYCError(code, serverConfig.message ?? 'Unable to start verification.'));
+      safeReportError(config.onError, new VerificationError(code, serverConfig.message ?? 'Unable to start verification.'));
     }
   }, [isFatal, serverConfig.statusCode, serverConfig.message, config.onError]);
 
@@ -92,7 +92,7 @@ export function KycFlow({
   // The derivation is memoised rather than done inside the selector: zustand
   // compares snapshots by identity, so a selector that mints a fresh object on
   // every call re-renders forever.
-  const state = useKyc((s) => s);
+  const state = useFlowState((s) => s);
   const order = useMemo(() => buildStepOrder(stepOrderOptions(state)), [state]);
 
   // The presence primer replaces the FIRST address step's body and carries its
@@ -180,7 +180,7 @@ export function KycFlow({
 
   return (
     <ToastProvider>
-      <KycSheet
+      <VerificationSheet
         title={meta.title}
         description={meta.description}
         progress={stepInfo?.progress ?? null}
@@ -213,7 +213,7 @@ export function KycFlow({
         immersiveControls={currentStep === 'liveness'}
       >
         <StepView step={currentStep} onClose={onClose} />
-      </KycSheet>
+      </VerificationSheet>
     </ToastProvider>
   );
 }

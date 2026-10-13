@@ -3,8 +3,8 @@ import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
-import { MyazaInput } from '../components/MyazaInput';
+import { UiText } from '../components/Typography';
+import { UiInput } from '../components/UiInput';
 import { PhoneNumberInput } from '../components/PhoneNumberInput';
 import { useText } from '../i18n/useText';
 
@@ -36,7 +36,7 @@ export function ContactDestinationField({
   const t = useText();
   if (isEmail) {
     return (
-      <MyazaInput
+      <UiInput
         label={t('contact.email.label')}
         value={email}
         onChangeText={onEmailChange}
@@ -52,9 +52,9 @@ export function ContactDestinationField({
 
   return (
     <View>
-      <MyazaText variant="label" style={{ marginBottom: spacing.xs }}>
+      <UiText variant="label" style={{ marginBottom: spacing.xs }}>
         {t('contact.phone.label')}
-      </MyazaText>
+      </UiText>
       <PhoneNumberInput
         defaultCountry={defaultCountry}
         geoCountry={geoCountry}
@@ -70,8 +70,8 @@ export function ContactDestinationField({
 function ErrorLine({ text }: { text: string }): React.ReactElement {
   const { colors } = useTheme();
   return (
-    <MyazaText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.xs }}>
+    <UiText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.xs }}>
       {text}
-    </MyazaText>
+    </UiText>
   );
 }

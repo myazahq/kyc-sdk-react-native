@@ -9,9 +9,9 @@ import {
 } from '../lib/silentCapture';
 import { buildVerifyRequest } from '../store/submit';
 import { buildApplicantVerifyRequest } from '../store/submitApplicant';
-import { createKycStore } from '../store/kycStore';
+import { createVerificationStore } from '../store/verificationStore';
 import { mergeWorkflowConfig } from '../config/workflowMerge';
-import type { ResolvedKYCConfig } from '../types/config';
+import type { ResolvedVerificationConfig } from '../types/config';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -112,12 +112,12 @@ describe('where frames are taken', () => {
 
 describe('on the wire', () => {
   function storeWith(config: Record<string, unknown> = {}) {
-    const store = createKycStore({
+    const store = createVerificationStore({
       apiKey: 'pk_test_x',
       country: 'NG',
       metadata: {},
       ...config,
-    } as unknown as ResolvedKYCConfig);
+    } as unknown as ResolvedVerificationConfig);
     const a = store.getState().reserveSilentFrame('document')!;
     const b = store.getState().reserveSilentFrame('document')!;
     store.getState().settleSilentFrame(a.index, a.capturedAt, null);
@@ -156,7 +156,7 @@ describe('on the wire', () => {
   });
 
   it('nothing is sent when no frame uploaded', () => {
-    const store = createKycStore({ apiKey: 'pk_test_x', country: 'NG', metadata: {} } as unknown as ResolvedKYCConfig);
+    const store = createVerificationStore({ apiKey: 'pk_test_x', country: 'NG', metadata: {} } as unknown as ResolvedVerificationConfig);
     const req = buildVerifyRequest(store.getState(), undefined);
     expect(Object.keys(req.mediaIds).some((k) => k.startsWith('silentCapture'))).toBe(false);
     expect((req.metadata.device as Record<string, unknown>).silentCapture).toBeUndefined();

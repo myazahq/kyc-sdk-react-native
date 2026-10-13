@@ -4,7 +4,7 @@ import { Pressable, View } from 'react-native';
 import { radius } from '../config/theme';
 import { useTheme } from './runtime';
 import { Icon } from './Icon';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 
 // The map's furniture, split from MapPinPicker per the 200-line rule.
 
@@ -59,9 +59,9 @@ export function MapAttribution(): React.ReactElement {
         backgroundColor: colors.background + 'B3',
       }}
     >
-      <MyazaText variant="bodySmall" style={{ fontSize: 10 }} color={colors.textSecondary}>
+      <UiText variant="bodySmall" style={{ fontSize: 10 }} color={colors.textSecondary}>
         © OpenStreetMap contributors
-      </MyazaText>
+      </UiText>
     </View>
   );
 }

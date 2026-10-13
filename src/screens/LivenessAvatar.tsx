@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Image } from 'react-native';
 
-import { useTheme, useKycConfig } from '../components/runtime';
+import { useTheme, useVerificationConfig } from '../components/runtime';
 import { Icon } from '../components/Icon';
 import { livenessAvatarUrl } from '../liveness/avatarSource';
 import type { GestureChallenge } from '../liveness/types';
@@ -34,7 +34,7 @@ export function LivenessAvatar({
 }): React.ReactElement {
   const SIZE = size;
   const { colors } = useTheme();
-  const { apiKey, devUrl } = useKycConfig();
+  const { apiKey, devUrl } = useVerificationConfig();
   const [displayed, setDisplayed] = useState<GestureChallenge>(challenge);
   const [broken, setBroken] = useState(false);
   const anim = useRef(new Animated.Value(1)).current;

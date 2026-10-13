@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from './runtime';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 import { Icon } from './Icon';
 
 // ---------------------------------------------------------------------------
@@ -78,9 +78,9 @@ export function OptionRow({
           <View style={{ width: 10 }} />
         </>
       ) : null}
-      <MyazaText variant="body" style={{ flex: 1 }}>
+      <UiText variant="body" style={{ flex: 1 }}>
         {label}
-      </MyazaText>
+      </UiText>
       {trailing}
     </Pressable>
   );
@@ -139,13 +139,13 @@ export function OptionPill({
         backgroundColor: selected ? `${colors.primary}14` : 'transparent',
       }}
     >
-      <MyazaText
+      <UiText
         variant="bodySmall"
         color={selected ? colors.primary : colors.textMuted}
         style={{ fontWeight: '600' }}
       >
         {label}
-      </MyazaText>
+      </UiText>
     </Pressable>
   );
 }

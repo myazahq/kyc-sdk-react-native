@@ -3,9 +3,9 @@ import { View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { radius, spacing } from '../config/theme';
-import { useKyc, useKycConfig, useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
-import { MyazaButton } from '../components/MyazaButton';
+import { useFlowState, useVerificationConfig, useTheme } from '../components/runtime';
+import { UiText } from '../components/Typography';
+import { UiButton } from '../components/UiButton';
 import { Icon } from '../components/Icon';
 import { buildConsentModel } from './consent/model';
 import { ConsentLegalNotice } from './consent/ConsentLegalNotice';
@@ -23,8 +23,8 @@ import { resubmitNote } from '../lib/resubmit';
 
 export function ConsentStep(): React.ReactElement {
   const { colors } = useTheme();
-  const config = useKycConfig();
-  const nextStep = useKyc((s) => s.nextStep);
+  const config = useVerificationConfig();
+  const nextStep = useFlowState((s) => s.nextStep);
   const t = useText();
 
   const { isBusiness, title, description, steps, capturesFace, recordsVideo } =
@@ -54,12 +54,12 @@ export function ConsentStep(): React.ReactElement {
         >
           <Icon name="refresh" size={16} color={colors.warning} />
           <View style={{ flex: 1, gap: 2 }}>
-            <MyazaText variant="bodyMedium" color={colors.warning}>
+            <UiText variant="bodyMedium" color={colors.warning}>
               A few things to redo
-            </MyazaText>
-            <MyazaText variant="bodySmall" color={colors.textSecondary}>
+            </UiText>
+            <UiText variant="bodySmall" color={colors.textSecondary}>
               {redoNote}
-            </MyazaText>
+            </UiText>
           </View>
         </View>
       ) : null}
@@ -94,20 +94,20 @@ export function ConsentStep(): React.ReactElement {
       </View>
 
       <View style={{ height: spacing.lg }} />
-      <MyazaText variant="heading1" style={{ textAlign: 'center' }}>
+      <UiText variant="heading1" style={{ textAlign: 'center' }}>
         {title}
-      </MyazaText>
+      </UiText>
       <View style={{ height: spacing.sm }} />
-      <MyazaText variant="bodyMedium" style={{ textAlign: 'center' }}>
+      <UiText variant="bodyMedium" style={{ textAlign: 'center' }}>
         {description}
-      </MyazaText>
+      </UiText>
       <View style={{ height: spacing.lg }} />
 
       {/* Process steps card */}
       <View style={{ backgroundColor: colors.backgroundSecondary, borderRadius: radius.lg, padding: spacing.md + 4 }}>
-        <MyazaText variant="bodySmall" color={colors.textMuted} style={{ fontWeight: '600', letterSpacing: 0.5 }}>
+        <UiText variant="bodySmall" color={colors.textMuted} style={{ fontWeight: '600', letterSpacing: 0.5 }}>
           {t('welcome.process.heading')}
-        </MyazaText>
+        </UiText>
         <View style={{ height: spacing.md }} />
         {steps.map((step, i) => (
           <View key={step.label} style={{ flexDirection: 'row', alignItems: 'center', marginTop: i > 0 ? 14 : 0 }}>
@@ -124,9 +124,9 @@ export function ConsentStep(): React.ReactElement {
               <Icon name={step.icon} size={18} color={colors.primary} />
             </View>
             <View style={{ width: spacing.sm + 4 }} />
-            <MyazaText variant="bodyMedium" color={colors.textDark} style={{ flex: 1, fontWeight: '600' }}>
+            <UiText variant="bodyMedium" color={colors.textDark} style={{ flex: 1, fontWeight: '600' }}>
               {step.label}
-            </MyazaText>
+            </UiText>
           </View>
         ))}
       </View>
@@ -137,7 +137,7 @@ export function ConsentStep(): React.ReactElement {
       <ConsentLegalNotice isBusiness={isBusiness} capturesFace={capturesFace} recordsVideo={recordsVideo} />
 
       <View style={{ height: spacing.lg }} />
-      <MyazaButton label={t('common.continue')} onPress={nextStep} />
+      <UiButton label={t('common.continue')} onPress={nextStep} />
       <View style={{ height: spacing.sm }} />
 
       {/* Footer */}
@@ -146,9 +146,9 @@ export function ConsentStep(): React.ReactElement {
         <View style={{ width: 6 }} />
         {/* flexShrink so a wide brand font wraps this instead of clipping it —
             a Text in a row without it overflows rather than wrapping. */}
-        <MyazaText variant="bodySmall" style={{ flexShrink: 1 }}>
+        <UiText variant="bodySmall" style={{ flexShrink: 1 }}>
           {t('welcome.secureNote')}
-        </MyazaText>
+        </UiText>
       </View>
     </View>
   );

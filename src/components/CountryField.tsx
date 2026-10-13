@@ -3,13 +3,13 @@ import { Pressable, View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from './runtime';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 import { CountryFlag } from './CountryFlag';
 import { DialCodePicker, type DialCodeOption } from './DialCodePicker';
 import { Icon } from './Icon';
 
 // ---------------------------------------------------------------------------
-// A country select field: a MyazaSelect-styled collapsed trigger (flag + name
+// A country select field: a UiSelect-styled collapsed trigger (flag + name
 // + chevron) that opens THE country sheet — the phone field's dial-code picker
 // minus the dial codes (keyboard-aware, autofocused search, results pinned
 // above the keys). Used wherever a country is picked from a flat list (the
@@ -65,14 +65,14 @@ export function CountryField({
             <View style={{ width: spacing.sm }} />
           </>
         ) : null}
-        <MyazaText
+        <UiText
           variant="body"
           color={name ? undefined : colors.textMuted}
           style={{ flex: 1 }}
           numberOfLines={1}
         >
           {name ?? placeholder}
-        </MyazaText>
+        </UiText>
         <View style={{ width: spacing.sm }} />
         <Icon name="chevron-down" size={18} color={colors.textSecondary} />
       </Pressable>

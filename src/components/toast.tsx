@@ -4,12 +4,12 @@ import { initialWindowMetrics } from 'react-native-safe-area-context';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from './runtime';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 import { Icon } from './Icon';
 
 // Top toast — the RN SDK surfaces technical errors (upload/network failures) as a
 // toast that slides down from the top of the modal, rather than an inline alert.
-// Mounted once (by KycFlow) so any step can raise one via `useToast()`.
+// Mounted once (by VerificationFlow) so any step can raise one via `useToast()`.
 
 type ToastVariant = 'error' | 'success' | 'warning' | 'info';
 
@@ -137,13 +137,13 @@ function ToastView({
         <Icon name={iconName} size={18} color={accent} />
         <View style={{ flex: 1 }}>
           {title ? (
-            <MyazaText variant="bodySmall" color={accent} style={{ fontWeight: '700' }}>
+            <UiText variant="bodySmall" color={accent} style={{ fontWeight: '700' }}>
               {title}
-            </MyazaText>
+            </UiText>
           ) : null}
-          <MyazaText variant="bodySmall" color={colors.textDark}>
+          <UiText variant="bodySmall" color={colors.textDark}>
             {message}
-          </MyazaText>
+          </UiText>
         </View>
         <Pressable onPress={onDismiss} hitSlop={8} accessibilityRole="button" accessibilityLabel="Dismiss">
           <Icon name="close" size={16} color={colors.textMuted} />

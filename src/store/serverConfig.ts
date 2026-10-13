@@ -1,10 +1,10 @@
 // ---------------------------------------------------------------------------
-// Server-driven config state (GET /api/kyc/config) — mirrors the Flutter SDK's
-// serverConfig handling on KYCState. Holds the org's allowed (country, idType)
+// Server-driven config state (GET /api/v1/config) — mirrors the Flutter SDK's
+// serverConfig handling on VerificationState. Holds the org's allowed (country, idType)
 // list, per-ID feature flags, branding, and an error classification.
 // ---------------------------------------------------------------------------
 
-import { KYCApiError } from '../services/api';
+import { VerificationApiError } from '../services/api';
 import type { SdkConfigBranding, SdkConfigIdType } from '../services/api';
 
 export type ServerConfigStatus = 'loading' | 'ready' | 'error';
@@ -83,7 +83,7 @@ export function featuresFor(
  * `_describeConfigError`.
  */
 export function describeConfigError(err: unknown): Pick<ServerConfigState, 'statusCode' | 'fatal' | 'message'> {
-  if (err instanceof KYCApiError) {
+  if (err instanceof VerificationApiError) {
     if (err.statusCode === 401) {
       return {
         statusCode: 401,

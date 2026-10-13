@@ -4,7 +4,7 @@ import { Image, Pressable, View } from 'react-native';
 import { radius, spacing } from '../config/theme';
 import { UPLOAD_HINT } from '../config/uploadLimits';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
+import { UiText } from '../components/Typography';
 import { Icon } from '../components/Icon';
 import { DashedBorder } from '../components/DashedBorder';
 import { Spinner } from '../components/Spinner';
@@ -122,19 +122,19 @@ export function BusinessDocumentSlot({
         <UploadedThumb previewUri={previewUri} isPdf={isPdf} />
         <View style={{ width: spacing.sm + 4 }} />
         <View style={{ flex: 1, minWidth: 0 }}>
-          <MyazaText variant="label" style={{ fontWeight: '600' }} numberOfLines={1}>
+          <UiText variant="label" style={{ fontWeight: '600' }} numberOfLines={1}>
             {fileName}
-          </MyazaText>
+          </UiText>
           {compact ? null : (
-            <MyazaText variant="bodySmall" color={colors.textMuted}>
+            <UiText variant="bodySmall" color={colors.textMuted}>
               {label}
-            </MyazaText>
+            </UiText>
           )}
         </View>
         <Pressable onPress={onPick} hitSlop={8} accessibilityRole="button">
-          <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '600' }}>
+          <UiText variant="bodySmall" color={colors.primary} style={{ fontWeight: '600' }}>
             Replace
-          </MyazaText>
+          </UiText>
         </Pressable>
         <View style={{ width: spacing.sm + 4 }} />
         <Pressable
@@ -171,26 +171,26 @@ export function BusinessDocumentSlot({
       )}
       <View style={{ width: spacing.sm + 4 }} />
       <View style={{ flex: 1, minWidth: 0 }}>
-        <MyazaText variant="label" style={{ fontWeight: '600' }} numberOfLines={2}>
+        <UiText variant="label" style={{ fontWeight: '600' }} numberOfLines={2}>
           {compact ? `Upload ${label.toLowerCase()}` : label}
           {required && !compact ? (
-            <MyazaText variant="label" color={colors.error} style={{ fontWeight: '600' }}>
+            <UiText variant="label" color={colors.error} style={{ fontWeight: '600' }}>
               {' *'}
-            </MyazaText>
+            </UiText>
           ) : null}
-        </MyazaText>
+        </UiText>
         {description && !uploading && !compact ? (
-          <MyazaText
+          <UiText
             variant="bodySmall"
             color={colors.textDark}
             style={{ marginTop: 2, opacity: 0.75 }}
           >
             {description}
-          </MyazaText>
+          </UiText>
         ) : null}
-        <MyazaText variant="bodySmall" color={colors.textMuted}>
+        <UiText variant="bodySmall" color={colors.textMuted}>
           {uploading ? 'Uploading…' : UPLOAD_HINT}
-        </MyazaText>
+        </UiText>
       </View>
     </Pressable>
   );

@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useColorScheme } from 'react-native';
 
-import { resolveColors, type MyazaColorScheme, type ThemeMode , applyRadiusScale } from '../config/theme';
-import type { KYCAppearance } from '../types/config';
-import { useMyazaFonts } from './fonts';
+import { resolveColors, type UiColorScheme, type ThemeMode , applyRadiusScale } from '../config/theme';
+import type { VerificationAppearance } from '../types/config';
+import { useUiFonts } from './fonts';
 import { useBrandFonts } from './brand-font';
 import { effectiveThemeMode } from '../lib/bright-screen';
 
@@ -19,7 +19,7 @@ import { effectiveThemeMode } from '../lib/bright-screen';
 
 export interface ThemeValue {
   mode: ThemeMode;
-  colors: MyazaColorScheme;
+  colors: UiColorScheme;
   setMode: (mode: ThemeMode) => void;
   toggle: () => void;
   /**
@@ -37,10 +37,10 @@ export interface ThemeValue {
    * The colours of the person's OWN mode, whatever is forced. The same as
    * `colors` unless a screen has forced a mode over it.
    */
-  ownColors: MyazaColorScheme;
+  ownColors: UiColorScheme;
   /** The person's own mode, whatever is forced. */
   ownMode: ThemeMode;
-  /** True once Space Grotesk + Karla are loaded (system font until then). */
+  /** True once the bundled Bricolage Grotesque and Geist faces are loaded (system font until then). */
   fontsLoaded: boolean;
   /** Org font families from `appearance`, when set. Empty object otherwise. */
   brandFonts: { body?: string; heading?: string };
@@ -48,11 +48,11 @@ export interface ThemeValue {
 
 const ThemeContext = createContext<ThemeValue | null>(null);
 
-export function MyazaThemeProvider({
+export function UiThemeProvider({
   appearance,
   children,
 }: {
-  appearance?: KYCAppearance;
+  appearance?: VerificationAppearance;
   children: React.ReactNode;
 }): React.ReactElement {
   // `theme: 'system'` follows the DEVICE's colour scheme — live, so an
@@ -75,7 +75,7 @@ export function MyazaThemeProvider({
     () => (ownMode === mode ? colors : resolveColors(ownMode, appearance)),
     [ownMode, mode, colors, appearance],
   );
-  const fontsLoaded = useMyazaFonts();
+  const fontsLoaded = useUiFonts();
 
   // Applied here rather than at launch so a nested provider (a resolved
   // workflow's appearance taking over from the props') re-scales too. The
@@ -132,7 +132,7 @@ export function OwnTheme({ children }: { children: React.ReactNode }): React.Rea
 export function useTheme(): ThemeValue {
   const ctx = useContext(ThemeContext);
   if (!ctx) {
-    throw new Error('Myaza KYC components must be rendered inside <MyazaThemeProvider>.');
+    throw new Error('Toden components must be rendered inside <UiThemeProvider>.');
   }
   return ctx;
 }

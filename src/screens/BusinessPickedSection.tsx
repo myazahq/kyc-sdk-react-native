@@ -1,7 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 
-import { MyazaText } from '../components/Typography';
+import { UiText } from '../components/Typography';
 import { useText } from '../i18n/useText';
 import { useTheme } from '../components/runtime';
 import { spacing } from '../config/theme';
@@ -39,9 +39,9 @@ export function BusinessPickedSection({
           against the register, which takes a moment and is charged to the
           organisation. "Continue" alone made a paid outbound call look like
           moving to the next page. */}
-      <MyazaText variant="bodySmall" color={colors.textSecondary}>
+      <UiText variant="bodySmall" color={colors.textSecondary}>
         {t('business.details.checkNote')}
-      </MyazaText>
+      </UiText>
       {isSandbox ? (
         <>
           <View style={{ height: spacing.lg }} />

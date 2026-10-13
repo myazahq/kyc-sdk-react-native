@@ -94,7 +94,7 @@ export async function fetchPresenceWatchStatus(options: {
   try {
     const base = resolveBaseUrl(options.apiKey, options.devUrl);
     const response = await fetch(
-      `${base}/api/kyc/address/presence/${encodeURIComponent(options.externalUserId)}`,
+      `${base}/api/v1/address/presence/${encodeURIComponent(options.externalUserId)}`,
       { headers: { Authorization: `Bearer ${options.apiKey}` } },
     );
     if (!response.ok) return null;

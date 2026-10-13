@@ -3,7 +3,7 @@ import { View } from 'react-native';
 
 import { spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 import { NfcReadProgress } from './NfcReadProgress';
 import { NfcScannedSummary } from './NfcScannedSummary';
 import { NfcScanIllustration } from './NfcScanIllustration';
@@ -36,20 +36,20 @@ export function NfcReadBody({
 
       {reading ? (
         <>
-          <MyazaText variant="bodyMedium" style={{ textAlign: 'center' }}>
+          <UiText variant="bodyMedium" style={{ textAlign: 'center' }}>
             {stage === 'waiting'
               ? 'Hold the top edge of your document flat against the back of your phone and keep still…'
               : 'Chip detected — keep the document still until this finishes.'}
-          </MyazaText>
+          </UiText>
           <View style={{ height: spacing.md }} />
           <NfcReadProgress stage={stage} />
         </>
       ) : (
         <>
-          <MyazaText variant="bodySmall" color={colors.textMuted} style={{ textAlign: 'center' }}>
+          <UiText variant="bodySmall" color={colors.textMuted} style={{ textAlign: 'center' }}>
             Hold the top edge of your document flat against the back of your
             phone and keep still…
-          </MyazaText>
+          </UiText>
           {/* Shown BEFORE the read, so the wrong document is obvious now rather
               than after an opaque BAC failure. */}
           <View style={{ height: spacing.md }} />

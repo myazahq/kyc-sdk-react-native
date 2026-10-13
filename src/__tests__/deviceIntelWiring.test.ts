@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-import { createKYCApi, uploadHeaders } from '../services/api';
+import { createVerificationApi, uploadHeaders } from '../services/api';
 import {
   submissionFingerprint,
   uploadDeviceIdSource,
@@ -65,7 +65,7 @@ describe('the upload request', () => {
     (globalThis as { XMLHttpRequest?: unknown }).XMLHttpRequest = realXhr;
   });
 
-  async function headersSent(api: ReturnType<typeof createKYCApi>): Promise<Record<string, string>> {
+  async function headersSent(api: ReturnType<typeof createVerificationApi>): Promise<Record<string, string>> {
     const fetchMock = jest.fn(async () => new Response(JSON.stringify({ mediaId: 'm1' }), { status: 200 }));
     globalThis.fetch = fetchMock as unknown as typeof fetch;
     await expect(api.upload({ uri: 'file:///a.jpg', type: 'image/jpeg' }, 'selfie')).resolves.toBe('m1');
@@ -74,12 +74,12 @@ describe('the upload request', () => {
   }
 
   it('carries X-Myaza-Device-Id when a device id source is given', async () => {
-    const api = createKYCApi('https://api.example', 'pk_test_x', { deviceId: async () => 'idfv-123' });
+    const api = createVerificationApi('https://api.example', 'pk_test_x', { deviceId: async () => 'idfv-123' });
     expect((await headersSent(api))['X-Myaza-Device-Id']).toBe('idfv-123');
   });
 
   it('carries no device header without one', async () => {
-    const api = createKYCApi('https://api.example', 'pk_test_x');
+    const api = createVerificationApi('https://api.example', 'pk_test_x');
     expect(await headersSent(api)).not.toHaveProperty('X-Myaza-Device-Id');
   });
 });
@@ -135,7 +135,7 @@ describe('the deviceIntelligence gate', () => {
 describe('store wiring', () => {
   // The omission is of a LINE: a store that stopped passing these would still
   // typecheck and submit, just without the signal.
-  const src = readFileSync(join(__dirname, '..', 'store', 'kycStore.ts'), 'utf8');
+  const src = readFileSync(join(__dirname, '..', 'store', 'verificationStore.ts'), 'utf8');
 
   it('gives the API client the gated device id source', () => {
     expect(src).toContain('deviceId: uploadDeviceIdSource(config)');

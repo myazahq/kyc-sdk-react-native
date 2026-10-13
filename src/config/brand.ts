@@ -1,33 +1,21 @@
 /**
  * Vendor brand constants for the SDK's own attribution — NOT the integrating
- * org's branding (that is `useBranding()`, driven by `/api/kyc/config`).
+ * org's branding (that is `useBranding()`, driven by `/api/v1/config`).
  *
- * The platform is **Myaza Trust**, a product of **Myaza** (the parent company).
- * Always the full product name: bare "Myaza" is the company, and a pipe
- * ("Myaza | Trust") reads as a separator between two items rather than one
- * name. See the naming rule in kyc-dashboard/CLAUDE.md.
+ * The platform is **Toden** (it was Myaza Trust).
  */
-export const PRODUCT_NAME = 'Myaza Trust';
+export const PRODUCT_NAME = 'Toden';
 
 /** The product site — where "who are these people?" gets answered. */
-export const PRODUCT_URL = 'https://trust.myaza.co';
-
-/**
- * Wordmark ink. The icon keeps its brand colours in both themes; only the
- * "myaza" lettering flips. These are the exact values the dashboard's own Logo
- * renders (logo.svg / logo-white.svg), so the mark is brand-accurate rather
- * than tinted to whatever the sheet's text colour happens to be.
- */
-export const WORDMARK_LIGHT = '#19156F';
-export const WORDMARK_DARK = '#F6F5FE';
+export const PRODUCT_URL = 'https://toden.co';
 
 /**
  * End-user legal documents linked from the consent screen. These are MYAZA's
  * terms — the person consents to us processing their data as the verification
  * provider — so they are never org-overridable.
  */
-export const TERMS_URL = 'https://trust.myaza.co/legal/terms';
-export const PRIVACY_URL = 'https://trust.myaza.co/legal/privacy';
+export const TERMS_URL = 'https://toden.co/legal/terms';
+export const PRIVACY_URL = 'https://toden.co/legal/privacy';
 
 /**
  * Version of the consent wording. Consent is given by ACTING (tapping
@@ -35,7 +23,7 @@ export const PRIVACY_URL = 'https://trust.myaza.co/legal/privacy';
  * materially and store it with the verification — otherwise nothing proves
  * which disclosure was on screen. Keep in step with the web SDK's value.
  */
-export const CONSENT_VERSION = '2026-08-06.1';
+export const CONSENT_VERSION = '2026-10-12.1';
 
 /**
  * Tones the footer mark may use — the design system's INK and LIGHT text
@@ -54,7 +42,12 @@ export const CONSENT_VERSION = '2026-08-06.1';
  *
  * Mirrors the web SDK's `lib/brand.ts` — keep the list and the rule in step.
  */
-const MARK_TONES = ['#070330', '#F6F5FE'] as const;
+const MARK_TONES = ['#080A12', '#F6F5FE'] as const;
+
+/** Whether a tone from `brandMarkColor` is the light one (the mark sits on a dark surface). */
+export function brandMarkIsLight(tone: string): boolean {
+  return tone.toUpperCase() === MARK_TONES[1];
+}
 
 /** WCAG AA for the small text this renders at. */
 const MIN_MARK_CONTRAST = 4.5;

@@ -6,7 +6,7 @@
 // (a geocode), or the address they picked from search (explicit). A mirror of
 // the web SDK's steps/address/country-adoption.ts and Flutter's
 // config/country_adoption.dart; the three run the shared vectors in
-// kyc-sdk-flutter/test/country_adoption_vectors.json, so a drift in any one
+// sdk-flutter/test/country_adoption_vectors.json, so a drift in any one
 // fails there.
 //
 // The rules, and why each exists:

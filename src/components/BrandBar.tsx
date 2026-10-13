@@ -4,7 +4,7 @@ import { SvgXml } from 'react-native-svg';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from './runtime';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 
 /** Whether a logo URI points at an SVG (extension check, query-safe). */
 export function isSvgUri(uri: string): boolean {
@@ -124,14 +124,14 @@ export function BrandBar({
           )}
         </View>
       </View>
-      <MyazaText
+      <UiText
         variant="heading3"
         numberOfLines={1}
         color={colors.textDark}
         style={{ flexShrink: 1, fontSize: 14 }}
       >
         {companyName}
-      </MyazaText>
+      </UiText>
     </>
   );
 }

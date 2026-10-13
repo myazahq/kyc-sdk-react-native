@@ -9,8 +9,8 @@
 // So: one builder, and every path that submits a chip goes through it.
 import { buildVerifyRequest, nfcPayload } from '../store/submit';
 import { buildApplicantVerifyRequest } from '../store/submitApplicant';
-import { createKycStore } from '../store/kycStore';
-import type { ResolvedKYCConfig } from '../types/config';
+import { createVerificationStore } from '../store/verificationStore';
+import type { ResolvedVerificationConfig } from '../types/config';
 import type { EmrtdReadResult } from '../emrtd/session';
 
 jest.useFakeTimers();
@@ -29,11 +29,11 @@ const FULL_CHIP: EmrtdReadResult = {
 };
 
 function makeStore() {
-  return createKycStore({
+  return createVerificationStore({
     apiKey: 'pk_test_x',
     country: 'NG',
     metadata: {},
-  } as unknown as ResolvedKYCConfig);
+  } as unknown as ResolvedVerificationConfig);
 }
 
 describe('nfcPayload', () => {

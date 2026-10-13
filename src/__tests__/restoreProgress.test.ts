@@ -1,17 +1,17 @@
 import { restoreAttemptProgress } from '../store/session';
-import { createKycStore } from '../store/kycStore';
-import type { ResolvedKYCConfig } from '../types/config';
+import { createVerificationStore } from '../store/verificationStore';
+import type { ResolvedVerificationConfig } from '../types/config';
 
 // A resumed session's stored progress hydrates the store — the RN mirror of
 // web's RESTORE_PROGRESS. The snapshot is our own SDK's write, but an OLD
 // snapshot (pre-sectioned key people) must normalize rather than break.
 
 function makeStore() {
-  return createKycStore({
+  return createVerificationStore({
     apiKey: 'pk_test_x',
     country: 'NG',
     metadata: {},
-  } as unknown as ResolvedKYCConfig);
+  } as unknown as ResolvedVerificationConfig);
 }
 
 // The store wires a debounced progress watcher; fake timers keep its 800ms

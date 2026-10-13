@@ -3,8 +3,8 @@ import { Pressable, View } from 'react-native';
 
 import { spacing, radius } from '../config/theme';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
-import { MyazaInput } from '../components/MyazaInput';
+import { UiText } from '../components/Typography';
+import { UiInput } from '../components/UiInput';
 import { emptyKeyPersonOwner, type KeyPersonOwnerEntry } from '../config/keyPeople';
 
 const MAX_OWNERS = 10;
@@ -43,16 +43,16 @@ export function KeyPersonOwners({
         padding: spacing.md,
       }}
     >
-      <MyazaText variant="bodySmall" style={{ fontWeight: '600' }}>
+      <UiText variant="bodySmall" style={{ fontWeight: '600' }}>
         Who owns {companyName.trim() || 'this company'}? (optional)
-      </MyazaText>
-      <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 2 }}>
+      </UiText>
+      <UiText variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 2 }}>
         A company cannot verify an identity, so tell us the people behind it if you know them.
-      </MyazaText>
+      </UiText>
 
       {owners.map((owner, index) => (
         <View key={index} style={{ marginTop: spacing.sm }}>
-          <MyazaInput
+          <UiInput
             label={`Owner ${index + 1}`}
             value={owner.name}
             onChangeText={(name) => patch(index, { name })}
@@ -60,16 +60,16 @@ export function KeyPersonOwners({
             autoCapitalize="words"
           />
           <View style={{ height: spacing.xs }} />
-          <MyazaInput
+          <UiInput
             label="Their share (optional)"
             value={owner.ownershipPct}
             onChangeText={(ownershipPct) => patch(index, { ownershipPct })}
             placeholder="e.g. 75"
             keyboardType="decimal-pad"
             suffix={
-              <MyazaText variant="bodySmall" color={colors.textMuted}>
+              <UiText variant="bodySmall" color={colors.textMuted}>
                 %
-              </MyazaText>
+              </UiText>
             }
           />
           <Pressable
@@ -78,9 +78,9 @@ export function KeyPersonOwners({
             onPress={() => onChange(owners.filter((_, i) => i !== index))}
             style={{ paddingVertical: spacing.xs, alignSelf: 'flex-start' }}
           >
-            <MyazaText variant="bodySmall" color={colors.error}>
+            <UiText variant="bodySmall" color={colors.error}>
               Remove
-            </MyazaText>
+            </UiText>
           </Pressable>
         </View>
       ))}
@@ -99,9 +99,9 @@ export function KeyPersonOwners({
             borderColor: colors.border,
           }}
         >
-          <MyazaText variant="bodySmall" style={{ fontWeight: '600' }} color={colors.primary}>
+          <UiText variant="bodySmall" style={{ fontWeight: '600' }} color={colors.primary}>
             {owners.length === 0 ? 'Add an owner' : 'Add another'}
-          </MyazaText>
+          </UiText>
         </Pressable>
       ) : null}
     </View>

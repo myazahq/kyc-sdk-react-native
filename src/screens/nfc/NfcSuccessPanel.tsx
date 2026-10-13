@@ -3,8 +3,8 @@ import { Image, View } from 'react-native';
 
 import { spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
-import { MyazaText } from '../../components/Typography';
-import { MyazaButton } from '../../components/MyazaButton';
+import { UiText } from '../../components/Typography';
+import { UiButton } from '../../components/UiButton';
 import { Icon } from '../../components/Icon';
 import { useText } from '../../i18n/useText';
 import { useChipPortrait } from './useChipPortrait';
@@ -114,15 +114,15 @@ export function NfcSuccessPanel({
       </View>
 
       <View style={{ height: spacing.lg }} />
-      <MyazaText variant="heading2" style={{ textAlign: 'center' }}>
+      <UiText variant="heading2" style={{ textAlign: 'center' }}>
         Chip read successfully
-      </MyazaText>
+      </UiText>
       <View style={{ height: spacing.xs }} />
-      <MyazaText variant="bodyMedium" color={colors.textSecondary} style={{ textAlign: 'center' }}>
+      <UiText variant="bodyMedium" color={colors.textSecondary} style={{ textAlign: 'center' }}>
         {name
           ? `We read the secure chip in ${name}’s document.`
           : 'The secure chip in your document was read and verified.'}
-      </MyazaText>
+      </UiText>
 
       {/* Said plainly rather than hidden: without the signed security object
           the server cannot verify the chip data against the issuer, so the read
@@ -131,10 +131,10 @@ export function NfcSuccessPanel({
       {!result.sod ? (
         <>
           <View style={{ height: spacing.md }} />
-          <MyazaText variant="bodySmall" color={colors.textMuted} style={{ textAlign: 'center' }}>
+          <UiText variant="bodySmall" color={colors.textMuted} style={{ textAlign: 'center' }}>
             The document&#8217;s security file could not be read, so the chip data
             cannot be fully verified. You can try again or continue.
-          </MyazaText>
+          </UiText>
         </>
       ) : null}
 
@@ -153,11 +153,11 @@ export function NfcSuccessPanel({
 
       <View style={{ height: spacing.lg }} />
       <View style={{ alignSelf: 'stretch' }}>
-        <MyazaButton label={t('common.continue')} onPress={onContinue} />
+        <UiButton label={t('common.continue')} onPress={onContinue} />
         {!result.sod ? (
           <>
             <View style={{ height: spacing.sm }} />
-            <MyazaButton label="Scan again" variant="ghost" onPress={onRescan} />
+            <UiButton label="Scan again" variant="ghost" onPress={onRescan} />
           </>
         ) : null}
       </View>

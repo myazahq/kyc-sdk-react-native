@@ -4,8 +4,8 @@ import { useStore } from 'zustand';
 import Svg, { Path, Rect } from 'react-native-svg';
 
 import { holePath, type FlashHole } from './flashHoleGeometry';
-import { useKycStore } from './runtime';
-import { MyazaText } from './Typography';
+import { useVerificationStore } from './runtime';
+import { UiText } from './Typography';
 import { spacing } from '../config/theme';
 import { flashOverlayPaint } from '../lib/bright-screen';
 
@@ -59,7 +59,7 @@ export type { FlashHole } from './flashHoleGeometry';
  * would re-render the step on every flash — and the camera with it, mid-capture.
  */
 export function FlashOverlay(): React.ReactElement | null {
-  const store = useKycStore();
+  const store = useVerificationStore();
   const paint = useStore(store, (s) => s.flashPaint);
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
 
@@ -161,9 +161,9 @@ function HoldStill({
   const top = Math.min(Math.max(belowHole, height * 0.78), height - spacing.xl * 2);
   return (
     <View style={{ position: 'absolute', top, left: 0, width, alignItems: 'center' }}>
-      <MyazaText variant="heading3" color={color} style={{ textAlign: 'center' }}>
+      <UiText variant="heading3" color={color} style={{ textAlign: 'center' }}>
         Hold still
-      </MyazaText>
+      </UiText>
     </View>
   );
 }

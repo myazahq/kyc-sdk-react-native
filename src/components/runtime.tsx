@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useMemo, useRef } from 'react';
 import { useStore } from 'zustand';
 
-import { createKycStore, effectiveCountry, type KycState, type KycStore } from '../store/kycStore';
-import type { ResolvedKYCConfig, SupportedCountry } from '../types/config';
+import { createVerificationStore, effectiveCountry, type VerificationState, type VerificationStore } from '../store/verificationStore';
+import type { ResolvedVerificationConfig, SupportedCountry } from '../types/config';
 import type { ServerConfigState } from '../store/serverConfig';
-import { MyazaThemeProvider } from './theme-provider';
+import { UiThemeProvider } from './theme-provider';
 
 // ---------------------------------------------------------------------------
 // Runtime context — owns the per-instance zustand store. Mirrors the Flutter
@@ -18,8 +18,8 @@ import { MyazaThemeProvider } from './theme-provider';
 // ---------------------------------------------------------------------------
 
 interface RuntimeValue {
-  store: KycStore;
-  config: ResolvedKYCConfig;
+  store: VerificationStore;
+  config: ResolvedVerificationConfig;
 }
 
 const RuntimeContext = createContext<RuntimeValue | null>(null);
@@ -27,25 +27,25 @@ const RuntimeContext = createContext<RuntimeValue | null>(null);
 function useRuntime(): RuntimeValue {
   const ctx = useContext(RuntimeContext);
   if (!ctx) {
-    throw new Error('Myaza KYC components must be rendered inside <KycRuntimeProvider>.');
+    throw new Error('Toden components must be rendered inside <VerificationRuntimeProvider>.');
   }
   return ctx;
 }
 
-export function KycRuntimeProvider({
+export function VerificationRuntimeProvider({
   config,
   serverConfig,
   children,
 }: {
-  config: ResolvedKYCConfig;
+  config: ResolvedVerificationConfig;
   /** Preloaded from a resolved workflow — skips the flow's own `/config` call. */
   serverConfig?: ServerConfigState;
   children: React.ReactNode;
 }): React.ReactElement {
   // The store is created once per provider instance (per modal launch).
-  const storeRef = useRef<KycStore | null>(null);
+  const storeRef = useRef<VerificationStore | null>(null);
   if (storeRef.current === null) {
-    storeRef.current = createKycStore(config, serverConfig);
+    storeRef.current = createVerificationStore(config, serverConfig);
   }
   const store = storeRef.current;
 
@@ -53,18 +53,18 @@ export function KycRuntimeProvider({
 
   return (
     <RuntimeContext.Provider value={value}>
-      <MyazaThemeProvider appearance={config.appearance}>{children}</MyazaThemeProvider>
+      <UiThemeProvider appearance={config.appearance}>{children}</UiThemeProvider>
     </RuntimeContext.Provider>
   );
 }
 
 /** Selects from the KYC store (re-renders only on selected-slice changes). */
-export function useKyc<T>(selector: (state: KycState) => T): T {
+export function useFlowState<T>(selector: (state: VerificationState) => T): T {
   return useStore(useRuntime().store, selector);
 }
 
 /** Returns the raw store (for actions / one-off reads). */
-export function useKycStore(): KycStore {
+export function useVerificationStore(): VerificationStore {
   return useRuntime().store;
 }
 
@@ -77,18 +77,18 @@ export function useKycStore(): KycStore {
  * IDs and validates against another's.
  */
 export function useEffectiveCountry(): SupportedCountry {
-  return useKyc(effectiveCountry);
+  return useFlowState(effectiveCountry);
 }
 
 /** The resolved SDK config (props + callbacks) for this launch. */
-export function useKycConfig(): ResolvedKYCConfig {
+export function useVerificationConfig(): ResolvedVerificationConfig {
   return useRuntime().config;
 }
 
 /** The resolved config, or null outside the provider (for components that
  *  also render before a flow exists, like the text lookup). */
-export function useOptionalKycConfig(): ResolvedKYCConfig | null {
+export function useOptionalVerificationConfig(): ResolvedVerificationConfig | null {
   return useContext(RuntimeContext)?.config ?? null;
 }
 
-export { MyazaThemeProvider, useTheme, type ThemeValue } from './theme-provider';
+export { UiThemeProvider, useTheme, type ThemeValue } from './theme-provider';

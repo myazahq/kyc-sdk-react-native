@@ -1,15 +1,15 @@
 {
   "name": "@myazahq/kyc-sdk-react-native",
-  "version": "3.5.0",
-  "description": "Myaza KYC SDK for React Native (Expo) — ID verification, liveness detection, and document capture",
+  "version": "3.6.0",
+  "description": "Toden SDK for React Native (Expo): ID verification, liveness detection and document capture",
   "author": "Flitstack Technologies Inc.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/myazahq/kyc-sdk-react-native.git"
+    "url": "git+https://github.com/todenhq/kyc-sdk-react-native.git"
   },
-  "homepage": "https://github.com/myazahq/kyc-sdk-react-native#readme",
+  "homepage": "https://github.com/todenhq/kyc-sdk-react-native#readme",
   "bugs": {
-    "url": "https://github.com/myazahq/kyc-sdk-react-native/issues"
+    "url": "https://github.com/todenhq/kyc-sdk-react-native/issues"
   },
   "main": "src/index.ts",
   "types": "src/index.ts",
@@ -44,7 +44,8 @@
     "verification",
     "liveness",
     "expo",
-    "react-native"
+    "react-native",
+    "toden"
   ],
   "license": "MIT",
   "peerDependencies": {

@@ -2,9 +2,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
-import { useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
-import { MyazaPulseLoader } from '../components/MyazaPulseLoader';
+import { useFlowState, useVerificationConfig, useVerificationStore, useTheme } from '../components/runtime';
+import { UiText } from '../components/Typography';
+import { UiPulseLoader } from '../components/UiPulseLoader';
 import { Icon } from '../components/Icon';
 import { cancelChipRead, nfcUnavailableReason, readPassportChip, type EmrtdReadResult } from '../emrtd';
 import { fromBase64 } from '../emrtd/bytes';
@@ -47,10 +47,10 @@ type Phase = 'idle' | 'reading' | 'done' | 'failed';
 const SKIP_REVEAL_MS = 15_000;
 
 export function NfcStep(): React.ReactElement {
-  const config = useKycConfig();
-  const store = useKycStore();
+  const config = useVerificationConfig();
+  const store = useVerificationStore();
   const { colors } = useTheme();
-  const mrz = useKyc((s) => s.mrzScan);
+  const mrz = useFlowState((s) => s.mrzScan);
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -258,9 +258,9 @@ export function NfcStep(): React.ReactElement {
       {error ? (
         <>
           <View style={{ height: spacing.md }} />
-          <MyazaText variant="bodySmall" color={colors.error} style={{ textAlign: 'center' }}>
+          <UiText variant="bodySmall" color={colors.error} style={{ textAlign: 'center' }}>
             {error}
-          </MyazaText>
+          </UiText>
         </>
       ) : null}
 

@@ -4,7 +4,7 @@ import { Image, Pressable, View } from 'react-native';
 import { radius, spacing } from '../config/theme';
 import { UPLOAD_HINT } from '../config/uploadLimits';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
+import { UiText } from '../components/Typography';
 import { Icon } from '../components/Icon';
 import { DashedBorder } from '../components/DashedBorder';
 import { CountryFlag } from '../components/CountryFlag';
@@ -83,14 +83,14 @@ export function PoaUploadedRow({
       )}
       <View style={{ width: spacing.md, flexShrink: 0 }} />
       <View style={{ flex: 1, minWidth: 0 }}>
-        <MyazaText variant="bodySmall" style={{ fontWeight: '600' }} numberOfLines={1}>
+        <UiText variant="bodySmall" style={{ fontWeight: '600' }} numberOfLines={1}>
           {fileName ?? t('proofOfAddress.uploaded')}
-        </MyazaText>
+        </UiText>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Flag country={country} size={14} />
-          <MyazaText variant="bodySmall" color={colors.textSecondary} numberOfLines={1} style={{ flexShrink: 1 }}>
+          <UiText variant="bodySmall" color={colors.textSecondary} numberOfLines={1} style={{ flexShrink: 1 }}>
             {typeLabel}
-          </MyazaText>
+          </UiText>
         </View>
       </View>
       <Pressable
@@ -142,13 +142,13 @@ export function PoaDropzone({
       <View style={{ height: spacing.sm }} />
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <Flag country={country} size={18} />
-        <MyazaText variant="bodySmall" style={{ fontWeight: '600' }}>
+        <UiText variant="bodySmall" style={{ fontWeight: '600' }}>
           {busy ? 'Uploading…' : `Upload your ${typeLabel.toLowerCase()}`}
-        </MyazaText>
+        </UiText>
       </View>
-      <MyazaText variant="bodySmall" color={colors.textSecondary}>
+      <UiText variant="bodySmall" color={colors.textSecondary}>
         {UPLOAD_HINT}
-      </MyazaText>
+      </UiText>
     </Pressable>
   );
 }

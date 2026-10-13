@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
-import type { KYCApi } from '../services/api';
+import type { VerificationApi } from '../services/api';
 import type { AwaitingPersonPayload } from '../services/api-types';
 
 // The SERVER's list of who a submitted KYB application is waiting on — mirrors
@@ -31,7 +31,7 @@ function anyoneStillOwes(people: AwaitingPersonPayload[]): boolean {
 }
 
 export function useAwaitingPeople(
-  api: KYCApi,
+  api: VerificationApi,
   sessionId: string | null,
   enabled: boolean,
 ): AwaitingPersonPayload[] | null {

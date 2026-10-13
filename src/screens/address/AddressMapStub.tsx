@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { View } from 'react-native';
 
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 import { Icon } from '../../components/Icon';
 import { DashedBorder } from '../../components/DashedBorder';
 import { useTheme } from '../../components/runtime';
@@ -42,9 +42,9 @@ export function AddressMapStub({
       <DashedBorder color={colors.border} radius={12} strokeWidth={1} />
       <Icon name="map-pin-house" size={32} color={colors.textSecondary} />
       <View style={{ height: spacing.sm }} />
-      <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ textAlign: 'center' }}>
+      <UiText variant="bodySmall" color={colors.textSecondary} style={{ textAlign: 'center' }}>
         Applicants place their pin on a live map here. The map loads only for real users.
-      </MyazaText>
+      </UiText>
     </View>
   );
 }

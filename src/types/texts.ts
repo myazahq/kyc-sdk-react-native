@@ -4,7 +4,7 @@ import type { WorkflowTexts } from '../i18n/types';
  * The custom-texts options, split from config.ts (200-line rule). Mirrors the
  * web SDK's `texts` and `language` props.
  */
-export interface KYCTextsConfig {
+export interface VerificationTextsConfig {
   /**
    * Custom copy by language then key, e.g. `{ en: { 'common.continue': 'Next' } }`.
    * Usually set by a workflow (it rides `workflowId`). Only the customisable

@@ -11,14 +11,14 @@ const MODAL_PRESENTATION = Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen';
 // ('none' suppresses the present transition, leaving no slide-up and no drag.)
 const MODAL_ANIMATION = 'slide';
 
-import type { KYCStep, MyazaKYCConfig, SupportedCountry } from './types/config';
-import { KycRuntimeProvider, MyazaThemeProvider } from './components/runtime';
+import type { VerificationStep, VerificationConfig, SupportedCountry } from './types/config';
+import { VerificationRuntimeProvider, UiThemeProvider } from './components/runtime';
 import { WorkflowGate } from './components/WorkflowGate';
 import { useWorkflowMount } from './components/useWorkflowMount';
 import { usePrimeModels } from './lib/prime-models';
 import { safeReportError } from './services/errors';
-import { KycFlow, type BackResult } from './components/KycFlow';
-import { MyazaButton } from './components/MyazaButton';
+import { VerificationFlow, type BackResult } from './components/VerificationFlow';
+import { UiButton } from './components/UiButton';
 
 /**
  * Builds the `<Modal onRequestClose>` handler (Android hardware back / TV menu).
@@ -42,25 +42,25 @@ function makeRequestClose(
 }
 
 // ---------------------------------------------------------------------------
-// Public entry points — `<MyazaKYC />` (trigger + modal) and `useMyazaKYC()`
+// Public entry points — `<Verification />` (trigger + modal) and `useVerification()`
 // (custom trigger). Mirrors the web SDK's component + hook API, adapted to React
 // Native's `<Modal>` (the RN equivalent of the web modal/portal).
 // ---------------------------------------------------------------------------
 
-export interface MyazaKYCProps<C extends SupportedCountry = SupportedCountry> extends MyazaKYCConfig<C> {
+export interface VerificationProps<C extends SupportedCountry = SupportedCountry> extends VerificationConfig<C> {
   /** Custom trigger label (defaults to "Verify with {companyName}" / "Verify Identity"). */
   children?: string;
   /** Disable the built-in trigger button. */
   disabled?: boolean;
 }
 
-function defaultTriggerLabel(config: MyazaKYCConfig): string {
+function defaultTriggerLabel(config: VerificationConfig): string {
   const name = config.appearance?.companyName;
   return name ? `Verify with ${name}` : 'Verify Identity';
 }
 
-export function MyazaKYC<C extends SupportedCountry = SupportedCountry>(
-  props: MyazaKYCProps<C>,
+export function Verification<C extends SupportedCountry = SupportedCountry>(
+  props: VerificationProps<C>,
 ): React.ReactElement {
   const { children, disabled, ...config } = props;
   // The provider wraps BOTH the trigger and the modal so the built-in trigger
@@ -70,18 +70,18 @@ export function MyazaKYC<C extends SupportedCountry = SupportedCountry>(
   // before anything is resolved; the flow's own provider (with the resolved
   // workflow's appearance) is mounted inside the modal by the gate.
   return (
-    <MyazaThemeProvider appearance={config.appearance}>
-      <MyazaKYCTrigger config={config} label={children} disabled={disabled} />
-    </MyazaThemeProvider>
+    <UiThemeProvider appearance={config.appearance}>
+      <VerificationTrigger config={config} label={children} disabled={disabled} />
+    </UiThemeProvider>
   );
 }
 
-function MyazaKYCTrigger({
+function VerificationTrigger({
   config,
   label,
   disabled,
 }: {
-  config: MyazaKYCConfig;
+  config: VerificationConfig;
   label?: string;
   disabled?: boolean;
 }): React.ReactElement {
@@ -145,7 +145,7 @@ function MyazaKYCTrigger({
 
   return (
     <>
-      <MyazaButton
+      <UiButton
         label={label ?? defaultTriggerLabel(config)}
         disabled={disabled}
         // Pressed, but the workflow has not arrived yet. Without this the press
@@ -167,9 +167,9 @@ function MyazaKYCTrigger({
         {open ? (
           <WorkflowGate config={config} state={state} onRetry={retryFlow} onClose={close}>
             {(mount) => (
-              <KycRuntimeProvider config={mount.config} serverConfig={mount.serverConfig}>
-                <KycFlow onClose={close} backRef={backRef} />
-              </KycRuntimeProvider>
+              <VerificationRuntimeProvider config={mount.config} serverConfig={mount.serverConfig}>
+                <VerificationFlow onClose={close} backRef={backRef} />
+              </VerificationRuntimeProvider>
             )}
           </WorkflowGate>
         ) : null}
@@ -179,13 +179,13 @@ function MyazaKYCTrigger({
 }
 
 // ---------------------------------------------------------------------------
-// useMyazaKYC — for fully custom triggers. Returns the controller plus a bound
-// `MyazaKYCModal` host element to render once in your tree. The consumer's own
+// useVerification — for fully custom triggers. Returns the controller plus a bound
+// `VerificationModal` host element to render once in your tree. The consumer's own
 // trigger element is plain (no theme dependency); the modal carries its own
 // provider, mounted fresh on each open.
 // ---------------------------------------------------------------------------
 
-export interface UseMyazaKYCReturn {
+export interface UseVerificationReturn {
   open: () => void;
   close: () => void;
   isOpen: boolean;
@@ -198,22 +198,24 @@ export interface UseMyazaKYCReturn {
    * acknowledged somewhere, or it looks ignored.
    */
   isPreparing: boolean;
-  currentStep: KYCStep | null;
+  currentStep: VerificationStep | null;
   /** Render this once in your component tree (RN has no implicit portal). */
+  VerificationModal: React.FC;
+  /** @deprecated Use `VerificationModal`. The same element under its earlier name. */
   MyazaKYCModal: React.FC;
 }
 
-export function useMyazaKYC<C extends SupportedCountry = SupportedCountry>(
-  config: MyazaKYCConfig<C>,
-): UseMyazaKYCReturn {
+export function useVerification<C extends SupportedCountry = SupportedCountry>(
+  config: VerificationConfig<C>,
+): UseVerificationReturn {
   const [wantOpen, setWantOpen] = useState(false);
-  const [currentStep, setCurrentStep] = useState<KYCStep | null>(null);
+  const [currentStep, setCurrentStep] = useState<VerificationStep | null>(null);
   const closedRef = useRef(true);
 
   // Consumers pass an inline config object, so its identity changes on every
   // render of their component. Keep the LATEST config in a ref and read it from
   // the (stable) callbacks below. This is what keeps `wrappedConfig` and the
-  // `MyazaKYCModal` element stable across re-renders — otherwise a step change
+  // `VerificationModal` element stable across re-renders — otherwise a step change
   // (which re-renders the consumer) would rebuild the modal subtree, and on iOS
   // a remounted presented <Modal> fires onDismiss → an unwanted close().
   const configRef = useRef(config);
@@ -247,11 +249,11 @@ export function useMyazaKYC<C extends SupportedCountry = SupportedCountry>(
   // to surface the live step to the consumer. Built once (the spread reads the
   // ref at call time via the wrapped callbacks), so the modal's provider/store
   // isn't recreated on each render.
-  const wrappedConfig = useMemo<MyazaKYCConfig<C>>(
+  const wrappedConfig = useMemo<VerificationConfig<C>>(
     () => ({
       ...configRef.current,
       onStart: () => configRef.current.onStart?.(),
-      onStepChange: (step: KYCStep) => {
+      onStepChange: (step: VerificationStep) => {
         setCurrentStep(step);
         configRef.current.onStepChange?.(step);
       },
@@ -294,7 +296,7 @@ export function useMyazaKYC<C extends SupportedCountry = SupportedCountry>(
 
   // Stable modal element — depends only on open/close state, never on the
   // changing consumer config (see configRef above).
-  const MyazaKYCModal = useCallback<React.FC>(
+  const VerificationModal = useCallback<React.FC>(
     () => (
       <Modal
         visible={presenting}
@@ -309,9 +311,9 @@ export function useMyazaKYC<C extends SupportedCountry = SupportedCountry>(
         {presenting ? (
           <WorkflowGate config={wrappedConfig} state={state} onRetry={retryFlow} onClose={close}>
             {(mount) => (
-              <KycRuntimeProvider config={mount.config} serverConfig={mount.serverConfig}>
-                <KycFlow onClose={close} backRef={backRef} />
-              </KycRuntimeProvider>
+              <VerificationRuntimeProvider config={mount.config} serverConfig={mount.serverConfig}>
+                <VerificationFlow onClose={close} backRef={backRef} />
+              </VerificationRuntimeProvider>
             )}
           </WorkflowGate>
         ) : null}
@@ -328,6 +330,7 @@ export function useMyazaKYC<C extends SupportedCountry = SupportedCountry>(
     isOpen: wantOpen,
     isPreparing: wantOpen && !settled,
     currentStep,
-    MyazaKYCModal,
+    VerificationModal,
+    MyazaKYCModal: VerificationModal,
   };
 }

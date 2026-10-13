@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { REVERSE_DEBOUNCE_MS, addressVendorsStubbed, SAMPLE_ADDRESS_LINE } from '../../lib/address-flow';
-import type { KycStore } from '../../store/state';
+import type { VerificationStore } from '../../store/state';
 
 // ---------------------------------------------------------------------------
 // Reverse geocoding: the pin's human-readable line. Split from
@@ -17,7 +17,7 @@ import type { KycStore } from '../../store/state';
 // ---------------------------------------------------------------------------
 
 export function useLabelPin(
-  store: KycStore,
+  store: VerificationStore,
   onGeocoded: (country: string | null | undefined) => void,
 ): { labelPin: (lat: number, lng: number, delay?: number) => void; labelling: boolean } {
   const reverseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);

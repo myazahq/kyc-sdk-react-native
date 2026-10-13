@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
+import { UiText } from '../components/Typography';
 import { Icon } from '../components/Icon';
 import { WhatsAppIcon } from '../components/WhatsAppIcon';
 import { CHANNEL_LABELS, type PhoneOtpChannel } from '../config/contact';
@@ -59,9 +59,9 @@ export function ContactChannelChoice({
   return (
     <View>
       <View style={{ height: spacing.md }} />
-      <MyazaText variant="bodySmall" color={colors.textMuted}>
+      <UiText variant="bodySmall" color={colors.textMuted}>
         {t('contact.channel.question')}
-      </MyazaText>
+      </UiText>
       <View style={{ height: spacing.xs }} />
       <View style={{ flexDirection: 'row', gap: spacing.sm }}>
         {offered.map((channel) => (
@@ -123,12 +123,12 @@ function ChannelTile({
         <ChannelGlyph channel={channel} color={selected ? colors.primary : colors.textMuted} />
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <MyazaText variant="bodyMedium" style={{ fontWeight: "600" }}>
+        <UiText variant="bodyMedium" style={{ fontWeight: "600" }}>
           {CHANNEL_LABELS[channel]}
-        </MyazaText>
-        <MyazaText variant="bodySmall" color={colors.textMuted} numberOfLines={1}>
+        </UiText>
+        <UiText variant="bodySmall" color={colors.textMuted} numberOfLines={1}>
           {HINTS[channel]}
-        </MyazaText>
+        </UiText>
       </View>
     </Pressable>
   );

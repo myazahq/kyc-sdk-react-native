@@ -3,17 +3,17 @@
 // off, the fire-and-forget caller swallowed the refusal, and reopening the app
 // resumed the application at the applicant's ID step (2026-09-29).
 import { buildApplicantVerifyRequest } from '../store/submitApplicant';
-import { createKycStore } from '../store/kycStore';
-import type { ResolvedKYCConfig } from '../types/config';
+import { createVerificationStore } from '../store/verificationStore';
+import type { ResolvedVerificationConfig } from '../types/config';
 
 jest.useFakeTimers();
 
 function makeStore() {
-  return createKycStore({
+  return createVerificationStore({
     apiKey: 'pk_test_x',
     country: 'NG',
     metadata: {},
-  } as unknown as ResolvedKYCConfig);
+  } as unknown as ResolvedVerificationConfig);
 }
 
 describe('applicant verification request', () => {

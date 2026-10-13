@@ -17,8 +17,8 @@ import { primeTextModel } from '../mrz/textRecognizer';
 // failure here costs a head start and nothing else.
 //
 // SHARED BY BOTH ENTRY POINTS, and that is the whole point of the file. This
-// effect used to live inside the <MyazaKYC/> trigger component, so a consumer
-// using useMyazaKYC() — the hook the SDK's own example uses, and the one
+// effect used to live inside the <Verification/> trigger component, so a consumer
+// using useVerification() — the hook the SDK's own example uses, and the one
 // documented for programmatic control — primed NOTHING. The face model was
 // first requested when the liveness step mounted, in front of a camera the
 // user was already looking at, and the gesture GIFs were fetched at the same

@@ -43,6 +43,19 @@ export function selfieUploadSettled(snapshot: SelfieUploadSnapshot): SelfieUploa
   return null;
 }
 
+/**
+ * Whether this flow has a selfie upload to wait for at all. A flow with no
+ * liveness step (address, questionnaire, contact, a business application
+ * without the applicant's own check) never uploads one, so its record stays
+ * `idle` with no media id for good: waiting on it would run the whole
+ * deadline and then report a selfie nobody was asked for. An upload that has
+ * already started counts whatever the step order says now. MIRRORED across
+ * the web, React Native and Flutter SDKs.
+ */
+export function selfieUploadExpected(snapshot: SelfieUploadSnapshot, hasLivenessStep: boolean): boolean {
+  return hasLivenessStep || snapshot.selfieUpload.status !== 'idle';
+}
+
 export interface AwaitSelfieUploadDeps {
   read: () => SelfieUploadSnapshot;
   /** Fires the listener on every store change; returns the unsubscribe. */

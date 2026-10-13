@@ -4,17 +4,17 @@
 
 /**
  * The verdict a flow that waited for it hands to `onResult`: the same state
- * vocabulary `GET /api/kyc/status/:id` serves, plus the reason pair. No result
+ * vocabulary `GET /api/v1/status/:id` serves, plus the reason pair. No result
  * data (scores, biodata) ever rides here; that stays behind the secret key.
  */
-export interface KYCResult {
+export interface VerificationResult {
   verificationId: string;
   status: import('../services/api-types').SessionStatus;
   reason: string | null;
   reasonCode: string | null;
 }
 
-export interface KYCSubmission {
+export interface VerificationSubmission {
   verificationId: string;
   status: 'processing';
   metadata: Record<string, string>;
@@ -33,7 +33,7 @@ export interface KYCSubmission {
  * - `network_error`            — connection failure / timeout (after retries)
  * - `invalid_api_key`          — server returned 401
  * - `insufficient_credits`     — server returned 402 (see `details`)
- * - `upload_failed`            — `POST /api/kyc/upload` failed (after retries)
+ * - `upload_failed`            — `POST /api/v1/upload` failed (after retries)
  * - `camera_permission_denied` — the user denied (or the OS blocks) camera
  *                                access; capture cannot proceed
  * - `feature_disabled`         — server returned 403 (ID type or a verification
@@ -43,7 +43,7 @@ export interface KYCSubmission {
  * > Voice guidance is text-to-speech *output* — it never records audio, so
  * > there is no microphone-permission error code.
  */
-export type KYCErrorCode =
+export type VerificationErrorCode =
   | 'network_error'
   | 'invalid_api_key'
   // A `workflowId` that is unknown, unpublished, archived, or belongs to
@@ -60,7 +60,7 @@ export type KYCErrorCode =
   | 'session_cancelled'
   | 'unknown';
 
-export interface KYCErrorDetails {
+export interface VerificationErrorDetails {
   required?: number;
   balance?: number;
   currency?: string;
@@ -70,19 +70,19 @@ export interface KYCErrorDetails {
  * The error instance passed to `onError`. It is a real `Error` (so existing
  * `onError: (error: Error) => void` handlers keep working) that additionally
  * carries a typed `code` and optional `details`. Narrow with `instanceof
- * KYCError` (or read `error.code`) to branch on the category.
+ * VerificationError` (or read `error.code`) to branch on the category.
  */
-export class KYCError extends Error {
-  readonly code: KYCErrorCode;
-  readonly details?: KYCErrorDetails;
+export class VerificationError extends Error {
+  readonly code: VerificationErrorCode;
+  readonly details?: VerificationErrorDetails;
 
-  constructor(code: KYCErrorCode, message: string, details?: KYCErrorDetails) {
+  constructor(code: VerificationErrorCode, message: string, details?: VerificationErrorDetails) {
     super(message);
-    this.name = 'KYCError';
+    this.name = 'KYCError'; // the earlier name, kept: callers may match on it;
     this.code = code;
     this.details = details;
     // Restore the prototype chain for `instanceof` after transpilation.
-    Object.setPrototypeOf(this, KYCError.prototype);
+    Object.setPrototypeOf(this, VerificationError.prototype);
   }
 }
 

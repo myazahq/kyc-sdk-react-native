@@ -1,9 +1,9 @@
-import { createKYCApi } from './api';
-import { KYCApiError } from './api';
+import { createVerificationApi } from './api';
+import { VerificationApiError } from './api';
 import { normalizeAppearanceUrls, normalizeBrandingUrls, resolveBaseUrl } from './resolveUrl';
 import { mergeWorkflowConfig, overlayApplicantWorkflow } from '../config/workflowMerge';
-import { KYCError } from '../types/verification';
-import type { MyazaKYCConfig, ResolvedKYCConfig } from '../types/config';
+import { VerificationError } from '../types/verification';
+import type { VerificationConfig, ResolvedVerificationConfig } from '../types/config';
 import type { ServerConfigState } from '../store/serverConfig';
 
 // ---------------------------------------------------------------------------
@@ -30,7 +30,7 @@ import type { ServerConfigState } from '../store/serverConfig';
 export const WORKFLOW_RESOLVE_TIMEOUT_MS = 15_000;
 
 export interface WorkflowGateResult {
-  config: ResolvedKYCConfig;
+  config: ResolvedVerificationConfig;
   /** Preloaded server config, so the flow skips its own `/config` fetch. */
   serverConfig: ServerConfigState;
 }
@@ -44,22 +44,22 @@ export class WorkflowTimeoutError extends Error {
   }
 }
 
-function toKycError(err: unknown): KYCError {
+function toVerificationError(err: unknown): VerificationError {
   if (err instanceof WorkflowTimeoutError) {
-    return new KYCError(
+    return new VerificationError(
       'network_error',
       'We could not reach the verification service. Check your connection and try again.',
     );
   }
-  if (err instanceof KYCApiError) {
-    return new KYCError(
+  if (err instanceof VerificationApiError) {
+    return new VerificationError(
       err.statusCode === 401 ? 'invalid_api_key' : 'invalid_workflow',
       err.statusCode === 401
         ? 'Invalid API key. Please contact support.'
         : 'This verification workflow could not be loaded. Please contact support.',
     );
   }
-  return new KYCError('invalid_workflow', 'This verification workflow could not be loaded.');
+  return new VerificationError('invalid_workflow', 'This verification workflow could not be loaded.');
 }
 
 /**
@@ -67,15 +67,15 @@ function toKycError(err: unknown): KYCError {
  *
  * `signal` aborts the request — pass the caller's so an abandoned resolve stops
  * consuming the network rather than merely being ignored. Rejects with a
- * {@link KYCError}; the timeout surfaces as `network_error` because that is what
+ * {@link VerificationError}; the timeout surfaces as `network_error` because that is what
  * it is from the user's side.
  */
 export async function resolveWorkflow(
-  config: MyazaKYCConfig,
+  config: VerificationConfig,
   signal?: AbortSignal,
 ): Promise<WorkflowGateResult> {
   const baseUrl = resolveBaseUrl(config.apiKey, config.devUrl);
-  const api = createKYCApi(baseUrl, config.apiKey);
+  const api = createVerificationApi(baseUrl, config.apiKey);
 
   // The deadline is ours, not the platform's: React Native's fetch has no
   // default request timeout, so without this a socket that is open but silent
@@ -101,7 +101,7 @@ export async function resolveWorkflow(
           normalizeAppearanceUrls(res.config, baseUrl),
           config as unknown as Record<string, unknown>,
         ),
-      ) as unknown as ResolvedKYCConfig,
+      ) as unknown as ResolvedVerificationConfig,
       serverConfig: {
         status: 'ready',
         idTypes: res.idTypes,
@@ -123,9 +123,9 @@ export async function resolveWorkflow(
     // An abort we caused by the deadline reads as a timeout; an abort the
     // caller caused is a cancellation and must propagate untranslated, so the
     // caller can tell "the user left" from "this failed".
-    if (timedOut) throw toKycError(new WorkflowTimeoutError());
+    if (timedOut) throw toVerificationError(new WorkflowTimeoutError());
     if (signal?.aborted) throw err;
-    throw toKycError(err);
+    throw toVerificationError(err);
   } finally {
     clearTimeout(timer);
     signal?.removeEventListener('abort', abort);
@@ -140,12 +140,12 @@ export async function resolveWorkflow(
  * a named error beats the alternative, which is a flow that mounts and then
  * shows an empty ID-type list.
  */
-export function requireCountry(config: MyazaKYCConfig): ResolvedKYCConfig {
+export function requireCountry(config: VerificationConfig): ResolvedVerificationConfig {
   if (!config.country) {
-    throw new KYCError(
+    throw new VerificationError(
       'invalid_config',
       'A `country` is required unless you pass a `workflowId`.',
     );
   }
-  return config as ResolvedKYCConfig;
+  return config as ResolvedVerificationConfig;
 }

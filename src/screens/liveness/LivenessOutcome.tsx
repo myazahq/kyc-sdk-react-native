@@ -4,8 +4,8 @@ import { View } from 'react-native';
 import { spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
 import { useText } from '../../i18n/useText';
-import { MyazaText } from '../../components/Typography';
-import { MyazaButton } from '../../components/MyazaButton';
+import { UiText } from '../../components/Typography';
+import { UiButton } from '../../components/UiButton';
 import { SelfiePreview } from './SelfiePreview';
 import type { SelfieUpload } from './useSelfieUpload';
 import type { LivenessFailureReason } from '../../liveness/types';
@@ -57,23 +57,23 @@ export function LivenessComplete({
         <SelfiePreview uri={selfieUri} uploading={uploading && !uploadError} soft={soft} />
         {done ? (
           <View style={{ marginTop: spacing.md, gap: 4 }}>
-            <MyazaText variant="label" style={{ textAlign: 'center', fontWeight: '600' }}>
+            <UiText variant="label" style={{ textAlign: 'center', fontWeight: '600' }}>
               {SELFIE_DONE_TITLE}
-            </MyazaText>
-            <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ textAlign: 'center' }}>
+            </UiText>
+            <UiText variant="bodySmall" color={colors.textSecondary} style={{ textAlign: 'center' }}>
               {SELFIE_DONE_BODY}
-            </MyazaText>
+            </UiText>
           </View>
         ) : null}
         {retryInfo && uploading ? (
-          <MyazaText variant="bodySmall" color={colors.warning} style={{ textAlign: 'center', marginTop: spacing.sm }}>
+          <UiText variant="bodySmall" color={colors.warning} style={{ textAlign: 'center', marginTop: spacing.sm }}>
             {`Upload failed, retrying (${retryInfo.attempt}/${retryInfo.total})`}
-          </MyazaText>
+          </UiText>
         ) : null}
         <View style={{ height: spacing.md }} />
         {uploadError ? (
           // The error message itself is shown as a top toast; keep a retry action.
-          <MyazaButton
+          <UiButton
             label="Try Again"
             // Disabled while the retry is in flight, not spinning — the progress
             // indicator belongs in the selfie frame, where the work is.
@@ -84,7 +84,7 @@ export function LivenessComplete({
           <View style={{ flexDirection: 'row', gap: spacing.md }}>
             {done ? null : (
               <View style={{ flex: 1 }}>
-                <MyazaButton
+                <UiButton
                   label={t('common.retake')}
                   variant="outline"
                   leadingIcon="refresh"
@@ -103,7 +103,7 @@ export function LivenessComplete({
                   started the moment the selfie appeared and the button has been
                   disabled since. Disabled-and-quiet says "not yet"; a spinner
                   says "working on your request", which would be a lie. */}
-              <MyazaButton
+              <UiButton
                 label={t('common.continue')}
                 disabled={uploading || !selfieIdRef.current}
                 onPress={onContinue}

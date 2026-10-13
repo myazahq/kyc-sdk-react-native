@@ -1,7 +1,7 @@
 import { precisePositionOutcome } from '../../services/location';
 import { addressVendorsStubbed, SAMPLE_ADDRESS_LINE } from '../../lib/address-flow';
 import type { FixSource } from '../../lib/address-current-location';
-import type { KycStore } from '../../store/state';
+import type { VerificationStore } from '../../store/state';
 
 // ---------------------------------------------------------------------------
 // What the current-location cache needs from the flow: the GPS reader and the
@@ -11,7 +11,7 @@ import type { KycStore } from '../../store/state';
 // use-pin-actions.ts (200-line rule).
 // ---------------------------------------------------------------------------
 
-export function fixSourceFor(store: KycStore): FixSource {
+export function fixSourceFor(store: VerificationStore): FixSource {
   const stubbed = (): boolean =>
     addressVendorsStubbed({ environment: store.getState().serverConfig.environment });
   return {

@@ -20,7 +20,7 @@ interface TextVector {
 }
 
 const vectors = sharedVectors<{ texts: TextVector[] }>(
-  'kyc-sdk-flutter/test/customisable_texts_vectors.json',
+  'sdk-flutter/test/customisable_texts_vectors.json',
   { texts: [] },
 );
 const vectorKeys = vectors.texts.map((v) => v.key);

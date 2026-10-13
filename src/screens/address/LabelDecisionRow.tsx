@@ -4,7 +4,7 @@ import { Pressable, View } from 'react-native';
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
 import { Icon } from '../../components/Icon';
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 import { useText } from '../../i18n/useText';
 
 /**
@@ -52,16 +52,16 @@ export function LabelDecisionRow({
           <Icon name="map-pinned" size={16} color={colors.primary} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <MyazaText variant="bodyMedium" style={{ fontWeight: '600' }}>
+          <UiText variant="bodyMedium" style={{ fontWeight: '600' }}>
             {t('address.labelDecision.title')}
-          </MyazaText>
-          <MyazaText variant="bodySmall" color={colors.textSecondary}>
+          </UiText>
+          <UiText variant="bodySmall" color={colors.textSecondary}>
             Keep{' '}
-            <MyazaText variant="bodySmall" style={{ fontWeight: '600' }}>
+            <UiText variant="bodySmall" style={{ fontWeight: '600' }}>
               {label}
-            </MyazaText>{' '}
+            </UiText>{' '}
             as your address, or update it to match the new spot?
-          </MyazaText>
+          </UiText>
         </View>
       </View>
 
@@ -102,14 +102,14 @@ function DecisionButton({
         opacity: pressed ? 0.8 : 1,
       })}
     >
-      <MyazaText
+      <UiText
         variant="bodySmall"
         color={primary ? colors.onPrimary : colors.primary}
         style={{ fontWeight: '500' }}
         numberOfLines={1}
       >
         {label}
-      </MyazaText>
+      </UiText>
     </Pressable>
   );
 }

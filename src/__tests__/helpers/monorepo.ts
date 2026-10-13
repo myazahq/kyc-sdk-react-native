@@ -4,9 +4,9 @@ import { join } from 'path';
 // ─── Reading across the monorepo, and skipping outside it ────────────────────
 //
 // Some suites here read a SIBLING package: the shared vector files under
-// kyc-sdk-flutter/test (one rule written down as data for all three SDKs), and
+// sdk-flutter/test (one rule written down as data for all three SDKs), and
 // the web or Flutter source a mirror test diffs this SDK against. The public
-// repo (myazahq/kyc-sdk-react-native) carries this package alone, so those
+// repo (todenhq/kyc-sdk-react-native) carries this package alone, so those
 // files do not exist there, and every such suite failed with ENOENT on the
 // 2.6.0 publish, which refused the release. Outside the monorepo the
 // cross-package suites SKIP: the monorepo's own CI still runs all of them, so
@@ -18,10 +18,10 @@ import { join } from 'path';
 
 const PACKAGE_ROOT = join(__dirname, '../../..');
 const PACKAGES = join(PACKAGE_ROOT, '..');
-const OWN = 'kyc-sdk-react-native/';
+const OWN = 'sdk-react-native/';
 
 export const IN_MONOREPO =
-  existsSync(join(PACKAGES, 'kyc-sdk-flutter')) && existsSync(join(PACKAGES, 'kyc-sdk-react'));
+  existsSync(join(PACKAGES, 'sdk-flutter')) && existsSync(join(PACKAGES, 'sdk-react'));
 
 /** `describe` in the monorepo, `describe.skip` on the public mirror. */
 export const describeInMonorepo = IN_MONOREPO ? describe : describe.skip;

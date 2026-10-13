@@ -4,8 +4,8 @@ import Svg, { Line, Rect } from 'react-native-svg';
 
 import { headerSurface, spacing } from '../config/theme';
 import { cropImage, imageSize } from '../services/mediaCompress';
-import { MyazaText } from './Typography';
-import { MyazaButton } from './MyazaButton';
+import { UiText } from './Typography';
+import { UiButton } from './UiButton';
 import { Icon } from './Icon';
 import { useTheme } from './runtime';
 import { useText } from '../i18n/useText';
@@ -233,12 +233,12 @@ export function DocumentCropper({ uri, onCancel, onConfirm }: DocumentCropperPro
             <Icon name="close" size={20} color={colors.textDark} />
           </Pressable>
           <View style={{ flexShrink: 1 }}>
-            <MyazaText variant="bodyMedium" color={colors.textDark} style={{ fontWeight: '600' }}>
+            <UiText variant="bodyMedium" color={colors.textDark} style={{ fontWeight: '600' }}>
               Crop to ID Card
-            </MyazaText>
-            <MyazaText variant="bodySmall" color={colors.textMuted}>
+            </UiText>
+            <UiText variant="bodySmall" color={colors.textMuted}>
               Drag to reposition · handles to resize
-            </MyazaText>
+            </UiText>
           </View>
         </View>
 
@@ -283,7 +283,7 @@ export function DocumentCropper({ uri, onCancel, onConfirm }: DocumentCropperPro
         {/* Action bar */}
         <View style={[styles.actionBar, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
           {/* The flow's own button: primary from the workflow, its loading state while the crop runs. */}
-          <MyazaButton label={t('uploadDocument.crop.confirm')} leadingIcon="check" onPress={confirm} disabled={!crop} loading={processing} />
+          <UiButton label={t('uploadDocument.crop.confirm')} leadingIcon="check" onPress={confirm} disabled={!crop} loading={processing} />
         </View>
       </View>
     </Modal>

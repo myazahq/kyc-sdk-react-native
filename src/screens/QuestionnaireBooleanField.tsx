@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
+import { UiText } from '../components/Typography';
 import { useText } from '../i18n/useText';
 import type { QuestionnaireAnswerValue } from '../types/workflow';
 
@@ -68,13 +68,13 @@ function BooleanChoice({
         backgroundColor: selected ? colors.primary50 : 'transparent',
       }}
     >
-      <MyazaText
+      <UiText
         variant="body"
         color={selected ? colors.primary : undefined}
         style={{ fontWeight: '600' }}
       >
         {label}
-      </MyazaText>
+      </UiText>
     </Pressable>
   );
 }

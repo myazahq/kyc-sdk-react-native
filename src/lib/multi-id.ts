@@ -2,7 +2,7 @@
 // kept byte-for-byte in its logic: the server validates the pick sequence the
 // client produced, so a client that computes options differently produces
 // submissions the server rejects. If you change a rule here, change it in
-// kyc-sdk-react/src/lib/multi-id.ts, kyc-core/src/lib/multi-id.ts and the
+// sdk-react/src/lib/multi-id.ts, kyc-core/src/lib/multi-id.ts and the
 // dashboard's required-ids-model.ts in the same commit.
 //
 // Multi-ID flows: a workflow's `multiId` block asks for SEVERAL ID checks in

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Image, View } from 'react-native';
 
 import { CUSTOM_LOGO_HEIGHT, CUSTOM_LOGO_MAX_WIDTH, customLogoLabel, customLogoWidth } from '../lib/trust-attribution';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 
 // The org's own logo in place of the Myaza Trust lockup (custom attribution).
 // Mirrors the web SDK's TrustAttributionMark custom branch: sized like the
@@ -48,13 +48,13 @@ export function CustomAttributionMark({
   }
   if (!companyName) return null;
   return (
-    <MyazaText
+    <UiText
       variant="body"
       color={markColor}
       numberOfLines={1}
       style={{ flexShrink: 1, maxWidth: 160, fontSize: 14, fontWeight: '600' }}
     >
       {companyName}
-    </MyazaText>
+    </UiText>
   );
 }

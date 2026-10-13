@@ -4,7 +4,7 @@ import { join } from 'path';
 import { adoptionDecision, geoDefaultCountry } from '../lib/country-adoption';
 import { describeInMonorepo, sharedVectors } from './helpers/monorepo';
 
-// ─── The shared vectors (kyc-sdk-flutter/test/country_adoption_vectors.json)
+// ─── The shared vectors (sdk-flutter/test/country_adoption_vectors.json)
 //
 // One rule decides when a geocode or a picked address may change the declared
 // country, on all three SDKs. The vectors are the one place it is written
@@ -30,7 +30,7 @@ interface GeoVector {
 }
 
 const shared = sharedVectors<{ adoption: AdoptionVector[]; geoDefault: GeoVector[] }>(
-  'kyc-sdk-flutter/test/country_adoption_vectors.json',
+  'sdk-flutter/test/country_adoption_vectors.json',
   { adoption: [], geoDefault: [] },
 );
 
@@ -71,7 +71,7 @@ describe('the flow runs the rule', () => {
   });
 
   it('the store flags a guessed country and a pick clears it', () => {
-    const store = read('store/kycStore.ts');
+    const store = read('store/verificationStore.ts');
     expect(store).toMatch(/setCountryAuto\(country\)/);
     expect(store).toMatch(/selectedCountry: country,\s*countryAutoPicked: false,/);
   });

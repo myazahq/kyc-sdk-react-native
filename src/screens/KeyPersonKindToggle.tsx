@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
+import { UiText } from '../components/Typography';
 
 // Person or company.
 //
@@ -28,9 +28,9 @@ export function KeyPersonKindToggle({
 
   return (
     <View>
-      <MyazaText variant="bodySmall" style={{ fontWeight: '600', marginBottom: spacing.xs }}>
+      <UiText variant="bodySmall" style={{ fontWeight: '600', marginBottom: spacing.xs }}>
         Who is this?
-      </MyazaText>
+      </UiText>
       <View style={{ flexDirection: 'row', gap: spacing.sm }}>
         {options.map(({ value, label }) => {
           const selected = isCorporate === value;
@@ -52,13 +52,13 @@ export function KeyPersonKindToggle({
                 backgroundColor: selected ? `${colors.primary}1A` : 'transparent',
               }}
             >
-              <MyazaText
+              <UiText
                 variant="bodySmall"
                 style={{ fontWeight: '600' }}
                 color={selected ? colors.primary : colors.textSecondary}
               >
                 {label}
-              </MyazaText>
+              </UiText>
             </Pressable>
           );
         })}

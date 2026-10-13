@@ -7,8 +7,8 @@
 // still standing on the placeholder's opening step, having done nothing, is
 // moved to the real one. Anyone who has moved is left alone. Mirrors the
 // Flutter provider's _loadServerConfig (user report 2026-09-08).
-import { createKycStore } from '../store/kycStore';
-import type { ResolvedKYCConfig } from '../types/config';
+import { createVerificationStore } from '../store/verificationStore';
+import type { ResolvedVerificationConfig } from '../types/config';
 import type { ServerConfigState } from '../store/serverConfig';
 
 jest.useFakeTimers();
@@ -17,7 +17,7 @@ jest.useFakeTimers();
 // is stubbed at the module seam rather than on the state.
 const mockConfig = jest.fn();
 jest.mock('../services/api', () => ({
-  createKYCApi: () => ({ config: (...args: unknown[]) => mockConfig(...args) }),
+  createVerificationApi: () => ({ config: (...args: unknown[]) => mockConfig(...args) }),
 }));
 
 const CONFIG = {
@@ -27,7 +27,7 @@ const CONFIG = {
   scope: 'address',
   addressCollection: { enabled: true },
   metadata: {},
-} as unknown as ResolvedKYCConfig;
+} as unknown as ResolvedVerificationConfig;
 
 const READY: ServerConfigState = {
   status: 'ready',
@@ -52,11 +52,11 @@ function withConfigAnswer(): void {
 
 describe('opening step and the server config', () => {
   it('opens on the search step when the facts are preloaded', () => {
-    expect(createKycStore(CONFIG, READY).getState().currentStep).toBe('address-search');
+    expect(createVerificationStore(CONFIG, READY).getState().currentStep).toBe('address-search');
   });
 
   it('opens on the pin off the placeholder and moves to the search step once /config lands', async () => {
-    const store = createKycStore(CONFIG);
+    const store = createVerificationStore(CONFIG);
     expect(store.getState().currentStep).toBe('address-collection');
     withConfigAnswer();
     await store.getState().loadServerConfig();
@@ -65,7 +65,7 @@ describe('opening step and the server config', () => {
   });
 
   it('leaves an applicant who has already moved where they are', async () => {
-    const store = createKycStore(CONFIG);
+    const store = createVerificationStore(CONFIG);
     store.setState({ currentStep: 'address-review' });
     withConfigAnswer();
     await store.getState().loadServerConfig();

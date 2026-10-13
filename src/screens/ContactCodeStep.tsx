@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 
 import { spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
+import { UiText } from '../components/Typography';
 import { ContactCodeEntry } from '../components/ContactCodeEntry';
 import { ExpiryCountdown } from '../components/ExpiryCountdown';
 import { CHANNEL_LABELS, type PhoneOtpChannel } from '../config/contact';
@@ -77,9 +77,9 @@ export function ContactCodeStep({
         {expiresAt ? (
           <ExpiryCountdown expiresAt={expiresAt} />
         ) : (
-          <MyazaText variant="bodySmall" color={colors.textMuted}>
+          <UiText variant="bodySmall" color={colors.textMuted}>
             The code expires in 5 minutes.
-          </MyazaText>
+          </UiText>
         )}
         <Pressable
           onPress={() => onResend()}
@@ -87,13 +87,13 @@ export function ContactCodeStep({
           accessibilityRole="button"
           hitSlop={8}
         >
-          <MyazaText
+          <UiText
             variant="bodySmall"
             color={busy ? colors.textMuted : colors.primary}
             style={{ fontWeight: '600' }}
           >
             {t('contact.code.resend')}
-          </MyazaText>
+          </UiText>
         </Pressable>
       </View>
 
@@ -106,26 +106,26 @@ export function ContactCodeStep({
             accessibilityRole="button"
             hitSlop={8}
           >
-            <MyazaText
+            <UiText
               variant="bodySmall"
               color={colors.textMuted}
               style={{ textAlign: 'center' }}
             >
               {`Didn't get it? Send by ${CHANNEL_LABELS[otherChannel]} instead`}
-            </MyazaText>
+            </UiText>
           </Pressable>
         </>
       ) : null}
 
       {error ? (
-        <MyazaText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.sm }}>
+        <UiText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.sm }}>
           {/* The remaining count is what stops someone burning the whole
               budget guessing — without it there is no signal the code is
               about to die. */}
           {attemptsLeft !== undefined
             ? `${error} ${attemptsLeft} ${attemptsLeft === 1 ? 'attempt' : 'attempts'} left.`
             : error}
-        </MyazaText>
+        </UiText>
       ) : null}
     </View>
   );

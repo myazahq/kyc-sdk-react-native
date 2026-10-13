@@ -4,7 +4,7 @@ import { join } from 'path';
 // ─── A test that reads another package goes through the monorepo helper ──────
 //
 // The public mirror carries this package alone. A suite that reaches into
-// kyc-sdk-flutter or kyc-sdk-react by a relative path passes here and fails
+// sdk-flutter or sdk-react by a relative path passes here and fails
 // there with ENOENT, which is how seven suites refused the 2.6.0 publish.
 // helpers/monorepo.ts skips such suites outside the monorepo; this pins that
 // every cross-package read uses it, so the failure cannot come back one new

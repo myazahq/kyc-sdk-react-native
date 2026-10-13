@@ -4,7 +4,7 @@ import { Pressable, View } from 'react-native';
 import { radius, spacing } from '../config/theme';
 import { Icon } from '../components/Icon';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
+import { UiText } from '../components/Typography';
 import { SignaturePreview } from '../components/SignaturePreview';
 import type { SignatureDrawing } from '../lib/signature';
 
@@ -58,9 +58,9 @@ export function SignedSignatureRow({
       )}
       <View style={{ width: spacing.sm + 4 }} />
       <View style={{ flex: 1, minWidth: 0 }}>
-        <MyazaText variant="label" style={{ fontWeight: '600' }} numberOfLines={1}>
+        <UiText variant="label" style={{ fontWeight: '600' }} numberOfLines={1}>
           {'Signed on screen'}
-        </MyazaText>
+        </UiText>
       </View>
       <Pressable
         onPress={onEdit}
@@ -71,9 +71,9 @@ export function SignedSignatureRow({
       >
         <Icon name="pen-line" size={14} color={colors.primary} />
         <View style={{ width: 4 }} />
-        <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '600' }}>
+        <UiText variant="bodySmall" color={colors.primary} style={{ fontWeight: '600' }}>
           {'Edit'}
-        </MyazaText>
+        </UiText>
       </Pressable>
       <View style={{ width: spacing.sm + 4 }} />
       <Pressable onPress={onRemove} hitSlop={12} accessibilityRole="button" accessibilityLabel={`Remove ${label}`}>

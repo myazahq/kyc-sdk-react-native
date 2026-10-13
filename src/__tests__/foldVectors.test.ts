@@ -11,7 +11,7 @@ import { describeInMonorepo, sharedVectors } from './helpers/monorepo';
 // sides (Kotlin + Swift) must fold too — three implementations, one contract.
 // This test pins the TypeScript one; PresenceFoldTest.kt and
 // PresenceFoldTests.swift pin the other two against the same file.
-const VECTORS = 'kyc-sdk-flutter/test/presence_fold_vectors.json';
+const VECTORS = 'sdk-flutter/test/presence_fold_vectors.json';
 
 interface Vector {
   name: string;

@@ -2,15 +2,15 @@ import type { FlashHole } from '../components/flashHoleGeometry';
 // ---------------------------------------------------------------------------
 // The flow's state shapes.
 //
-// Split from kycStore.ts (200-line rule). These are pure type declarations plus
+// Split from verificationStore.ts (200-line rule). These are pure type declarations plus
 // their empty values — no store, no actions — so any module can describe the
 // state without importing the store and its whole dependency graph.
 // ---------------------------------------------------------------------------
 
 import type { StoreApi } from 'zustand/vanilla';
 
-import type { BusinessCompanyRecord, KYCApi, KeyPersonInvite, RegistryOfficer } from '../services/api';
-import type { IdType, KYCStep, ResolvedKYCConfig } from '../types/config';
+import type { BusinessCompanyRecord, VerificationApi, KeyPersonInvite, RegistryOfficer } from '../services/api';
+import type { IdType, VerificationStep, ResolvedVerificationConfig } from '../types/config';
 import type { PoaDocumentType } from '../types/workflow';
 import type { ApplicantRole } from '../types/business';
 import type { QuestionnaireAnswers } from '../config/questionnaire';
@@ -24,7 +24,7 @@ import type { EmrtdReadResult } from '../emrtd';
 import type { SelfieUploadState } from '../lib/selfie-upload-wait';
 import type { SilentCaptureFrame, SilentCaptureMoment } from '../lib/silentCapture';
 
-export interface KYCMediaIds {
+export interface VerificationMediaIds {
   /** Proof-of-address document (image or PDF). */
   proofOfAddress?: string;
   /** Address Intelligence door photo (image only). */
@@ -37,7 +37,7 @@ export interface KYCMediaIds {
   livenessVideo?: string;
 }
 
-export interface KYCSubmissionResult {
+export interface VerificationSubmissionResult {
   verificationId: string;
   status: 'processing';
 }
@@ -268,7 +268,7 @@ export interface AddressState {
 export type DocumentCapturePhase = 'front' | 'front-preview' | 'back' | 'review';
 
 /** The mediaIds keys settable via `setMediaId`. */
-export type MediaIdKey = keyof KYCMediaIds;
+export type MediaIdKey = keyof VerificationMediaIds;
 
 /** One committed multi-ID check. `documentFront/Back` are mediaIds; the
  *  `*Image` fields are LOCAL previews and never reach the wire. */
@@ -290,11 +290,11 @@ export interface MultiIdSlot {
   documentBackImage?: string;
 }
 
-export interface KycState {
-  config: ResolvedKYCConfig;
-  api: KYCApi;
+export interface VerificationState {
+  config: ResolvedVerificationConfig;
+  api: VerificationApi;
 
-  currentStep: KYCStep;
+  currentStep: VerificationStep;
   /**
    * The attempt SESSION this run is recorded under (`/session/start`). Null
    * when minting failed or preview — verifying is never conditional on it. It
@@ -363,8 +363,8 @@ export interface KycState {
    * it is the durable proof; this is the in-flight state.
    */
   selfieUpload: SelfieUploadState;
-  mediaIds: KYCMediaIds;
-  submissionResult: KYCSubmissionResult | null;
+  mediaIds: VerificationMediaIds;
+  submissionResult: VerificationSubmissionResult | null;
   serverConfig: ServerConfigState;
   documentScanPhase: DocumentScanPhase;
   /** Sub-phase of the document-capture step — synced by the screen so the header
@@ -506,9 +506,9 @@ export interface KycState {
   setIdNumber: (idNumber: string) => void;
   /** Commit the current slot's evidence and move to the next check. The
    *  previews come from the capture screen, which owns them. */
-  commitMultiIdSlot: (nextStep: KYCStep, previews?: { front?: string; back?: string }) => void;
+  commitMultiIdSlot: (nextStep: VerificationStep, previews?: { front?: string; back?: string }) => void;
   /** Step BACK into the previous slot, restoring what it captured. */
-  uncommitMultiIdSlot: (step: KYCStep) => void;
+  uncommitMultiIdSlot: (step: VerificationStep) => void;
   setMediaId: (key: MediaIdKey, mediaId: string) => void;
   /** Record the captured selfie's local path (null on retake). */
   setSelfiePreview: (uri: string | null) => void;
@@ -563,7 +563,7 @@ export interface KycState {
   clearProofOfAddress: () => void;
   /** Set / update the smart address (null clears it). */
   setAddress: (address: AddressState | null) => void;
-  setAddressSandboxOutcome: (outcome: KycState['addressSandboxOutcome']) => void;
+  setAddressSandboxOutcome: (outcome: VerificationState['addressSandboxOutcome']) => void;
   /** Attach / remove the door photo (null removes it). */
   setAddressPhoto: (mediaId: string | null) => void;
   /** Remember the local URI of the picked entrance photo (null on remove). */
@@ -583,8 +583,8 @@ export interface KycState {
   setLivenessCameraOn: (on: boolean) => void;
   nextStep: () => void;
   previousStep: () => void;
-  goToStep: (step: KYCStep) => void;
-  submitAsync: (onRetry?: (attempt: number, total: number) => void) => Promise<KYCSubmissionResult>;
+  goToStep: (step: VerificationStep) => void;
+  submitAsync: (onRetry?: (attempt: number, total: number) => void) => Promise<VerificationSubmissionResult>;
   reset: () => void;
 }
 
@@ -593,4 +593,4 @@ export interface KycState {
 // Flow navigation — single source of truth for the 5-step sequence.
 // ---------------------------------------------------------------------------
 
-export type KycStore = StoreApi<KycState>;
+export type VerificationStore = StoreApi<VerificationState>;

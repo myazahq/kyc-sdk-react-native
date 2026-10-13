@@ -4,8 +4,8 @@ import { initialWindowMetrics } from 'react-native-safe-area-context';
 
 import { radius, spacing } from '../config/theme';
 import { Icon } from './Icon';
-import { MyazaText } from './Typography';
-import { MyazaButton } from './MyazaButton';
+import { UiText } from './Typography';
+import { UiButton } from './UiButton';
 import { Chip, CHIP_TEXT, type ReviewSide } from './DocumentReviewSide';
 import type { DocumentReviewCopy } from './documentReviewCopy';
 
@@ -73,9 +73,9 @@ export function DocumentReviewZoom({
       >
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Chip>
-            <MyazaText variant="bodySmall" color="#FFFFFF" style={[CHIP_TEXT, { flexShrink: 1 }]}>
+            <UiText variant="bodySmall" color="#FFFFFF" style={[CHIP_TEXT, { flexShrink: 1 }]}>
               {side.label}
-            </MyazaText>
+            </UiText>
           </Chip>
           <View style={{ flex: 1 }} />
           {/* A filled circle, not a bare glyph on a dark field: the way out of
@@ -110,7 +110,7 @@ export function DocumentReviewZoom({
         </Pressable>
 
         <View style={{ height: spacing.sm }} />
-        <MyazaButton
+        <UiButton
           label={copy.redoSide(side.label)}
           leadingIcon="refresh"
           variant="outline"

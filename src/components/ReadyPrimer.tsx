@@ -3,8 +3,8 @@ import { Animated, Easing, ScrollView, View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from './runtime';
-import { MyazaText } from './Typography';
-import { MyazaButton } from './MyazaButton';
+import { UiText } from './Typography';
+import { UiButton } from './UiButton';
 import { Icon } from './Icon';
 import type { ReadyContent } from './readyPrimerContent';
 import { useText } from '../i18n/useText';
@@ -82,13 +82,13 @@ export function ReadyPrimer({
         </View>
 
         <View style={{ height: spacing.md }} />
-        <MyazaText variant="heading3" style={{ textAlign: 'center' }}>
+        <UiText variant="heading3" style={{ textAlign: 'center' }}>
           {title}
-        </MyazaText>
+        </UiText>
         <View style={{ height: 6 }} />
-        <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ textAlign: 'center' }}>
+        <UiText variant="bodySmall" color={colors.textSecondary} style={{ textAlign: 'center' }}>
           {body}
-        </MyazaText>
+        </UiText>
       </View>
 
       <View style={{ height: 20 }} />
@@ -110,15 +110,15 @@ export function ReadyPrimer({
             <Icon name={item.icon} size={18} color={colors.primary} />
           </View>
           <View style={{ width: 12 }} />
-          <MyazaText variant="bodyMedium" style={{ flex: 1 }}>
+          <UiText variant="bodyMedium" style={{ flex: 1 }}>
             {item.label}
-          </MyazaText>
+          </UiText>
         </View>
       ))}
 
       <View style={{ height: 8 }} />
-      {/* One primary action. MyazaButton already clears the 44pt minimum. */}
-      <MyazaButton label={buttonLabel ?? t('primer.readyButton')} onPress={onReady} />
+      {/* One primary action. UiButton already clears the 44pt minimum. */}
+      <UiButton label={buttonLabel ?? t('primer.readyButton')} onPress={onReady} />
     </ScrollView>
   );
 }

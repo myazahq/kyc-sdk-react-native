@@ -2,13 +2,13 @@ import React from 'react';
 import { View } from 'react-native';
 
 import { radius, spacing } from '../../config/theme';
-import { useKyc, useKycConfig, useKycStore, useTheme } from '../../components/runtime';
-import { MyazaText } from '../../components/Typography';
-import { MyazaButton } from '../../components/MyazaButton';
+import { useFlowState, useVerificationConfig, useVerificationStore, useTheme } from '../../components/runtime';
+import { UiText } from '../../components/Typography';
+import { UiButton } from '../../components/UiButton';
 import { Icon } from '../../components/Icon';
 import { MilestoneTrack, type Milestone } from '../../components/MilestoneTrack';
 import { IntroDisclosures } from './IntroDisclosures';
-import type { KYCStep } from '../../types/config';
+import type { VerificationStep } from '../../types/config';
 import { useText } from '../../i18n/useText';
 import type { TextFn } from '../../i18n/types';
 
@@ -58,14 +58,14 @@ const milestonesFor = (background: boolean, t: TextFn): readonly Milestone[] => 
  * step renders `gate ?? its own body`.
  */
 export function useAddressIntroGate(
-  step: KYCStep,
-  firstStep: KYCStep,
+  step: VerificationStep,
+  firstStep: VerificationStep,
 ): React.ReactElement | null {
-  const config = useKycConfig();
-  const store = useKycStore();
+  const config = useVerificationConfig();
+  const store = useVerificationStore();
   const { colors } = useTheme();
   const t = useText();
-  const seen = useKyc((s) => s.addressIntroSeen);
+  const seen = useFlowState((s) => s.addressIntroSeen);
   const presence = config.addressCollection?.presence?.enabled === true;
   // Background monitoring is on unless the workflow turns it off.
   const background = config.addressCollection?.presence?.background !== false;
@@ -106,7 +106,7 @@ export function useAddressIntroGate(
             }}
           >
             <Icon name="map-pin-check" size={12} color={colors.primary} />
-            <MyazaText
+            <UiText
               variant="bodySmall"
               color={colors.primary}
               style={{
@@ -117,16 +117,16 @@ export function useAddressIntroGate(
               }}
             >
               {t('address.intro.badge')}
-            </MyazaText>
+            </UiText>
           </View>
           {/* Web's `text-base font-semibold`: the BODY face at 16/600, not a
               heading, so it matches the review card's address line. */}
-          <MyazaText variant="body" style={{ marginTop: spacing.sm, fontWeight: '600' }}>
+          <UiText variant="body" style={{ marginTop: spacing.sm, fontWeight: '600' }}>
             {t('address.intro.title')}
-          </MyazaText>
-          <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 2 }}>
+          </UiText>
+          <UiText variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 2 }}>
             {t('address.intro.description')}
-          </MyazaText>
+          </UiText>
         </View>
 
         <MilestoneTrack milestones={milestonesFor(background, t)} numbered />
@@ -136,7 +136,7 @@ export function useAddressIntroGate(
       <IntroDisclosures background={background} />
 
       <View style={{ height: spacing.lg }} />
-      <MyazaButton
+      <UiButton
         label={t('address.intro.start')}
         onPress={() => store.getState().markAddressIntroSeen()}
       />

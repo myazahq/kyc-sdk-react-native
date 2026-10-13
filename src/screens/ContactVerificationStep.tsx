@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
-import { useEffectiveCountry, useKyc, useKycConfig, useKycStore } from '../components/runtime';
+import { useEffectiveCountry, useFlowState, useVerificationConfig, useVerificationStore } from '../components/runtime';
 import { ContactActions } from './ContactActions';
 import { ContactEntryPanel } from './ContactEntryPanel';
 import { ContactVerifiedPanel } from './ContactVerifiedPanel';
@@ -32,11 +32,11 @@ export function ContactVerificationStep({
 }: {
   channel: 'email' | 'phone';
 }): React.ReactElement {
-  const config = useKycConfig();
+  const config = useVerificationConfig();
   const country = useEffectiveCountry();
-  const store = useKycStore();
-  const contact = useKyc((s) => s.contact);
-  const serverConfig = useKyc((s) => s.serverConfig);
+  const store = useVerificationStore();
+  const contact = useFlowState((s) => s.contact);
+  const serverConfig = useFlowState((s) => s.serverConfig);
 
   const isEmail = channel === 'email';
   const stepConfig = isEmail ? config.emailVerification : config.phoneVerification;

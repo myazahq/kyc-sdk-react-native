@@ -3,7 +3,7 @@ import { Animated, View } from 'react-native';
 
 import { radius } from '../config/theme';
 import { useTheme } from './runtime';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 import { useReduceMotion } from './StaggerIn';
 
 // ─── A text line that is on its way ─────────────────────────────────────────
@@ -20,7 +20,7 @@ import { useReduceMotion } from './StaggerIn';
 // Mirrors the web SDK's components/LineSkeleton and Flutter's
 // widgets/line_skeleton.dart.
 
-type Variant = React.ComponentProps<typeof MyazaText>['variant'];
+type Variant = React.ComponentProps<typeof UiText>['variant'];
 
 export function LineSkeleton({
   label,
@@ -65,9 +65,9 @@ export function LineSkeleton({
     >
       {/* An invisible line in the real variant owns the height, so the card
           does not move when the words replace the bar. */}
-      <MyazaText variant={variant} style={[textStyle, { opacity: 0 }]} numberOfLines={1}>
+      <UiText variant={variant} style={[textStyle, { opacity: 0 }]} numberOfLines={1}>
         {' '}
-      </MyazaText>
+      </UiText>
       <Animated.View
         pointerEvents="none"
         style={{

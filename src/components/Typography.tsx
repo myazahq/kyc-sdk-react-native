@@ -4,9 +4,10 @@ import { StyleSheet, Text, type TextProps, type TextStyle } from 'react-native';
 import { useTheme } from './runtime';
 import { fontFamilyFor, markFamilyName } from './fonts';
 
-// Branded text. `variant` picks size/weight; headings render in Space Grotesk and
-// body/labels in Karla — the SAME families the Flutter SDK uses (google_fonts) —
-// resolved per weight by `fontFamilyFor` once expo-font has loaded them.
+// Branded text. `variant` picks size/weight. Headings, and any text at 16px or
+// more, render in Bricolage Grotesque; smaller text renders in Geist. These are
+// the SAME families and the same rule the Flutter and web SDKs use, resolved
+// per weight by `fontFamilyFor` once expo-font has loaded them.
 
 export type TextVariant =
   | 'heading1'
@@ -31,7 +32,10 @@ const VARIANTS: Record<TextVariant, TextStyle> = {
 
 const HEADINGS = new Set<TextVariant>(['heading1', 'heading2', 'heading3']);
 
-export interface MyazaTextProps extends TextProps {
+/** Text at this size or larger takes the heading typeface (the brand type rule). */
+const LARGE_COPY_FROM = 16;
+
+export interface UiTextProps extends TextProps {
   variant?: TextVariant;
   color?: string;
   /**
@@ -44,13 +48,13 @@ export interface MyazaTextProps extends TextProps {
   brandMark?: boolean;
 }
 
-export function MyazaText({
+export function UiText({
   variant = 'body',
   color,
   style,
   brandMark = false,
   ...rest
-}: MyazaTextProps): React.ReactElement {
+}: UiTextProps): React.ReactElement {
   const { colors, fontsLoaded, brandFonts } = useTheme();
   const defaultColor =
     variant === 'bodyMedium'
@@ -60,12 +64,18 @@ export function MyazaText({
         : colors.textDark;
 
   // Flatten variant + caller style so an inline `fontWeight` override selects the
-  // right Space Grotesk / Karla weight (custom fonts ignore `fontWeight`, so the
+  // right bundled weight (custom fonts ignore `fontWeight`, so the
   // weight must be baked into the family).
   const flat = (StyleSheet.flatten([VARIANTS[variant], style]) ?? {}) as TextStyle;
   const family = brandMark
     ? markFamilyName(flat.fontWeight, fontsLoaded)
-    : fontFamilyFor(HEADINGS.has(variant), flat.fontWeight, fontsLoaded, brandFonts);
+    : fontFamilyFor(
+        HEADINGS.has(variant),
+        flat.fontWeight,
+        fontsLoaded,
+        brandFonts,
+        typeof flat.fontSize === 'number' && flat.fontSize >= LARGE_COPY_FROM,
+      );
 
   return (
     <Text

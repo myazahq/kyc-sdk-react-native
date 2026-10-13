@@ -3,7 +3,7 @@ import { NOT_SHOWN } from './not-shown';
 
 // ---------------------------------------------------------------------------
 // The keys a workflow may change. The set is the shared contract
-// (kyc-sdk-flutter/test/customisable_texts_vectors.json, pinned by
+// (sdk-flutter/test/customisable_texts_vectors.json, pinned by
 // customisableTexts.test.ts), split two ways:
 //
 //   • DEFAULT_TEXTS: the keys this SDK shows, each with ITS OWN default (the

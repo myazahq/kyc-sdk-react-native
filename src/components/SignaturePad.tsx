@@ -8,7 +8,7 @@ import { useTheme } from './runtime';
 import { useScrollLock } from './ScrollLock';
 import { TouchGuard } from './TouchGuard';
 import { useReduceMotion } from './StaggerIn';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 import {
   hasSignature,
   MAX_POINTS,
@@ -207,13 +207,13 @@ export function SignaturePad({
             style={{ position: 'absolute', left: 24, right: 24, bottom: 36, height: 1, backgroundColor: '#D4D4D4' }}
           />
           {empty ? (
-            <MyazaText
+            <UiText
               variant="bodySmall"
               color="#737373"
               style={{ position: 'absolute', left: 0, right: 0, bottom: 10, textAlign: 'center' }}
             >
               {hint}
-            </MyazaText>
+            </UiText>
           ) : null}
         </View>
         {/* iOS: keeps the stroke from also scrolling the page or dragging the
@@ -251,13 +251,13 @@ export function SignaturePad({
           })}
         >
           <Icon name={expanded ? 'minimize' : 'maximize'} size={12} color="#262626" />
-          <MyazaText
+          <UiText
             variant="bodySmall"
             color="#262626"
             style={{ fontWeight: '600', fontSize: 11, lineHeight: 13, marginLeft: 4 }}
           >
             {expanded ? 'Collapse' : 'Expand'}
-          </MyazaText>
+          </UiText>
         </Pressable>
       </Animated.View>
       <View style={{ alignItems: 'flex-end', marginTop: 8 }}>
@@ -275,9 +275,9 @@ export function SignaturePad({
             opacity: disabled || empty ? 0.5 : pressed ? 0.7 : 1,
           })}
         >
-          <MyazaText variant="label" color={colors.primary} style={{ fontSize: 12 }}>
+          <UiText variant="label" color={colors.primary} style={{ fontSize: 12 }}>
             {clearLabel}
-          </MyazaText>
+          </UiText>
         </Pressable>
       </View>
     </View>

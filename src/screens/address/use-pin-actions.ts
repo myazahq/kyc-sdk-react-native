@@ -14,7 +14,7 @@ import { adoptionDecision } from '../../lib/country-adoption';
 import { configScope } from '../../lib/scope';
 import { useLabelPin } from './use-label-pin';
 import { fixSourceFor } from './fix-source';
-import type { KycStore } from '../../store/state';
+import type { VerificationStore } from '../../store/state';
 
 // ---------------------------------------------------------------------------
 // The pin's mechanics — the shared current-location fix and every way the pin
@@ -45,7 +45,7 @@ export interface PinActions {
 }
 
 export function usePinActions(
-  store: KycStore,
+  store: VerificationStore,
   setError: (message: string | null) => void,
 ): PinActions {
   const [fix, setFix] = useState<CurrentFix | null>(cachedFix());

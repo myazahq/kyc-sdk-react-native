@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { spacing } from '../config/theme';
 import { useTheme } from './runtime';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 import { CountryFlag } from './CountryFlag';
 import { GeoBadge } from './GeoBadge';
 import type { DialCodeOption } from './DialCodePicker';
@@ -49,14 +49,14 @@ export function DialCodeRow({
       {/* No line clamp: "Bosnia & Herzegovina" and the like must read in full,
           which is what Flutter's Expanded(Text) gives. Full body size (16),
           the web dropdown's reading size — 14 read small against the flags. */}
-      <MyazaText variant="body" style={{ flex: 1 }}>
+      <UiText variant="body" style={{ flex: 1 }}>
         {option.name}
-      </MyazaText>
+      </UiText>
       {badge ? <GeoBadge label={badge} /> : null}
       {option.dialCode != null ? (
-        <MyazaText variant="bodyMedium" color={colors.textSecondary}>
+        <UiText variant="bodyMedium" color={colors.textSecondary}>
           {option.dialCode}
-        </MyazaText>
+        </UiText>
       ) : null}
     </Pressable>
   );
@@ -69,7 +69,7 @@ export function DialCodeRow({
 export function DialCodeRegionHeader({ region }: { region: string }): React.ReactElement {
   const { colors } = useTheme();
   return (
-    <MyazaText
+    <UiText
       variant="bodySmall"
       color={colors.textSecondary}
       accessibilityRole="header"
@@ -82,7 +82,7 @@ export function DialCodeRegionHeader({ region }: { region: string }): React.Reac
       }}
     >
       {region.toUpperCase()}
-    </MyazaText>
+    </UiText>
   );
 }
 

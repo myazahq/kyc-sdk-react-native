@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { radius, spacing } from '../../config/theme';
-import { useKyc, useKycStore, useTheme } from '../../components/runtime';
-import { MyazaText } from '../../components/Typography';
-import { MyazaButton } from '../../components/MyazaButton';
+import { useFlowState, useVerificationStore, useTheme } from '../../components/runtime';
+import { UiText } from '../../components/Typography';
+import { UiButton } from '../../components/UiButton';
 import { displayAddressLine, addressVendorsStubbed } from '../../lib/address-flow';
 import { useAuthedImage } from '../../lib/authed-image';
 import { missingFieldsNudge, missingRequiredAddressFields } from '../../lib/address-field-modes';
@@ -26,14 +26,14 @@ import { useText } from '../../i18n/useText';
  * surface is ReviewMapPicture, the thumbnails ReviewEntranceThumbs.
  */
 export function AddressReviewStep(): React.ReactElement {
-  const store = useKycStore();
+  const store = useVerificationStore();
   const { colors } = useTheme();
   const t = useText();
   const flow = useAddressFlow();
-  const previewUri = useKyc((s) => s.addressPhotoPreview);
-  const mapsFrameUrl = useKyc((s) => s.serverConfig.mapsFrameUrl ?? null);
+  const previewUri = useFlowState((s) => s.addressPhotoPreview);
+  const mapsFrameUrl = useFlowState((s) => s.serverConfig.mapsFrameUrl ?? null);
   const vendorsStubbed = addressVendorsStubbed({
-    environment: useKyc((s) => s.serverConfig.environment ?? null),
+    environment: useFlowState((s) => s.serverConfig.environment ?? null),
   });
 
   // A resumed session can land straight here with a pin that predates the
@@ -50,7 +50,7 @@ export function AddressReviewStep(): React.ReactElement {
   // key lives in the framed page, never in this SDK. Fetched with the SDK's
   // bearer by lib/authed-image (an <Image> header is dropped on Android).
   const frame = address?.streetView ?? null;
-  const api = useKyc((s) => s.api);
+  const api = useFlowState((s) => s.api);
   const frameImage = useAuthedImage(frame ? api.streetViewPreviewSource(frame) : null, 'Street View entrance');
   const frameSource = frameImage.uri ? { uri: frameImage.uri } : null;
   // The map as a picture, through the same bearer; a refused one (the Static
@@ -135,23 +135,23 @@ export function AddressReviewStep(): React.ReactElement {
       </View>
 
       {flow.error ? (
-        <MyazaText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.sm }}>
+        <UiText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.sm }}>
           {flow.error}
-        </MyazaText>
+        </UiText>
       ) : null}
       {missingRequired.length > 0 ? (
-        <MyazaText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.sm }}>
+        <UiText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.sm }}>
           {`${missingFieldsNudge(missingRequired)} `}
-          <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '600' }} onPress={toPin}>
+          <UiText variant="bodySmall" color={colors.primary} style={{ fontWeight: '600' }} onPress={toPin}>
             Edit details
-          </MyazaText>
-        </MyazaText>
+          </UiText>
+        </UiText>
       ) : null}
 
       <View style={{ height: spacing.lg }} />
       <AddressSandboxTabs />
       <View style={{ height: spacing.md }} />
-      <MyazaButton
+      <UiButton
         label={t('address.review.confirm')}
         loading={flow.confirming}
         disabled={!flow.pin || missingRequired.length > 0}

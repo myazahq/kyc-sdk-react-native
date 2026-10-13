@@ -3,7 +3,7 @@ import { View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from './runtime';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 
 /**
  * The "Your location" pill beside a pinned geo row: primary tint, primary
@@ -26,9 +26,9 @@ export function GeoBadge({ label }: { label: string }): React.ReactElement {
         backgroundColor: colors.primary50,
       }}
     >
-      <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '500' }}>
+      <UiText variant="bodySmall" color={colors.primary} style={{ fontWeight: '500' }}>
         {label}
-      </MyazaText>
+      </UiText>
     </View>
   );
 }

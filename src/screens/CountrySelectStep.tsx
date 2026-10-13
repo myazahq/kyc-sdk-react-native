@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View } from 'react-native';
 
-import { useKyc, useKycConfig, useKycStore } from '../components/runtime';
+import { useFlowState, useVerificationConfig, useVerificationStore } from '../components/runtime';
 import { CountryRegionPicker, CountryRow } from '../components/CountryRegionPicker';
 import { regionCountryName } from '../config/regions';
 import { countrySelectOptions } from '../store/derive';
@@ -24,16 +24,16 @@ import { countrySelectOptions } from '../store/derive';
 export const COUNTRY_SEARCH_THRESHOLD = 5;
 
 export function CountrySelectStep(): React.ReactElement {
-  const config = useKycConfig();
-  const store = useKycStore();
+  const config = useVerificationConfig();
+  const store = useVerificationStore();
   // Only an actual PICK counts as selected. `useEffectiveCountry` falls back to
   // the workflow's primary country, which on this screen would render a
   // highlighted row for a choice the user has not made yet.
-  const selected = useKyc((s) => s.selectedCountry);
+  const selected = useFlowState((s) => s.selectedCountry);
 
   // Multi-region flows carry `countries`; the KYB applicant leg does not, so
   // it offers the org's GRANTED countries instead — see countrySelectOptions.
-  const serverConfig = useKyc((s) => s.serverConfig);
+  const serverConfig = useFlowState((s) => s.serverConfig);
   const options = useMemo(
     () => countrySelectOptions({ config, serverConfig }),
     [config, serverConfig],

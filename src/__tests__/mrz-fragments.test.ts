@@ -6,7 +6,7 @@ import { extractMrz } from '../mrz/extract';
 // line as two text lines: a passport's two-line band came back as three lines
 // and no candidate had the right width (seen on the Flutter SDK, 2026-09-15).
 // These pin that split lines are joined back, and that a join still has to
-// pass the check digits. Mirrored in kyc-sdk-flutter's mrz_extract_test.dart.
+// pass the check digits. Mirrored in sdk-flutter's mrz_extract_test.dart.
 
 // ICAO 9303 specimen, the same one mrz.test.ts uses.
 const TD3_L1 = 'P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<';

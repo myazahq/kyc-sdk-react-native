@@ -39,18 +39,18 @@ export * from './api-types';
 // WinterCG `fetch` whose serializer rejects the `{ uri }` form.
 // ---------------------------------------------------------------------------
 
-export class KYCApiError extends Error {
+export class VerificationApiError extends Error {
   statusCode: number;
   code?: string;
   body?: Record<string, unknown>;
 
   constructor(message: string, statusCode: number, code?: string, body?: Record<string, unknown>) {
     super(message);
-    this.name = 'KYCApiError';
+    this.name = 'KYCApiError'; // the earlier name, kept: callers may match on it;
     this.statusCode = statusCode;
     this.code = code;
     this.body = body;
-    Object.setPrototypeOf(this, KYCApiError.prototype);
+    Object.setPrototypeOf(this, VerificationApiError.prototype);
   }
 }
 
@@ -111,7 +111,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
     const errObj = typeof data === 'object' && data !== null ? (data as Record<string, unknown>) : {};
     const message = String(errObj.message ?? errObj.error ?? `Request failed with status ${res.status}`);
     const code = typeof errObj.error === 'string' ? errObj.error : undefined;
-    throw new KYCApiError(message, res.status, code, errObj);
+    throw new VerificationApiError(message, res.status, code, errObj);
   }
   return data as T;
 }
@@ -152,7 +152,7 @@ function normalizeMimeType(rawType: string | undefined, type: MediaUploadType): 
 // Factory
 // ---------------------------------------------------------------------------
 
-export interface KYCApiOptions {
+export interface VerificationApiOptions {
   /**
    * Resolves the per-install device id sent as `X-Myaza-Device-Id` on every
    * upload — the same value the submission's `fingerprint.deviceId` carries,
@@ -165,7 +165,7 @@ export interface KYCApiOptions {
 /** The upload headers: the shared ones plus the device id, when known. */
 export async function uploadHeaders(
   headers: Record<string, string>,
-  deviceId: KYCApiOptions['deviceId'],
+  deviceId: VerificationApiOptions['deviceId'],
 ): Promise<Record<string, string>> {
   // Best-effort by contract: a device id that cannot be read must never cost
   // the applicant their upload.
@@ -173,8 +173,8 @@ export async function uploadHeaders(
   return id ? { ...headers, 'X-Myaza-Device-Id': id } : headers;
 }
 
-export function createKYCApi(baseUrl: string, apiKey: string, options: KYCApiOptions = {}) {
-  const base = `${baseUrl}/api/kyc`;
+export function createVerificationApi(baseUrl: string, apiKey: string, options: VerificationApiOptions = {}) {
+  const base = `${baseUrl}/api/v1`;
   const headers = baseHeaders(apiKey);
 
   // JSON request to our own server (verify, status, config, health).
@@ -209,10 +209,10 @@ export function createKYCApi(baseUrl: string, apiKey: string, options: KYCApiOpt
       // content-type; pass the filename as the 3rd append arg.
       const blob = await uriToBlob(file.uri, mimeType);
       // Hard size ceiling (used for best-effort videos): reject locally rather than
-      // wasting an upload the server will refuse. A 4xx KYCApiError is terminal, so
+      // wasting an upload the server will refuse. A 4xx VerificationApiError is terminal, so
       // withRetry won't retry it and the caller drops the media.
       if (maxBytes != null && blob.size > maxBytes) {
-        throw new KYCApiError(
+        throw new VerificationApiError(
           `File too large (${(blob.size / 1024 / 1024).toFixed(1)}MB > ${(maxBytes / 1024 / 1024).toFixed(0)}MB)`,
           413,
           'file_too_large',
@@ -558,5 +558,5 @@ export function createKYCApi(baseUrl: string, apiKey: string, options: KYCApiOpt
   };
 }
 
-export type KYCApi = ReturnType<typeof createKYCApi>;
+export type VerificationApi = ReturnType<typeof createVerificationApi>;
 

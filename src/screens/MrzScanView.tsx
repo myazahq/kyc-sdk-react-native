@@ -10,9 +10,9 @@ import { runOnJS } from 'react-native-worklets';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
-import { MyazaButton } from '../components/MyazaButton';
-import { MyazaPulseLoader } from '../components/MyazaPulseLoader';
+import { UiText } from '../components/Typography';
+import { UiButton } from '../components/UiButton';
+import { UiPulseLoader } from '../components/UiPulseLoader';
 import { extractMrz } from '../mrz/extract';
 import { recognizeMrzLines, MRZ_BAND_FRACTION } from '../mrz/textRecognizer';
 import { useTextModelReady } from '../mrz/useTextModelReady';
@@ -94,15 +94,15 @@ export function MrzScanView({
   if (!hasPermission) {
     return (
       <Centered>
-        <MyazaText variant="bodyMedium" style={{ textAlign: 'center' }}>
+        <UiText variant="bodyMedium" style={{ textAlign: 'center' }}>
           {denied
             ? 'Camera access is off, so the printed code cannot be read. You can still continue without the chip.'
             : 'We need the camera to read the printed code on your document.'}
-        </MyazaText>
+        </UiText>
         {denied ? null : (
           <>
             <View style={{ height: spacing.md }} />
-            <MyazaButton label="Allow camera" onPress={askForCamera} />
+            <UiButton label="Allow camera" onPress={askForCamera} />
           </>
         )}
       </Centered>
@@ -112,9 +112,9 @@ export function MrzScanView({
   if (device == null) {
     return (
       <Centered>
-        <MyazaText variant="bodyMedium" color={colors.error} style={{ textAlign: 'center' }}>
+        <UiText variant="bodyMedium" color={colors.error} style={{ textAlign: 'center' }}>
           No camera is available on this device.
-        </MyazaText>
+        </UiText>
       </Centered>
     );
   }
@@ -126,10 +126,10 @@ export function MrzScanView({
   if (modelState === 'unavailable') {
     return (
       <Centered>
-        <MyazaText variant="bodyMedium" style={{ textAlign: 'center' }}>
+        <UiText variant="bodyMedium" style={{ textAlign: 'center' }}>
           The text reader could not be set up on this device, so the printed code
           cannot be read. You can still continue without the chip.
-        </MyazaText>
+        </UiText>
       </Centered>
     );
   }
@@ -137,11 +137,11 @@ export function MrzScanView({
   if (modelState === 'preparing') {
     return (
       <Centered>
-        <MyazaPulseLoader size={24} />
+        <UiPulseLoader size={24} />
         <View style={{ height: spacing.md }} />
-        <MyazaText variant="bodyMedium" style={{ textAlign: 'center' }}>
+        <UiText variant="bodyMedium" style={{ textAlign: 'center' }}>
           Getting the text reader ready. This only happens once.
-        </MyazaText>
+        </UiText>
       </Centered>
     );
   }
@@ -193,7 +193,7 @@ export function MrzScanView({
           alignItems: 'center',
         }}
       >
-        <MyazaPulseLoader size={20} />
+        <UiPulseLoader size={20} />
       </View>
     </View>
   );

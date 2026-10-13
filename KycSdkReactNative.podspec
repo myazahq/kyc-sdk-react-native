@@ -8,10 +8,10 @@ Pod::Spec.new do |s|
   s.summary        = package['description']
   s.license        = package['license']
   s.author         = 'Myaza'
-  s.homepage       = 'https://github.com/myazahq/kyc-sdk-react-native'
+  s.homepage       = 'https://github.com/todenhq/kyc-sdk-react-native'
   s.platforms      = { :ios => '15.1' }
   s.swift_version  = '5.9'
-  s.source         = { :git => 'https://github.com/myazahq/kyc-sdk-react-native.git', :tag => "#{s.version}" }
+  s.source         = { :git => 'https://github.com/todenhq/kyc-sdk-react-native.git', :tag => "#{s.version}" }
 
   # Apple Vision face-detector — a VisionCamera v5 Nitro HybridObject
   # (ios/HybridMyazaFaceDetector.swift), generated from

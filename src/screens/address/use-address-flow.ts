@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useKyc, useKycConfig, useKycStore } from '../../components/runtime';
+import { useFlowState, useVerificationConfig, useVerificationStore } from '../../components/runtime';
 import { addressFlowFor } from '../../config/addressCollection';
 import { webViewAvailable } from '../../lib/webview-available';
 import { isBusinessFlow } from '../../config/business';
@@ -10,11 +10,11 @@ import { defaultMapView } from '../../lib/map-tiles';
 import { buildStepOrder, nextStepInOrder } from '../../config/stepOrder';
 import { geoDefaultCountry } from '../../lib/country-adoption';
 import { configScope } from '../../lib/scope';
-import { stepOrderOptions } from '../../store/kycStore';
+import { stepOrderOptions } from '../../store/verificationStore';
 import { deviceFixFields } from '../../services/location';
 import { savePresencePin } from '../../presence/store';
 import { usePinActions } from './use-pin-actions';
-import type { KYCStep } from '../../types/config';
+import type { VerificationStep } from '../../types/config';
 import type { AddressState } from '../../store/state';
 
 // ---------------------------------------------------------------------------
@@ -34,20 +34,20 @@ import type { AddressState } from '../../store/state';
 // ---------------------------------------------------------------------------
 
 export function useAddressFlow() {
-  const config = useKycConfig();
-  const store = useKycStore();
-  const address = useKyc((s) => s.address);
-  const serverSearch = useKyc((s) => s.serverConfig.addressSearch === true);
-  const selectedCountry = useKyc((s) => s.selectedCountry);
-  const businessCountry = useKyc((s) => s.business.country);
+  const config = useVerificationConfig();
+  const store = useVerificationStore();
+  const address = useFlowState((s) => s.address);
+  const serverSearch = useFlowState((s) => s.serverConfig.addressSearch === true);
+  const selectedCountry = useFlowState((s) => s.selectedCountry);
+  const businessCountry = useFlowState((s) => s.business.country);
   const [uploading, setUploading] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const cfg = config.addressCollection;
   const isBusiness = isBusinessFlow(config);
-  const vendorEnvironment = useKyc((s) => s.serverConfig.environment ?? null);
-  const mapsFrameUrl = useKyc((s) => s.serverConfig.mapsFrameUrl ?? null);
+  const vendorEnvironment = useFlowState((s) => s.serverConfig.environment ?? null);
+  const mapsFrameUrl = useFlowState((s) => s.serverConfig.mapsFrameUrl ?? null);
   const flow = addressFlowFor(
     config,
     serverSearch,
@@ -62,7 +62,7 @@ export function useAddressFlow() {
   // array on every render would make `goNext` a new function each time, and
   // the entrance step depends on that identity inside an effect.
   const { searchAvailable, photoMode, streetViewOffered } = flow;
-  const steps: KYCStep[] = useMemo(
+  const steps: VerificationStep[] = useMemo(
     () =>
       isBusiness
         ? ['address-collection']
@@ -76,8 +76,8 @@ export function useAddressFlow() {
   // applicant sits on a screen the order does not contain, where Continue has
   // nothing to advance to and Back has no predecessor. Gated on the config
   // having settled: until then the order is not the real one.
-  const configSettled = useKyc((s) => s.serverConfig.status !== 'loading');
-  const currentStep = useKyc((s) => s.currentStep);
+  const configSettled = useFlowState((s) => s.serverConfig.status !== 'loading');
+  const currentStep = useFlowState((s) => s.currentStep);
   useEffect(() => {
     if (!configSettled || !isAddressStep(currentStep)) return;
     const options = stepOrderOptions(store.getState());
@@ -90,7 +90,7 @@ export function useAddressFlow() {
   // The address scope declares the visitor's IP country by default, ONCE,
   // while nothing is declared; a geocode or a picked address then corrects
   // the guess (lib/country-adoption.ts). A full flow never defaults from it.
-  const geoCountry = useKyc((s) => s.serverConfig.geoCountry ?? null);
+  const geoCountry = useFlowState((s) => s.serverConfig.geoCountry ?? null);
   useEffect(() => {
     const s = store.getState();
     const country = geoDefaultCountry({

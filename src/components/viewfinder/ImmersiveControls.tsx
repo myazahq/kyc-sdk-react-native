@@ -4,7 +4,7 @@ import Svg, { Circle } from 'react-native-svg';
 
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../runtime';
-import { MyazaText } from '../Typography';
+import { UiText } from '../Typography';
 import { Icon } from '../Icon';
 import { CountryFlag } from '../CountryFlag';
 import { CHROME_SCRIM, ChromeGlass } from '../glass/ChromeGlass';
@@ -86,9 +86,9 @@ export function SideBadge({ side, top }: { side: 'front' | 'back'; top: number }
         paddingVertical: 8,
       }}
     >
-      <MyazaText variant="bodySmall" color="#FFFFFF" style={{ fontWeight: '800', letterSpacing: 0.8 }}>
+      <UiText variant="bodySmall" color="#FFFFFF" style={{ fontWeight: '800', letterSpacing: 0.8 }}>
         {side === 'back' ? 'BACK' : 'FRONT'}
-      </MyazaText>
+      </UiText>
     </View>
   );
 }
@@ -126,14 +126,14 @@ export function DocumentPill({
             <View style={{ width: 9 }} />
           </>
         ) : null}
-        <MyazaText
+        <UiText
           variant="bodyMedium"
           color="#FFFFFF"
           numberOfLines={1}
           style={{ fontWeight: '700', flexShrink: 1 }}
         >
           {label}
-        </MyazaText>
+        </UiText>
       </View>
     </View>
   );

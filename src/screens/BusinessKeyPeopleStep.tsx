@@ -2,9 +2,9 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
-import { useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
-import { MyazaButton } from '../components/MyazaButton';
+import { useFlowState, useVerificationConfig, useVerificationStore, useTheme } from '../components/runtime';
+import { UiText } from '../components/Typography';
+import { UiButton } from '../components/UiButton';
 import { useText } from '../i18n/useText';
 import { DashedBorder } from '../components/DashedBorder';
 import { KeyPeopleSectionsList } from './KeyPeopleSectionsList';
@@ -39,14 +39,14 @@ import { prefillKeyPeople, shouldPrefill } from '../config/keyPeoplePrefill';
 type SheetState = { mode: 'add' | 'edit'; section: SectionKey; index?: number } | null;
 
 export function BusinessKeyPeopleStep(): React.ReactElement {
-  const config = useKycConfig();
+  const config = useVerificationConfig();
   const t = useText();
-  const store = useKycStore();
+  const store = useVerificationStore();
   const { colors } = useTheme();
-  const rows = useKyc((s) => s.businessApplication.keyPeople);
-  const uboUnidentifiable = useKyc((s) => s.businessApplication.uboUnidentifiable);
-  const registryCountry = useKyc((s) => s.business.country);
-  const officers = useKyc((s) => s.businessCheck.officers);
+  const rows = useFlowState((s) => s.businessApplication.keyPeople);
+  const uboUnidentifiable = useFlowState((s) => s.businessApplication.uboUnidentifiable);
+  const registryCountry = useFlowState((s) => s.business.country);
+  const officers = useFlowState((s) => s.businessCheck.officers);
   const [sheet, setSheet] = useState<SheetState>(null);
 
   // Start from the register's own officer list (fetched by the paid check at
@@ -146,9 +146,9 @@ export function BusinessKeyPeopleStep(): React.ReactElement {
           }}
         >
           <DashedBorder color={colors.border} radius={radius.sm} strokeWidth={1} />
-          <MyazaText variant="bodyMedium" color={colors.textSecondary}>
+          <UiText variant="bodyMedium" color={colors.textSecondary}>
             {hint}
-          </MyazaText>
+          </UiText>
         </View>
       ) : null}
 
@@ -165,13 +165,13 @@ export function BusinessKeyPeopleStep(): React.ReactElement {
       />
 
       {!canAdd ? (
-        <MyazaText
+        <UiText
           variant="bodyMedium"
           color={colors.textMuted}
           style={{ textAlign: 'center', marginTop: spacing.lg }}
         >
           {`You can list up to ${MAX_KEY_PEOPLE_ROWS} people here.`}
-        </MyazaText>
+        </UiText>
       ) : null}
 
       {/* Total-ownership summary at the DECISION point — the disabled
@@ -190,26 +190,26 @@ export function BusinessKeyPeopleStep(): React.ReactElement {
             paddingVertical: spacing.sm + 4,
           }}
         >
-          <MyazaText variant="bodyMedium" color={overAllocated ? colors.error : colors.textMuted}>
+          <UiText variant="bodyMedium" color={overAllocated ? colors.error : colors.textMuted}>
             Total ownership listed
-          </MyazaText>
-          <MyazaText
+          </UiText>
+          <UiText
             variant="bodyMedium"
             color={overAllocated ? colors.error : colors.textDark}
             style={{ fontWeight: '700' }}
           >
             {`${fmtPct(totalPct)}%`}
-          </MyazaText>
+          </UiText>
         </View>
       ) : null}
       {overAllocated ? (
-        <MyazaText variant="bodyMedium" color={colors.error} style={{ marginTop: spacing.xs }}>
+        <UiText variant="bodyMedium" color={colors.error} style={{ marginTop: spacing.xs }}>
           {`Together the percentages can't exceed 100%, so reduce them by ${fmtPct(totalPct - 100)}%.`}
-        </MyazaText>
+        </UiText>
       ) : null}
 
       <View style={{ height: spacing.lg }} />
-      <MyazaButton label={t('common.continue')} onPress={handleContinue} disabled={!canContinue} />
+      <UiButton label={t('common.continue')} onPress={handleContinue} disabled={!canContinue} />
 
       {sheet && (sheet.mode === 'add' || editEntry) ? (
         <KeyPersonSheet

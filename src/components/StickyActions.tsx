@@ -15,7 +15,7 @@ import { useTheme } from './runtime';
  * view means the applicant never has to get past the map to move on, and
  * everything else still scrolls under them.
  *
- * Needs a BOUNDED parent: the step must be listed in KycFlow's fillsViewport
+ * Needs a BOUNDED parent: the step must be listed in VerificationFlow's fillsViewport
  * set, where the sheet hands it a flex:1 box padded `spacing.md`. The footer's
  * negative margins cancel that padding so the bar meets the sheet's edge, and
  * the same padding is restored inside so the buttons keep their gutter.

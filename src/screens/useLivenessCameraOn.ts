@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useStore } from 'zustand';
 
-import { useKycStore } from '../components/runtime';
+import { useVerificationStore } from '../components/runtime';
 import { latchBrightScreen } from '../lib/bright-screen';
 
 // ---------------------------------------------------------------------------
@@ -17,7 +17,7 @@ import { latchBrightScreen } from '../lib/bright-screen';
 // ---------------------------------------------------------------------------
 
 export function useLivenessCameraOn(cameraOnScreen: boolean): void {
-  const store = useKycStore();
+  const store = useVerificationStore();
   const setOn = useStore(store, (s) => s.setLivenessCameraOn);
   // Scoped to this mount: a fresh visit to the step starts unlatched.
   const latched = useRef(false);

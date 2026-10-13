@@ -3,7 +3,7 @@ import { View } from 'react-native';
 
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 import { Icon } from '../../components/Icon';
 
 // "Required: {label}" pill with optional side badge + step label — mirrors the
@@ -36,24 +36,24 @@ export function RequiredPill({
       >
         <Icon name="credit-card" size={16} color={colors.primary} />
         <View style={{ width: 8 }} />
-        <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '600' }}>
+        <UiText variant="bodySmall" color={colors.primary} style={{ fontWeight: '600' }}>
           Required:{' '}
-        </MyazaText>
-        <MyazaText variant="bodySmall" color={colors.primary} style={{ flexShrink: 1 }}>
+        </UiText>
+        <UiText variant="bodySmall" color={colors.primary} style={{ flexShrink: 1 }}>
           {documentLabel}
-        </MyazaText>
+        </UiText>
         {sideBadge ? (
           <View style={{ backgroundColor: `${colors.primary}26`, borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 2, marginLeft: 8 }}>
-            <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '600', fontSize: 11 }}>
+            <UiText variant="bodySmall" color={colors.primary} style={{ fontWeight: '600', fontSize: 11 }}>
               {sideBadge}
-            </MyazaText>
+            </UiText>
           </View>
         ) : null}
       </View>
       {stepLabel ? (
-        <MyazaText variant="bodySmall" color={colors.textMuted} style={{ marginLeft: spacing.sm }}>
+        <UiText variant="bodySmall" color={colors.textMuted} style={{ marginLeft: spacing.sm }}>
           {stepLabel}
-        </MyazaText>
+        </UiText>
       ) : null}
     </View>
   );

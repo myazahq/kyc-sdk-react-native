@@ -2,8 +2,8 @@ import React, { useEffect } from 'react';
 import { View } from 'react-native';
 
 import { spacing } from '../../config/theme';
-import { useKyc, useKycStore, useTheme } from '../../components/runtime';
-import { MyazaText } from '../../components/Typography';
+import { useFlowState, useVerificationStore, useTheme } from '../../components/runtime';
+import { UiText } from '../../components/Typography';
 import { pickedAddressState } from '../../lib/address-helpers';
 import { useAddressFlow } from './use-address-flow';
 import { useAddressIntroGate } from './AddressIntroGate';
@@ -16,10 +16,10 @@ import { SkipForNow } from './SkipForNow';
  * step.
  */
 export function AddressSearchStep(): React.ReactElement {
-  const store = useKycStore();
+  const store = useVerificationStore();
   const { colors } = useTheme();
   const flow = useAddressFlow();
-  const autocomplete = useKyc((s) => s.serverConfig.addressSearchMode === 'autocomplete');
+  const autocomplete = useFlowState((s) => s.serverConfig.addressSearchMode === 'autocomplete');
   const gate = useAddressIntroGate('address-search', flow.steps[0]!);
 
   // Warm the GPS and its reverse geocode from the moment the flow is reached,
@@ -83,9 +83,9 @@ export function AddressSearchStep(): React.ReactElement {
       />
 
       {flow.error ? (
-        <MyazaText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.sm }}>
+        <UiText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.sm }}>
           {flow.error}
-        </MyazaText>
+        </UiText>
       ) : null}
 
       <SkipForNow requirePin={flow.cfg?.requirePin} onPress={flow.exitForward} />

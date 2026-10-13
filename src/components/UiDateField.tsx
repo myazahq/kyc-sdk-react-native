@@ -12,7 +12,7 @@ import {
 } from '../lib/calendar';
 import { Icon } from './Icon';
 import { useTheme } from './runtime';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 import { FloatingSheet } from './glass/FloatingSheet';
 
 /**
@@ -29,7 +29,7 @@ import { FloatingSheet } from './glass/FloatingSheet';
  * Years run NEWEST-FIRST in the year grid: the common date questions are
  * birthdays and document dates, both reached faster from the recent end.
  */
-export function MyazaDateField({
+export function UiDateField({
   value,
   onChange,
   placeholder,
@@ -56,7 +56,7 @@ export function MyazaDateField({
           paddingHorizontal: spacing.md,
           paddingVertical: spacing.md,
           borderRadius: radius.sm,
-          // Mirrors MyazaInput's border grammar so the two field kinds sit
+          // Mirrors UiInput's border grammar so the two field kinds sit
           // side by side without looking like different systems.
           borderWidth: error ? 1.5 : 1,
           borderColor: error ? colors.error : colors.border,
@@ -65,15 +65,15 @@ export function MyazaDateField({
       >
         <Icon name="calendar" size={18} color={colors.textSecondary} />
         <View style={{ width: spacing.sm }} />
-        <MyazaText variant="body" color={selected ? undefined : colors.textMuted} style={{ flex: 1 }}>
+        <UiText variant="body" color={selected ? undefined : colors.textMuted} style={{ flex: 1 }}>
           {selected ? value! : (placeholder ?? 'Select a date')}
-        </MyazaText>
+        </UiText>
         <Icon name="chevron-down" size={18} color={colors.textSecondary} />
       </Pressable>
       {error ? (
-        <MyazaText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.xs }}>
+        <UiText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.xs }}>
           {error}
-        </MyazaText>
+        </UiText>
       ) : null}
 
       {open ? (
@@ -135,7 +135,7 @@ function DatePickerSheet({
               accessibilityLabel="Choose year"
               style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 4 }}
             >
-              <MyazaText variant="label">{`${MONTH_NAMES[cursor.month0]} ${cursor.year}`}</MyazaText>
+              <UiText variant="label">{`${MONTH_NAMES[cursor.month0]} ${cursor.year}`}</UiText>
               <Icon name="chevron-down" size={16} color={colors.textSecondary} />
             </Pressable>
             <Pressable
@@ -160,13 +160,13 @@ function DatePickerSheet({
                     }}
                     style={{ width: '25%', paddingVertical: spacing.sm, alignItems: 'center' }}
                   >
-                    <MyazaText
+                    <UiText
                       variant="body"
                       color={y === cursor.year ? colors.primary : undefined}
                       style={y === cursor.year ? { fontWeight: '600' } : undefined}
                     >
                       {String(y)}
-                    </MyazaText>
+                    </UiText>
                   </Pressable>
                 ))}
               </View>
@@ -175,14 +175,14 @@ function DatePickerSheet({
             <>
               <View style={{ flexDirection: 'row' }}>
                 {WEEKDAY_INITIALS.map((w, i) => (
-                  <MyazaText
+                  <UiText
                     key={`${w}${i}`}
                     variant="bodySmall"
                     color={colors.textMuted}
                     style={{ flex: 1, textAlign: 'center' }}
                   >
                     {w}
-                  </MyazaText>
+                  </UiText>
                 ))}
               </View>
               {weeks.map((week, wi) => (
@@ -207,12 +207,12 @@ function DatePickerSheet({
                           borderColor: colors.primary,
                         }}
                       >
-                        <MyazaText
+                        <UiText
                           variant="body"
                           color={isSelected(day) ? colors.onPrimary : undefined}
                         >
                           {String(day)}
-                        </MyazaText>
+                        </UiText>
                       </Pressable>
                     ),
                   )}

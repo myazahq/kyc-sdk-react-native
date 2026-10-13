@@ -10,8 +10,8 @@ import {
 
 import { spacing } from '../config/theme';
 import { useTheme } from './runtime';
-import { MyazaText } from './Typography';
-import { MyazaInput } from './MyazaInput';
+import { UiText } from './Typography';
+import { UiInput } from './UiInput';
 import { Icon } from './Icon';
 import { FloatingSheet } from './glass/FloatingSheet';
 import { DialCodeDivider, DialCodeRegionHeader, DialCodeRow } from './DialCodeRow';
@@ -20,14 +20,14 @@ import { buildDialCodeItems, dialCodeItemKey, filterDialCodeOptions, type DialCo
 // ---------------------------------------------------------------------------
 // THE country sheet — the phone field's dial-code picker, generalised.
 //
-// A dedicated searchable sheet rather than MyazaSelect: that control renders
+// A dedicated searchable sheet rather than UiSelect: that control renders
 // every option in a ScrollView, which is fine for four document kinds and
 // unusable for ~240 countries. A FlatList keeps the list smooth on a low-end
 // Android device. `dialCode` is optional: with it this is the phone picker,
 // without it a plain country picker (the key-people "where their ID was
 // issued" field) — SAME sheet, SAME search, so the two feel identical.
 //
-// Laid out to match Flutter's showDialCodePicker row for row: a MyazaInput with
+// Laid out to match Flutter's showDialCodePicker row for row: a UiInput with
 // a search prefix on top, then flag / full country name / dial code, with the
 // selected row tinted rather than ticked.
 //
@@ -121,7 +121,7 @@ export function DialCodePicker({
           {/* Deliberately NOT autofocused: springing the keyboard the instant
               the sheet opens hides half the list before the person has even
               seen it — search is one tap away for whoever wants it. */}
-          <MyazaInput
+          <UiInput
             value={query}
             onChangeText={setQuery}
             placeholder={searchPlaceholder}
@@ -141,9 +141,9 @@ export function DialCodePicker({
             ) : null
           }
           ListEmptyComponent={
-            <MyazaText variant="bodyMedium" style={{ padding: spacing.lg, textAlign: 'center' }}>
+            <UiText variant="bodyMedium" style={{ padding: spacing.lg, textAlign: 'center' }}>
               No countries match your search.
-            </MyazaText>
+            </UiText>
           }
           renderItem={({ item }) =>
             item.kind === 'header' ? (

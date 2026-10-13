@@ -178,7 +178,7 @@ describe('the wiring', () => {
   });
 
   it('the sheet root lights the screen, beneath the flash', () => {
-    const sheet = src('components/KycSheet.tsx');
+    const sheet = src('components/VerificationSheet.tsx');
     expect(sheet.indexOf('<BrightScreen />')).toBeGreaterThan(-1);
     expect(sheet.indexOf('<BrightScreen />')).toBeLessThan(sheet.indexOf('<FlashOverlay />'));
     // The toggle is disabled, not hidden, while the theme is held.

@@ -3,9 +3,9 @@ import { View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
-import { MyazaInput } from '../components/MyazaInput';
-import { MyazaSelect } from '../components/MyazaSelect';
+import { UiText } from '../components/Typography';
+import { UiInput } from '../components/UiInput';
+import { UiSelect } from '../components/UiSelect';
 import { CountryFlag } from '../components/CountryFlag';
 import { currencyFlagCountry, currencyName } from '../config/currencyFlags';
 import { formatGroupedAmount, parseGroupedAmount } from '../utils/amountFormat';
@@ -23,7 +23,7 @@ import type { QuestionnaireAnswerValue, QuestionnaireField as FieldDef } from '.
 // rather than a unit attached to the number above them.
 // ---------------------------------------------------------------------------
 
-/** Matches MyazaInput's single-line height so the two controls line up. */
+/** Matches UiInput's single-line height so the two controls line up. */
 const CONTROL_HEIGHT = 48;
 
 /** Flag for a currency code — blank for supranational codes (XOF, XAU…). */
@@ -78,11 +78,11 @@ export function MoneyField({
     <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
       {currencies.length > 1 ? (
         <>
-          {/* Height is pinned so the select matches MyazaInput's single-line
+          {/* Height is pinned so the select matches UiInput's single-line
               box exactly; without it the select renders short and the two
               controls sit at different heights. */}
           <View style={{ height: CONTROL_HEIGHT }}>
-            <MyazaSelect<string>
+            <UiSelect<string>
               value={currency}
               sheetTitle="Currency"
               height={CONTROL_HEIGHT}
@@ -112,16 +112,16 @@ export function MoneyField({
           >
             <CurrencyFlag code={currency} />
             <View style={{ width: spacing.xs }} />
-            <MyazaText variant="body" style={{ fontWeight: '600' }}>
+            <UiText variant="body" style={{ fontWeight: '600' }}>
               {currency}
-            </MyazaText>
+            </UiText>
           </View>
           <View style={{ width: spacing.sm }} />
         </>
       ) : null}
 
       <View style={{ flex: 1 }}>
-        <MyazaInput
+        <UiInput
           value={display}
           onChangeText={onAmountText}
           placeholder={field.placeholder ?? '0.00'}

@@ -1,4 +1,4 @@
-import type { KYCStep } from '../types/config';
+import type { VerificationStep } from '../types/config';
 
 // ---------------------------------------------------------------------------
 // The address flow as REAL steps: find it (search) → confirm it (pin, with the
@@ -42,8 +42,8 @@ export interface AddressFlowOptions {
 }
 
 /** The individual flow's address steps, in order. */
-export function addressFlowSteps(o: AddressFlowOptions): KYCStep[] {
-  const steps: KYCStep[] = [];
+export function addressFlowSteps(o: AddressFlowOptions): VerificationStep[] {
+  const steps: VerificationStep[] = [];
   if (o.searchAvailable) steps.push('address-search');
   steps.push('address-collection');
   if (o.photoMode !== 'off' || o.streetViewOffered) steps.push('address-entrance');
@@ -51,7 +51,7 @@ export function addressFlowSteps(o: AddressFlowOptions): KYCStep[] {
   return steps;
 }
 
-const ADDRESS_STEPS: ReadonlySet<KYCStep> = new Set<KYCStep>([
+const ADDRESS_STEPS: ReadonlySet<VerificationStep> = new Set<VerificationStep>([
   'address-search',
   'address-collection',
   'address-entrance',
@@ -59,16 +59,16 @@ const ADDRESS_STEPS: ReadonlySet<KYCStep> = new Set<KYCStep>([
 ]);
 
 /** Whether `step` belongs to the address flow. */
-export function isAddressStep(step: KYCStep): boolean {
+export function isAddressStep(step: VerificationStep): boolean {
   return ADDRESS_STEPS.has(step);
 }
 
-export function nextAddressStep(steps: KYCStep[], current: KYCStep): KYCStep | null {
+export function nextAddressStep(steps: VerificationStep[], current: VerificationStep): VerificationStep | null {
   const i = steps.indexOf(current);
   return i >= 0 && i + 1 < steps.length ? steps[i + 1]! : null;
 }
 
-export function prevAddressStep(steps: KYCStep[], current: KYCStep): KYCStep | null {
+export function prevAddressStep(steps: VerificationStep[], current: VerificationStep): VerificationStep | null {
   const i = steps.indexOf(current);
   return i > 0 ? steps[i - 1]! : null;
 }

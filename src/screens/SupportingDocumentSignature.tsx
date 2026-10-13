@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { useTheme } from '../components/runtime';
-import { MyazaButton } from '../components/MyazaButton';
-import { MyazaText } from '../components/Typography';
+import { UiButton } from '../components/UiButton';
+import { UiText } from '../components/Typography';
 import { SignaturePad } from '../components/SignaturePad';
 import { hasSignature, type SignatureDrawing } from '../lib/signature';
 
@@ -46,7 +46,7 @@ export function SupportingDocumentSignature({
         }}
       />
       <View style={{ height: 8 }} />
-      <MyazaButton
+      <UiButton
         label={saving ? 'Saving…' : 'Use this signature'}
         loading={saving}
         disabled={!ready || !drawing}
@@ -67,9 +67,9 @@ export function SupportingDocumentSignature({
             opacity: saving ? 0.5 : pressed ? 0.7 : 1,
           })}
         >
-          <MyazaText variant="label" color={colors.primary} style={{ fontSize: 12 }}>
+          <UiText variant="label" color={colors.primary} style={{ fontSize: 12 }}>
             {'Upload a photo of your signature instead'}
-          </MyazaText>
+          </UiText>
         </Pressable>
       ) : null}
     </View>

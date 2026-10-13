@@ -1,4 +1,4 @@
-import { createKYCApi } from '../services/api';
+import { createVerificationApi } from '../services/api';
 
 // ─── The two review-card pictures come through OUR server ────────────────────
 //
@@ -8,12 +8,12 @@ import { createKYCApi } from '../services/api';
 // because an <Image> handed `source.headers` drops them on Android (the
 // server answered 401 to every thumbnail; Galaxy S24, 2026-09-07).
 
-const api = createKYCApi('https://trust.myaza.app', 'pk_test_abc123');
+const api = createVerificationApi('https://trust.myaza.app', 'pk_test_abc123');
 
 describe('staticMapSource', () => {
   it('points at our own server and carries the bearer', () => {
     const source = api.staticMapSource({ lat: 4.9331, lng: 8.3258 });
-    expect(source.uri.startsWith('https://trust.myaza.app/api/kyc/address/static-map?')).toBe(true);
+    expect(source.uri.startsWith('https://trust.myaza.app/api/v1/address/static-map?')).toBe(true);
     expect(source.headers.Authorization).toBe('Bearer pk_test_abc123');
     // Never Google directly: a browser key in this SDK is the thing the framed
     // page exists to avoid.
@@ -46,7 +46,7 @@ describe('streetViewPreviewSource', () => {
       pitch: -15,
       fov: 60,
     });
-    expect(source.uri.startsWith('https://trust.myaza.app/api/kyc/address/street-view-preview?')).toBe(true);
+    expect(source.uri.startsWith('https://trust.myaza.app/api/v1/address/street-view-preview?')).toBe(true);
     expect(source.headers.Authorization).toBe('Bearer pk_test_abc123');
     const params = new URLSearchParams(source.uri.split('?')[1]);
     expect(params.get('panoId')).toBe('2upafFBbqcZP-du1e0DxYw');

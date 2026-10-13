@@ -9,7 +9,7 @@ import type { GestureChallenge } from './types';
 // They used to be four GIFs bundled in this package — 5.5 MB, shipped to every
 // device whatever the workflow asked for, for a badge that is on screen for a
 // few seconds of the liveness step. They are served by the API instead
-// (`/api/kyc/assets/liveness/<gesture>.gif`), prefetched when the flow opens,
+// (`/api/v1/assets/liveness/<gesture>.gif`), prefetched when the flow opens,
 // and cached by the platform image loader from then on.
 //
 // GIF on BOTH platforms deliberately, even though the server also has WebP at a
@@ -31,7 +31,7 @@ export function livenessAvatarUrl(
   try {
     // Throws on a malformed key, which is a real error everywhere else in the
     // SDK and merely a missing cartoon here.
-    return `${resolveBaseUrl(apiKey, devUrl)}/api/kyc/assets/liveness/${challenge}-transparent.gif`;
+    return `${resolveBaseUrl(apiKey, devUrl)}/api/v1/assets/liveness/${challenge}-transparent.gif`;
   } catch {
     return null;
   }

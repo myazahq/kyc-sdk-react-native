@@ -24,7 +24,7 @@ import { windowRect, type Rect, type Size, aboveHeight } from '../../lib/livenes
 //   footer    what rests on the bottom edge
 // ---------------------------------------------------------------------------
 
-/** The gap the sheet leaves over its back and close buttons (KycSheet). */
+/** The gap the sheet leaves over its back and close buttons (VerificationSheet). */
 const CONTROLS_TOP_GAP = 8;
 
 export function ImmersiveFrame({

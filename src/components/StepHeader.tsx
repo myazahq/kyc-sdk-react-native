@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { spacing } from '../config/theme';
 import type { SupportedCountry } from '../types/config';
 import { useTheme } from './runtime';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 import { GlassIconButton } from './GlassIconButton';
 import { CountryFlag } from './CountryFlag';
 
@@ -55,9 +55,9 @@ export function StepHeader({ title, description, onBack, country }: StepHeaderPr
             it reads as a marker on the title, wherever the text wraps.
             Seen on a Galaxy S24. */}
         <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-start' }}>
-          <MyazaText variant="heading2" numberOfLines={2} style={{ flexShrink: 1 }}>
+          <UiText variant="heading2" numberOfLines={2} style={{ flexShrink: 1 }}>
             {title}
-          </MyazaText>
+          </UiText>
           {country ? (
             // The flag box is the height of one line of heading2, with the flag
             // centred in it — so it sits on the first line's optical centre
@@ -76,13 +76,13 @@ export function StepHeader({ title, description, onBack, country }: StepHeaderPr
         </View>
       </View>
       {description ? (
-        <MyazaText
+        <UiText
           variant="bodyMedium"
           color={colors.textSecondary}
           style={{ marginTop: spacing.xs, marginLeft: onBack ? BACK_FOOTPRINT : 0 }}
         >
           {description}
-        </MyazaText>
+        </UiText>
       ) : null}
     </View>
   );

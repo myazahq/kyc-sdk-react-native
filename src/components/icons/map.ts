@@ -50,7 +50,7 @@ import MapPinIcon from '@hugeicons/core-free-icons/MapPinIcon';
 import Message01Icon from '@hugeicons/core-free-icons/Message01Icon';
 import MinusSignIcon from '@hugeicons/core-free-icons/MinusSignIcon';
 import MoonIcon from '@hugeicons/core-free-icons/MoonIcon';
-import NfcIcon from '@hugeicons/core-free-icons/NfcIcon';
+import NfcIcon from '@hugeicons/core-free-icons/SmartphoneNfcIcon';
 import PenTool01Icon from '@hugeicons/core-free-icons/PenTool01Icon';
 import PencilEdit01Icon from '@hugeicons/core-free-icons/PencilEdit01Icon';
 import PencilIcon from '@hugeicons/core-free-icons/PencilIcon';

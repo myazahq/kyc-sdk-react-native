@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { useOptionalKycConfig } from '../components/runtime';
+import { useOptionalVerificationConfig } from '../components/runtime';
 import { createTextFn } from './translate';
 import type { TextFn } from './types';
 
@@ -11,7 +11,7 @@ import type { TextFn } from './types';
  * any text may use them. Outside the runtime provider it returns the defaults.
  */
 export function useText(): TextFn {
-  const config = useOptionalKycConfig();
+  const config = useOptionalVerificationConfig();
   const texts = config?.texts;
   const language = config?.language;
   const firstName = config?.userData?.firstName;

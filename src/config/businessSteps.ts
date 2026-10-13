@@ -11,7 +11,7 @@
 // ---------------------------------------------------------------------------
 
 import type { BusinessDocumentKey, WorkflowBusinessConfig } from '../types/business';
-import type { KYCStep } from '../types/config';
+import type { VerificationStep } from '../types/config';
 
 /** Default display labels per document key (server contract). */
 export const BUSINESS_DOCUMENT_LABELS: Record<BusinessDocumentKey, string> = {
@@ -112,7 +112,7 @@ export function businessSectionSteps(
 }
 
 /** Type guard so the step order can be walked without casting. */
-export function isBusinessSectionStep(step: KYCStep): step is BusinessSectionStep {
+export function isBusinessSectionStep(step: VerificationStep): step is BusinessSectionStep {
   return (
     step === 'business-details' ||
     step === 'business-key-people' ||

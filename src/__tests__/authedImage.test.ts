@@ -16,10 +16,10 @@ describe('fetchImageDataUri', () => {
     global.fetch = jest.fn(async () => ({ ok: false, status: 401 })) as unknown as typeof fetch;
     try {
       await expect(
-        fetchImageDataUri({ uri: 'https://trust.myaza.app/api/kyc/address/static-map', headers: { Authorization: 'Bearer x' } }),
+        fetchImageDataUri({ uri: 'https://trust.myaza.app/api/v1/address/static-map', headers: { Authorization: 'Bearer x' } }),
       ).rejects.toThrow('HTTP 401');
       expect(global.fetch).toHaveBeenCalledWith(
-        'https://trust.myaza.app/api/kyc/address/static-map',
+        'https://trust.myaza.app/api/v1/address/static-map',
         expect.objectContaining({ headers: { Authorization: 'Bearer x' } }),
       );
     } finally {

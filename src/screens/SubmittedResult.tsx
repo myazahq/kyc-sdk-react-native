@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
-import { useKycConfig, useKycStore, useTheme } from '../components/runtime';
+import { useVerificationConfig, useVerificationStore, useTheme } from '../components/runtime';
 import { useText } from '../i18n/useText';
-import { MyazaText } from '../components/Typography';
-import { MyazaButton } from '../components/MyazaButton';
+import { UiText } from '../components/Typography';
+import { UiButton } from '../components/UiButton';
 import { Icon } from '../components/Icon';
 import { awaitVerificationOutcome, type VerificationOutcome } from '../lib/result-wait';
 import { describeOutcome, describeWaiting } from '../lib/result-copy';
@@ -39,9 +39,9 @@ export function SubmittedResult({
   onClose: () => void;
 }): React.ReactElement {
   const { colors } = useTheme();
-  const config = useKycConfig();
+  const config = useVerificationConfig();
   const t = useText();
-  const store = useKycStore();
+  const store = useVerificationStore();
   const [outcome, setOutcome] = useState<VerificationOutcome | null>(null);
 
   useEffect(() => {
@@ -104,20 +104,20 @@ export function SubmittedResult({
         </StaggerIn>
         <View style={{ height: spacing.lg }} />
         <StaggerIn delayMs={200}>
-          <MyazaText variant="heading1" style={{ textAlign: 'center' }}>
+          <UiText variant="heading1" style={{ textAlign: 'center' }}>
             {copy.title}
-          </MyazaText>
+          </UiText>
         </StaggerIn>
         <View style={{ height: spacing.sm }} />
         <StaggerIn delayMs={320}>
-          <MyazaText variant="bodyMedium" style={{ textAlign: 'center', paddingHorizontal: spacing.lg }}>
+          <UiText variant="bodyMedium" style={{ textAlign: 'center', paddingHorizontal: spacing.lg }}>
             {copy.description}
-          </MyazaText>
+          </UiText>
         </StaggerIn>
       </View>
       {showDone ? (
         <StaggerIn delayMs={600}>
-          <MyazaButton label={t('common.done')} onPress={onClose} />
+          <UiButton label={t('common.done')} onPress={onClose} />
         </StaggerIn>
       ) : (
         <View />

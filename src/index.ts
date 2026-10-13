@@ -2,27 +2,27 @@
 // @myazahq/kyc-sdk-react-native — public API barrel.
 //
 // Mirrors the Flutter SDK's `kyc_sdk_flutter.dart`. The UI entry points
-// (`MyazaKYC`, `useMyazaKYC`) are added in Step 2; this currently exports the
+// (`Verification`, `useVerification`) are added in Step 2; this currently exports the
 // public types, the ID-type matrix, validators, the typed error, and the
 // liveness face-detector registry (for custom/test detector overrides).
 // ---------------------------------------------------------------------------
 
 // UI entry points
-export { MyazaKYC, useMyazaKYC } from './MyazaKYC';
-export type { MyazaKYCProps, UseMyazaKYCReturn } from './MyazaKYC';
+export { Verification, useVerification } from './Verification';
+export type { VerificationProps, UseVerificationReturn } from './Verification';
 
 // Public config + callback types
 export type {
-  MyazaKYCConfig,
-  ResolvedKYCConfig,
+  VerificationConfig,
+  ResolvedVerificationConfig,
   SupportedCountry,
   IdType,
   IdTypeForCountry,
   IdTypeDefinition,
-  KYCStep,
-  KYCAppearance,
-  KYCConsentContent,
-  KYCSuccessContent,
+  VerificationStep,
+  VerificationAppearance,
+  VerificationConsentContent,
+  VerificationSuccessContent,
   VoiceGuidanceConfig,
   ProgressStyle,
   VoiceGuidanceOption,
@@ -57,12 +57,12 @@ export type {
   WorkflowBusinessDocumentTypeConfig,
   WorkflowBusinessApplicantConfig,
 } from './types/business';
-export type { KYCSubmission, KYCResult, KYCErrorCode, KYCErrorDetails } from './types/verification';
+export type { VerificationSubmission, VerificationResult, VerificationErrorCode, VerificationErrorDetails } from './types/verification';
 export type { BiometricFlowConfig, BiometricCopy, BiometricCopyText } from './config/biometricOptions';
-export { KYCError } from './types/verification';
+export { VerificationError } from './types/verification';
 
 // Custom texts: the keys a workflow's `texts` may set, and the resolver.
-export type { KYCTextsConfig } from './types/texts';
+export type { VerificationTextsConfig } from './types/texts';
 export type { WorkflowTexts, TextVars } from './i18n/types';
 export { CUSTOMISABLE_KEYS, DEFAULT_TEXTS, resolveText } from './i18n';
 
@@ -230,3 +230,20 @@ export {
 
 // SDK version
 export { SDK_VERSION } from './services/deviceMetadata';
+
+// The earlier names, kept as deprecated aliases.
+export { MyazaKYC, useMyazaKYC } from './deprecated-names';
+export type { MyazaKYCConfig, MyazaKYCProps, UseMyazaKYCReturn } from './deprecated-names';
+
+// Earlier KYC-prefixed names, kept as deprecated aliases of the names above.
+export type { VerificationAppearance as KYCAppearance } from './types/config';
+export type { VerificationConsentContent as KYCConsentContent } from './types/config';
+export { VerificationError as KYCError } from './types/verification';
+export type { VerificationErrorCode as KYCErrorCode } from './types/verification';
+export type { VerificationErrorDetails as KYCErrorDetails } from './types/verification';
+export type { VerificationResult as KYCResult } from './types/verification';
+export type { VerificationStep as KYCStep } from './types/config';
+export type { VerificationSubmission as KYCSubmission } from './types/verification';
+export type { VerificationSuccessContent as KYCSuccessContent } from './types/config';
+export type { VerificationTextsConfig as KYCTextsConfig } from './types/texts';
+export type { ResolvedVerificationConfig as ResolvedKYCConfig } from './types/config';

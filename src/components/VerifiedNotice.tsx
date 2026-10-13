@@ -3,7 +3,7 @@ import { View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from './runtime';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 import { Icon } from './Icon';
 
 /**
@@ -30,9 +30,9 @@ export function VerifiedNotice({ label }: { label: string }): React.ReactElement
       }}
     >
       <Icon name="badge-check" size={20} color={colors.primary} />
-      <MyazaText variant="body" style={{ flex: 1, fontWeight: '600' }}>
+      <UiText variant="body" style={{ flex: 1, fontWeight: '600' }}>
         {label}
-      </MyazaText>
+      </UiText>
     </View>
   );
 }

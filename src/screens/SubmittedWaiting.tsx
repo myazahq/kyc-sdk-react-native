@@ -3,8 +3,8 @@ import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
-import { MyazaPulseLoader } from '../components/MyazaPulseLoader';
+import { UiText } from '../components/Typography';
+import { UiPulseLoader } from '../components/UiPulseLoader';
 
 // ─── The one loading screen ─────────────────────────────────────────────────
 //
@@ -27,19 +27,19 @@ export function SubmittedWaiting({
   const { colors } = useTheme();
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xl }}>
-      <MyazaPulseLoader />
+      <UiPulseLoader />
       <View style={{ height: spacing.lg }} />
-      <MyazaText variant="heading3" style={{ textAlign: 'center' }}>
+      <UiText variant="heading3" style={{ textAlign: 'center' }}>
         {title}
-      </MyazaText>
+      </UiText>
       <View style={{ height: spacing.sm }} />
-      <MyazaText
+      <UiText
         variant="bodyMedium"
         color={retrying ? colors.warning : undefined}
         style={{ textAlign: 'center', paddingHorizontal: spacing.lg }}
       >
         {description}
-      </MyazaText>
+      </UiText>
     </View>
   );
 }

@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, View } from 'react-native';
 
-import { MyazaText } from '../components/Typography';
-import { useKyc, useKycStore, useTheme } from '../components/runtime';
+import { UiText } from '../components/Typography';
+import { useFlowState, useVerificationStore, useTheme } from '../components/runtime';
 import { DashedBorder } from '../components/DashedBorder';
 import { spacing } from '../config/theme';
 
@@ -22,9 +22,9 @@ const OUTCOMES = [
 ] as const;
 
 export function BusinessSandboxToggle(): React.ReactElement {
-  const store = useKycStore();
+  const store = useVerificationStore();
   const { colors } = useTheme();
-  const outcome = useKyc((s) => s.business.sandboxOutcome) || 'verified';
+  const outcome = useFlowState((s) => s.business.sandboxOutcome) || 'verified';
   const [trackWidth, setTrackWidth] = useState(0);
   // Equal columns are what let the indicator translate by exactly its own
   // width. onLayout reports the BORDER box, so both the 1px borders and the
@@ -50,7 +50,7 @@ export function BusinessSandboxToggle(): React.ReactElement {
       }}
     >
       <DashedBorder color={colors.border} radius={12} strokeWidth={1} />
-      <MyazaText variant="label">Test result</MyazaText>
+      <UiText variant="label">Test result</UiText>
       <View style={{ height: spacing.sm }} />
       <View
         onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
@@ -95,20 +95,20 @@ export function BusinessSandboxToggle(): React.ReactElement {
               style={{ flex: 1, alignItems: 'center', justifyContent: 'center', height: 40 }}
             >
               {/* Above the indicator, or the label slides out from under it. */}
-              <MyazaText
+              <UiText
                 variant="bodyMedium"
                 color={active ? colors.background : colors.textSecondary}
               >
                 {label}
-              </MyazaText>
+              </UiText>
             </Pressable>
           );
         })}
       </View>
       <View style={{ height: spacing.sm }} />
-      <MyazaText variant="bodySmall" color={colors.textSecondary}>
+      <UiText variant="bodySmall" color={colors.textSecondary}>
         Returned instead of calling the register.
-      </MyazaText>
+      </UiText>
     </View>
   );
 }

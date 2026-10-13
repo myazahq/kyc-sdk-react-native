@@ -3,7 +3,7 @@ import { View } from 'react-native';
 
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 import { Icon } from '../../components/Icon';
 import type { MrzScan } from '../../mrz/parse';
 
@@ -26,13 +26,13 @@ export function NfcScannedSummary({ scan }: { scan: MrzScan }): React.ReactEleme
   const name = [scan.firstName, scan.lastName].filter(Boolean).join(' ');
 
   const Label = ({ children }: { children: string }): React.ReactElement => (
-    <MyazaText
+    <UiText
       variant="bodySmall"
       color={colors.textMuted}
       style={{ fontSize: 10, fontWeight: '600', letterSpacing: 0.8 }}
     >
       {children.toUpperCase()}
-    </MyazaText>
+    </UiText>
   );
 
   return (
@@ -57,16 +57,16 @@ export function NfcScannedSummary({ scan }: { scan: MrzScan }): React.ReactEleme
         {name ? (
           <View style={{ marginBottom: spacing.sm }}>
             <Label>Name</Label>
-            <MyazaText variant="bodyMedium" color={colors.textDark} style={{ fontWeight: '600' }}>
+            <UiText variant="bodyMedium" color={colors.textDark} style={{ fontWeight: '600' }}>
               {name}
-            </MyazaText>
+            </UiText>
           </View>
         ) : null}
         <View>
           <Label>Document number</Label>
-          <MyazaText variant="bodyMedium" color={colors.textDark} style={{ fontWeight: '600' }}>
+          <UiText variant="bodyMedium" color={colors.textDark} style={{ fontWeight: '600' }}>
             {scan.documentNumber}
-          </MyazaText>
+          </UiText>
         </View>
       </View>
     </View>

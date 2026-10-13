@@ -3,9 +3,9 @@ import {
   requireCountry,
   resolveWorkflow,
 } from '../services/workflowGate';
-import { KYCApiError } from '../services/api';
-import { KYCError } from '../types/verification';
-import type { MyazaKYCConfig } from '../types/config';
+import { VerificationApiError } from '../services/api';
+import { VerificationError } from '../types/verification';
+import type { VerificationConfig } from '../types/config';
 
 // ─── Resolve-before-mount ─────────────────────────────────────────────────────
 //
@@ -18,8 +18,8 @@ import type { MyazaKYCConfig } from '../types/config';
 // silent socket hangs the user forever) and CANCELLATION (leaving mid-resolve
 // must stop the request, not merely ignore it).
 
-const config = (over: Partial<MyazaKYCConfig> = {}): MyazaKYCConfig =>
-  ({ apiKey: 'pk_test_abc', workflowId: 'wf_abc', ...over }) as MyazaKYCConfig;
+const config = (over: Partial<VerificationConfig> = {}): VerificationConfig =>
+  ({ apiKey: 'pk_test_abc', workflowId: 'wf_abc', ...over }) as VerificationConfig;
 
 /** Installs a fetch that resolves however the test says. */
 function mockFetch(impl: (url: string, init?: RequestInit) => Promise<unknown>): jest.Mock {
@@ -84,23 +84,23 @@ describe('failures', () => {
   it('reports a bad key as invalid_api_key, not a generic workflow failure', async () => {
     // The distinction matters to the integrator: one is their key, the other is
     // their workflow, and the fixes are different.
-    mockFetch(() => Promise.reject(new KYCApiError('nope', 401)));
+    mockFetch(() => Promise.reject(new VerificationApiError('nope', 401)));
     await expect(resolveWorkflow(config())).rejects.toMatchObject({
       code: 'invalid_api_key',
     });
   });
 
   it('reports an unknown or unpublished flow as invalid_workflow', async () => {
-    mockFetch(() => Promise.reject(new KYCApiError('not found', 404)));
+    mockFetch(() => Promise.reject(new VerificationApiError('not found', 404)));
     await expect(resolveWorkflow(config())).rejects.toMatchObject({
       code: 'invalid_workflow',
     });
   });
 
-  it('turns anything unrecognised into a KYCError rather than leaking it', async () => {
+  it('turns anything unrecognised into a VerificationError rather than leaking it', async () => {
     mockFetch(() => Promise.reject(new TypeError('Network request failed')));
     const err = await resolveWorkflow(config()).catch((e: unknown) => e);
-    expect(err).toBeInstanceOf(KYCError);
+    expect(err).toBeInstanceOf(VerificationError);
   });
 });
 
@@ -169,10 +169,10 @@ describe('cancellation', () => {
     const err = await pending;
 
     expect(aborted).toBe(true);
-    // A cancellation is NOT translated into a KYCError: the caller has to be
+    // A cancellation is NOT translated into a VerificationError: the caller has to be
     // able to tell "the user left" from "this failed", or closing the sheet
     // would fire onError and show an error screen on the way out.
-    expect(err).not.toBeInstanceOf(KYCError);
+    expect(err).not.toBeInstanceOf(VerificationError);
   });
 });
 
@@ -184,7 +184,7 @@ describe('mounting without a workflow', () => {
   it('refuses a config with neither country nor workflow', () => {
     // Mounting anyway would give an empty ID-type list and no explanation.
     expect(() => requireCountry(config({ workflowId: undefined, country: undefined }))).toThrow(
-      KYCError,
+      VerificationError,
     );
   });
 });

@@ -7,13 +7,13 @@ import { useMultiIdPlan } from '../lib/use-multi-id-plan';
 import type { IdType, IdTypeDefinition } from '../types/config';
 import {
   useEffectiveCountry,
-  useKyc,
-  useKycConfig,
-  useKycStore,
+  useFlowState,
+  useVerificationConfig,
+  useVerificationStore,
   useTheme,
 } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
-import { MyazaPulseLoader } from '../components/MyazaPulseLoader';
+import { UiText } from '../components/Typography';
+import { UiPulseLoader } from '../components/UiPulseLoader';
 import { Icon, type IconName } from '../components/Icon';
 
 // ID-type picker — 1:1 with the Flutter SDK's IdTypeScreen: a list of cards
@@ -50,11 +50,11 @@ const ICON_FOR: Record<string, IconName> = {
 
 export function IdTypeStep(): React.ReactElement {
   const { colors } = useTheme();
-  const config = useKycConfig();
+  const config = useVerificationConfig();
   const country = useEffectiveCountry();
-  const store = useKycStore();
-  const serverConfig = useKyc((s) => s.serverConfig);
-  const selectedIdType = useKyc((s) => s.selectedIdType);
+  const store = useVerificationStore();
+  const serverConfig = useFlowState((s) => s.serverConfig);
+  const selectedIdType = useFlowState((s) => s.selectedIdType);
   // Multi-ID: this picker is for ONE check of several. It may only offer picks
   // that leave every later check something to offer — the server validates the
   // same rule, so an unsafe pick would be a submission it rejects.
@@ -122,7 +122,7 @@ export function IdTypeStep(): React.ReactElement {
   if (serverConfig.status === 'loading') {
     return (
       <View style={{ paddingVertical: spacing.xl, alignItems: 'center' }}>
-        <MyazaPulseLoader />
+        <UiPulseLoader />
       </View>
     );
   }
@@ -138,9 +138,9 @@ export function IdTypeStep(): React.ReactElement {
           borderColor: `${colors.error}4D`,
         }}
       >
-        <MyazaText variant="bodyMedium" color={colors.error}>
+        <UiText variant="bodyMedium" color={colors.error}>
           No ID types are enabled for your organization. Contact your administrator to request access.
-        </MyazaText>
+        </UiText>
       </View>
     );
   }
@@ -184,9 +184,9 @@ export function IdTypeStep(): React.ReactElement {
               <Icon name={ICON_FOR[t.key] ?? 'credit-card'} size={22} color={selected ? colors.primary : colors.textSecondary} />
             </View>
             <View style={{ width: spacing.md }} />
-            <MyazaText variant="label" style={{ flex: 1, fontWeight: '600' }}>
+            <UiText variant="label" style={{ flex: 1, fontWeight: '600' }}>
               {t.label}
-            </MyazaText>
+            </UiText>
             <View style={{ width: spacing.md }} />
             {/* Forward chevron, not a radio: the tap advances, so the icon has
                 to promise the next step rather than a pending confirmation. */}

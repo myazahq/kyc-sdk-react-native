@@ -7,7 +7,7 @@ import type { AddressState } from '../store/state';
 // lockstep: the legacy propertyFields group switch is the default for every
 // typed field, propertyFields 'required' requires the house/flat NUMBER, and
 // fields.<key> overrides per key. The three mirrors share one vector file
-// (kyc-sdk-flutter/test/address_field_modes_vectors.json).
+// (sdk-flutter/test/address_field_modes_vectors.json).
 //
 // Why it matters here: the server 422s a submission whose required fields
 // never arrived. Without this mirror a mobile applicant walked the whole

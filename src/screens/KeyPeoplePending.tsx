@@ -3,7 +3,7 @@ import { Animated, View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
+import { UiText } from '../components/Typography';
 import { useText } from '../i18n/useText';
 import { useReduceMotion } from '../components/StaggerIn';
 import { Spinner } from '../components/Spinner';
@@ -126,19 +126,19 @@ export function KeyPeoplePending(): React.ReactElement {
       >
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Spinner size="small" color={colors.primary} />
-          <MyazaText variant="bodyMedium" style={{ fontWeight: '600', marginLeft: spacing.sm }}>
+          <UiText variant="bodyMedium" style={{ fontWeight: '600', marginLeft: spacing.sm }}>
             {title}
-          </MyazaText>
+          </UiText>
         </View>
         {/* Naming the authority is the reassurance: the pause is the official
             register being consulted, not the app hanging. */}
-        <MyazaText
+        <UiText
           variant="bodySmall"
           color={colors.textMuted}
           style={{ textAlign: 'center', marginTop: spacing.xs }}
         >
           {body}
-        </MyazaText>
+        </UiText>
       </View>
 
       {/* The ghost roster: geometry, not information — hidden from assistive

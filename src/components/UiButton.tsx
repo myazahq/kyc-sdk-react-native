@@ -3,11 +3,11 @@ import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { radius, sizing, spacing } from '../config/theme';
 import { useTheme } from './runtime';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 import { Icon, type IconName } from './Icon';
 import { Spinner } from './Spinner';
 
-// Branded button — 1:1 with the Flutter SDK's MyazaButton:
+// Branded button — 1:1 with the Flutter SDK's UiButton:
 //   • primary     — solid primary fill, onPrimary label
 //   • outline     — transparent, 1.5px primary border, primary label
 //   • ghost       — transparent, primary label
@@ -17,7 +17,7 @@ import { Spinner } from './Spinner';
 
 export type ButtonVariant = 'primary' | 'outline' | 'ghost' | 'destructive';
 
-export interface MyazaButtonProps {
+export interface UiButtonProps {
   label: string;
   onPress?: () => void;
   variant?: ButtonVariant;
@@ -32,7 +32,7 @@ export interface MyazaButtonProps {
   accessibilityHint?: string;
 }
 
-export function MyazaButton({
+export function UiButton({
   label,
   onPress,
   variant = 'primary',
@@ -43,7 +43,7 @@ export function MyazaButton({
   fullWidth = true,
   accessibilityLabel,
   accessibilityHint,
-}: MyazaButtonProps): React.ReactElement {
+}: UiButtonProps): React.ReactElement {
   const { colors } = useTheme();
   const isDisabled = disabled || loading || !onPress;
 
@@ -106,7 +106,7 @@ export function MyazaButton({
               <Icon name={leadingIcon} size={18} color={effectiveFg} />
             </View>
           ) : null}
-          <MyazaText
+          <UiText
             variant="button"
             color={effectiveFg}
             numberOfLines={1}
@@ -115,7 +115,7 @@ export function MyazaButton({
             style={{ flexShrink: 1 }}
           >
             {label}
-          </MyazaText>
+          </UiText>
         </View>
       )}
     </Pressable>

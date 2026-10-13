@@ -1,7 +1,7 @@
 import {
   customLogoWidth,
   myazaProviderName,
-  needsMyazaDisclosure,
+  needsProcessorDisclosure,
   resolveTrustAttribution,
 } from '../lib/trust-attribution';
 import { consentLegalNotice, legalNoticeText } from '../screens/consent/legal';
@@ -16,7 +16,7 @@ import { normalizeBrandingUrls } from '../services/resolveUrl';
 const custom = { mode: 'custom', logo: 'https://cdn/logo.png', logoDark: 'https://cdn/dark.png', companyName: 'Acme' };
 
 describe('resolveTrustAttribution', () => {
-  it('reads a missing or older answer as Myaza', () => {
+  it('reads a missing or older answer as Toden', () => {
     expect(resolveTrustAttribution(undefined)).toEqual({ mode: 'myaza' });
     expect(resolveTrustAttribution(null)).toEqual({ mode: 'myaza' });
     expect(resolveTrustAttribution('custom')).toEqual({ mode: 'myaza' });
@@ -37,7 +37,7 @@ describe('resolveTrustAttribution', () => {
     expect(resolveTrustAttribution({ ...custom, logoDark: '  ' }, true)).toMatchObject({ logo: custom.logo });
   });
 
-  it('stays custom with a malformed logo, never falling back to Myaza', () => {
+  it('stays custom with a malformed logo, never falling back to Toden', () => {
     expect(resolveTrustAttribution({ mode: 'custom', logo: 42, companyName: ' ' })).toEqual({
       mode: 'custom',
       logo: undefined,
@@ -52,11 +52,11 @@ describe('resolveTrustAttribution', () => {
   });
 });
 
-describe('the Myaza disclosure', () => {
+describe('the Toden disclosure', () => {
   it('is needed only with a custom attribution', () => {
-    expect(needsMyazaDisclosure(custom)).toBe(true);
-    expect(needsMyazaDisclosure({ mode: 'myaza' })).toBe(false);
-    expect(needsMyazaDisclosure(undefined)).toBe(false);
+    expect(needsProcessorDisclosure(custom)).toBe(true);
+    expect(needsProcessorDisclosure({ mode: 'myaza' })).toBe(false);
+    expect(needsProcessorDisclosure(undefined)).toBe(false);
   });
 
   it('names the attribution company, then the workflow, then the branding', () => {
@@ -73,7 +73,7 @@ describe('the consent notice', () => {
       consentLegalNotice({ isBusiness: false, capturesFace: true, recordsVideo: true, attribution: undefined, ...input }),
     );
 
-  it('is unchanged with the Myaza footer', () => {
+  it('is unchanged with the Toden footer', () => {
     expect(notice({})).toBe(
       'By tapping Continue, you agree to the End User Terms and Privacy Policy, and consent to your personal data being processed to verify your identity. This includes facial recognition and recording this session.',
     );
@@ -82,23 +82,23 @@ describe('the consent notice', () => {
     );
   });
 
-  it('names Myaza Trust for the organisation when the logo is custom', () => {
+  it('names Toden for the organisation when the logo is custom', () => {
     expect(notice({ attribution: custom })).toBe(
-      'Verification is processed by Myaza Trust for Acme. By tapping Continue, you agree to Myaza Trust’s End User Terms and Privacy Policy, and consent to your personal data being processed to verify your identity. This includes facial recognition and recording this session.',
+      'Verification is processed by Toden for Acme. By tapping Continue, you agree to Toden’s End User Terms and Privacy Policy, and consent to your personal data being processed to verify your identity. This includes facial recognition and recording this session.',
     );
     expect(notice({ attribution: custom, isBusiness: true, capturesFace: false, recordsVideo: true })).toBe(
-      'Verification is processed by Myaza Trust for Acme. By tapping Continue, you agree to Myaza Trust’s End User Terms and Privacy Policy, and consent to your business and personal data being processed to verify your identity. This includes recording this session.',
+      'Verification is processed by Toden for Acme. By tapping Continue, you agree to Toden’s End User Terms and Privacy Policy, and consent to your business and personal data being processed to verify your identity. This includes recording this session.',
     );
   });
 
   it('falls back through the workflow and branding names, then to no name', () => {
     const noName = { mode: 'custom', logo: 'x' };
     expect(notice({ attribution: noName, workflowCompanyName: 'Flow Co', capturesFace: false, recordsVideo: false })).toMatch(
-      /^Verification is processed by Myaza Trust for Flow Co\. By tapping/,
+      /^Verification is processed by Toden for Flow Co\. By tapping/,
     );
     expect(notice({ attribution: noName, brandingCompanyName: 'Brand Co' })).toMatch(/for Brand Co\./);
     expect(notice({ attribution: noName, capturesFace: false, recordsVideo: false })).toBe(
-      'Verification is processed by Myaza Trust. By tapping Continue, you agree to Myaza Trust’s End User Terms and Privacy Policy, and consent to your personal data being processed to verify your identity.',
+      'Verification is processed by Toden. By tapping Continue, you agree to Toden’s End User Terms and Privacy Policy, and consent to your personal data being processed to verify your identity.',
     );
   });
 

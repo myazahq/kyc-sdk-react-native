@@ -5,7 +5,7 @@ import { useStore } from 'zustand';
 import { brightScreenEnabled, shouldBoostBrightness, themeFadeMs } from '../lib/bright-screen';
 import { createBrightnessBooster, type BrightnessBooster } from '../lib/brightness-booster';
 import { loadBrightnessBackend } from './brightness-backend';
-import { useKycConfig, useKycStore, useTheme } from './runtime';
+import { useVerificationConfig, useVerificationStore, useTheme } from './runtime';
 import { useReduceMotion } from './StaggerIn';
 
 // ---------------------------------------------------------------------------
@@ -22,9 +22,9 @@ import { useReduceMotion } from './StaggerIn';
 // ---------------------------------------------------------------------------
 
 export function BrightScreen(): React.ReactElement {
-  const store = useKycStore();
+  const store = useVerificationStore();
   const cameraOn = useStore(store, (s) => s.livenessCameraOn);
-  const config = useKycConfig();
+  const config = useVerificationConfig();
   const { setForcedMode } = useTheme();
   const wanted = cameraOn && brightScreenEnabled(config);
 

@@ -21,7 +21,7 @@ export { BRAND_WEIGHTS, brandFamilyName };
  * the rendered text overflows it. That is what truncated "Continue" to
  * "Continu". Real weights are measured correctly, so nothing is clipped.
  *
- * This mirrors how the SDK's own Karla / Space Grotesk work: each weight is its
+ * This mirrors how the SDK's own Bricolage Grotesque works: each weight is its
  * own registered family and `fontWeight` is cleared at the call site.
  *
  * HOW: Google Fonts serves a different FORMAT per User-Agent — woff2 to

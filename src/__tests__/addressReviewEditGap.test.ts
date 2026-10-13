@@ -13,25 +13,25 @@ import { describeInMonorepo, readPackageFile as read } from './helpers/monorepo'
 
 describeInMonorepo('Edit moves under the address when an entrance hangs over the band', () => {
   it('react native', () => {
-    const src = read('kyc-sdk-react-native/src/screens/address/ReviewAddressBand.tsx');
+    const src = read('sdk-react-native/src/screens/address/ReviewAddressBand.tsx');
     expect(src).toMatch(/\{clearsHero \? null : editLink\}/);
     expect(src).toMatch(/\{clearsHero \? <View[^>]*>\{editLink\}<\/View> : null\}/);
   });
 
   it('flutter', () => {
-    const src = read('kyc-sdk-flutter/lib/src/screens/address/address_review_band.dart');
-    expect(src).toMatch(/if \(hangs\) \.\.\.\[\s*const SizedBox\(height: MyazaSpacing\.sm\),\s*editLink,/);
-    expect(src).toMatch(/if \(!hangs\) \.\.\.\[\s*const SizedBox\(width: MyazaSpacing\.sm\),\s*editLink,/);
+    const src = read('sdk-flutter/lib/src/screens/address/address_review_band.dart');
+    expect(src).toMatch(/if \(hangs\) \.\.\.\[\s*const SizedBox\(height: UiSpacing\.sm\),\s*editLink,/);
+    expect(src).toMatch(/if \(!hangs\) \.\.\.\[\s*const SizedBox\(width: UiSpacing\.sm\),\s*editLink,/);
   });
 
   it('web', () => {
-    const src = read('kyc-sdk-react/src/steps/address/AddressReviewStep.tsx');
+    const src = read('sdk-react/src/steps/address/AddressReviewStep.tsx');
     expect(src).toMatch(/\{hero && <div className="pt-1">\{editButton\}<\/div>\}/);
     expect(src).toMatch(/\{!hero && editButton\}/);
   });
 
   it('the clearance itself stays at 128', () => {
-    expect(read('kyc-sdk-react-native/src/screens/address/ReviewAddressBand.tsx')).toMatch(/const BAND_CLEARANCE = 128;/);
-    expect(read('kyc-sdk-flutter/lib/src/screens/address/address_review_band.dart')).toMatch(/const double _kBandClearance = 128;/);
+    expect(read('sdk-react-native/src/screens/address/ReviewAddressBand.tsx')).toMatch(/const BAND_CLEARANCE = 128;/);
+    expect(read('sdk-flutter/lib/src/screens/address/address_review_band.dart')).toMatch(/const double _kBandClearance = 128;/);
   });
 });

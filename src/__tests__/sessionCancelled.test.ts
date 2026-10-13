@@ -1,5 +1,5 @@
-import { KYCApiError } from '../services/api';
-import { mapToKycError } from '../services/errors';
+import { VerificationApiError } from '../services/api';
+import { mapToVerificationError } from '../services/errors';
 import { recoveryStepFor, serverRefusalOf } from '../lib/submit-recovery';
 import { awaitVerificationOutcome, isPendingStatus } from '../lib/result-wait';
 import { describeOutcome } from '../lib/result-copy';
@@ -10,7 +10,7 @@ import {
   isCancelledStatus,
   shouldStopOnSessionStartFailure,
 } from '../lib/session-cancelled';
-import type { KYCStep } from '../types/config';
+import type { VerificationStep } from '../types/config';
 import type { VerificationStatusResponse } from '../services/api-types';
 
 // An organisation can cancel a verification session midway. The server then
@@ -22,7 +22,7 @@ const SERVER_MESSAGE =
   'This verification was cancelled. Contact the organisation that sent it if you think this is a mistake.';
 
 const cancelled = (body: Record<string, unknown> = { error: 'session_cancelled', message: SERVER_MESSAGE }) =>
-  new KYCApiError(String(body.message ?? body.error), 409, 'session_cancelled', body);
+  new VerificationApiError(String(body.message ?? body.error), 409, 'session_cancelled', body);
 
 describe('cancelledRefusalOf', () => {
   it('reads the server message off a session_cancelled refusal', () => {
@@ -39,28 +39,28 @@ describe('cancelledRefusalOf', () => {
   });
 
   it('ignores every other failure, including other 409s', () => {
-    expect(cancelledRefusalOf(new KYCApiError('used', 409, 'handoff_session_used'))).toBeNull();
-    expect(cancelledRefusalOf(new KYCApiError('x', 500))).toBeNull();
+    expect(cancelledRefusalOf(new VerificationApiError('used', 409, 'handoff_session_used'))).toBeNull();
+    expect(cancelledRefusalOf(new VerificationApiError('x', 500))).toBeNull();
     expect(cancelledRefusalOf(new TypeError('Network request failed'))).toBeNull();
     expect(cancelledRefusalOf(null)).toBeNull();
   });
 });
 
-describe('mapToKycError', () => {
+describe('mapToVerificationError', () => {
   it('maps a session_cancelled refusal to its own code, in either context', () => {
     for (const context of ['verify', 'upload'] as const) {
-      const e = mapToKycError(cancelled(), context);
+      const e = mapToVerificationError(cancelled(), context);
       expect(e.code).toBe('session_cancelled');
       expect(e.message).toBe(SERVER_MESSAGE);
     }
   });
 
   it('never words a cancellation as something to try again', () => {
-    expect(mapToKycError(cancelled({ error: 'session_cancelled' }), 'verify').message).not.toMatch(/try again/i);
+    expect(mapToVerificationError(cancelled({ error: 'session_cancelled' }), 'verify').message).not.toMatch(/try again/i);
   });
 
   it('leaves other 409s on the generic path', () => {
-    expect(mapToKycError(new KYCApiError('used', 409, 'handoff_session_used'), 'verify').code).toBe('unknown');
+    expect(mapToVerificationError(new VerificationApiError('used', 409, 'handoff_session_used'), 'verify').code).toBe('unknown');
   });
 });
 
@@ -70,15 +70,15 @@ describe('shouldStopOnSessionStartFailure', () => {
   });
 
   it('keeps every other start failure best-effort', () => {
-    expect(shouldStopOnSessionStartFailure(new KYCApiError('x', 500))).toBe(false);
-    expect(shouldStopOnSessionStartFailure(new KYCApiError('x', 401))).toBe(false);
-    expect(shouldStopOnSessionStartFailure(new KYCApiError('x', 409, 'session_unavailable'))).toBe(false);
+    expect(shouldStopOnSessionStartFailure(new VerificationApiError('x', 500))).toBe(false);
+    expect(shouldStopOnSessionStartFailure(new VerificationApiError('x', 401))).toBe(false);
+    expect(shouldStopOnSessionStartFailure(new VerificationApiError('x', 409, 'session_unavailable'))).toBe(false);
     expect(shouldStopOnSessionStartFailure(new TypeError('Network request failed'))).toBe(false);
   });
 });
 
 describe('submit recovery', () => {
-  const order: KYCStep[] = ['consent', 'id-type', 'id-input', 'liveness', 'submitted'];
+  const order: VerificationStep[] = ['consent', 'id-type', 'id-input', 'liveness', 'submitted'];
 
   it('reads the server code off a cancelled submission', () => {
     expect(serverRefusalOf(cancelled())).toEqual({ code: 'session_cancelled', mediaKey: null });

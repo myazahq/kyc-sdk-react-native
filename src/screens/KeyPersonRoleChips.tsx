@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
 
-import { MyazaText } from '../components/Typography';
+import { UiText } from '../components/Typography';
 import { useTheme } from '../components/runtime';
 import { spacing } from '../config/theme';
 import type { KeyPersonRole } from '../types/business';
@@ -28,9 +28,9 @@ export function KeyPersonRoleChips({
   const repCount = roles.filter((r) => r === 'director' || r === 'signatory').length;
   return (
     <View>
-      <MyazaText variant="label" style={{ marginBottom: spacing.sm }}>
+      <UiText variant="label" style={{ marginBottom: spacing.sm }}>
         Role
-      </MyazaText>
+      </UiText>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {REP_ROLES.map(({ role, label }) => {
           const active = roles.includes(role);
@@ -52,13 +52,13 @@ export function KeyPersonRoleChips({
                 paddingVertical: 7,
               }}
             >
-              <MyazaText
+              <UiText
                 variant="bodyMedium"
                 color={active ? colors.onPrimary : colors.textSecondary}
                 style={{ fontWeight: '500' }}
               >
                 {label}
-              </MyazaText>
+              </UiText>
             </Pressable>
           );
         })}

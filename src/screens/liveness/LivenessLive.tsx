@@ -4,8 +4,8 @@ import type { CameraDevice, CameraViewProps } from 'react-native-vision-camera';
 
 import { spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
-import { MyazaText } from '../../components/Typography';
-import { MyazaButton } from '../../components/MyazaButton';
+import { UiText } from '../../components/Typography';
+import { UiButton } from '../../components/UiButton';
 import { GESTURE_FULL_SIZE, gestureSize, ROOM_FOR_GESTURE, type Size } from '../../lib/livenessCutout';
 import { lightingGuidanceText, type useLiveness } from '../../liveness/useLiveness';
 import { LivenessAvatar } from '../LivenessAvatar';
@@ -146,16 +146,16 @@ export function LivenessLive({
         failure ? (
           // Its own surface: red text straight on the camera would be lost.
           <Panel>
-            <MyazaText
+            <UiText
               variant="bodyMedium"
               color={colors.error}
               accessibilityRole="alert"
               style={{ textAlign: 'center', fontWeight: '500' }}
             >
               {failure.message}
-            </MyazaText>
+            </UiText>
             <RNView style={{ height: spacing.md }} />
-            <MyazaButton label="Try Again" onPress={failure.onRetry} />
+            <UiButton label="Try Again" onPress={failure.onRetry} />
           </Panel>
         ) : showsCount ? (
           <StepCount step={step} total={total} />

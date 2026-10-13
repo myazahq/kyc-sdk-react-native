@@ -11,9 +11,9 @@ import { describeInMonorepo, readPackageFile as read } from './helpers/monorepo'
 // pinned across the monorepo the way the map protocol is.
 
 const LINE_SOURCES = {
-  web: 'kyc-sdk-react/src/steps/address/flow-steps.ts',
-  rn: 'kyc-sdk-react-native/src/lib/address-line.ts',
-  flutter: 'kyc-sdk-flutter/lib/src/config/address_flow.dart',
+  web: 'sdk-react/src/steps/address/flow-steps.ts',
+  rn: 'sdk-react-native/src/lib/address-line.ts',
+  flutter: 'sdk-flutter/lib/src/config/address_flow.dart',
 };
 
 describeInMonorepo('no SDK falls back to coordinates', () => {
@@ -44,12 +44,12 @@ describeInMonorepo('the waiting copy is one text on three SDKs', () => {
 // summaries that used to draw one.
 
 const PENDING_SURFACES = {
-  'web pin': 'kyc-sdk-react/src/steps/AddressCollectionStep.tsx',
-  'web review': 'kyc-sdk-react/src/steps/address/AddressReviewStep.tsx',
-  'rn pin': 'kyc-sdk-react-native/src/screens/address/PinSummaryRow.tsx',
-  'rn review': 'kyc-sdk-react-native/src/screens/address/ReviewAddressBand.tsx',
-  'flutter pin': 'kyc-sdk-flutter/lib/src/screens/address/address_pin_summary.dart',
-  'flutter review': 'kyc-sdk-flutter/lib/src/screens/address/address_review_band.dart',
+  'web pin': 'sdk-react/src/steps/AddressCollectionStep.tsx',
+  'web review': 'sdk-react/src/steps/address/AddressReviewStep.tsx',
+  'rn pin': 'sdk-react-native/src/screens/address/PinSummaryRow.tsx',
+  'rn review': 'sdk-react-native/src/screens/address/ReviewAddressBand.tsx',
+  'flutter pin': 'sdk-flutter/lib/src/screens/address/address_pin_summary.dart',
+  'flutter review': 'sdk-flutter/lib/src/screens/address/address_review_band.dart',
 };
 
 describeInMonorepo('the wait is a skeleton line, not a spinner', () => {

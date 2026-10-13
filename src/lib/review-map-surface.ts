@@ -3,7 +3,7 @@
 // step drew, then the built-in tiles. Pure, so a test can pin the order — the
 // Flutter card skipped the middle rung and confirmed the address on
 // OpenStreetMap where RN confirmed it on Google (user report 2026-09-08).
-// Mirrors kyc-sdk-flutter's reviewMapSurface; keep the two in lockstep.
+// Mirrors sdk-flutter's reviewMapSurface; keep the two in lockstep.
 
 export type ReviewMapSurface = 'stub' | 'picture' | 'pending' | 'framed' | 'builtIn';
 

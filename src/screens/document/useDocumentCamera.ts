@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
 
 import { safeReportError } from '../../services/errors';
-import { KYCError } from '../../types/verification';
+import { VerificationError } from '../../types/verification';
 
 // The document camera's permission and hardware state, lifted out of
 // DocumentCaptureStep so that only a workflow which SCANS ever calls
@@ -27,7 +27,7 @@ export interface DocumentCamera {
   requestAccess: () => void;
 }
 
-export function useDocumentCamera(onError: ((error: KYCError) => void) | undefined): DocumentCamera {
+export function useDocumentCamera(onError: ((error: VerificationError) => void) | undefined): DocumentCamera {
   // ── Camera permission ──────────────────────────────────────────────────────
   // `perm` is derived from the ASYNC requestPermission result, not synchronously
   // from `hasPermission` — otherwise the brief window while the OS prompt is open
@@ -85,7 +85,7 @@ export function useDocumentCamera(onError: ((error: KYCError) => void) | undefin
       permReportedRef.current = true;
       safeReportError(
         onError,
-        new KYCError(
+        new VerificationError(
           'camera_permission_denied',
           'Camera access is required to photograph your document. Allow camera access or upload a photo instead.',
         ),

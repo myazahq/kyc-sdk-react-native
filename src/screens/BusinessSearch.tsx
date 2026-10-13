@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { MyazaAlert } from '../components/MyazaAlert';
-import { MyazaButton } from '../components/MyazaButton';
-import { MyazaInput } from '../components/MyazaInput';
-import { MyazaSelect } from '../components/MyazaSelect';
-import { MyazaText } from '../components/Typography';
+import { UiAlert } from '../components/UiAlert';
+import { UiButton } from '../components/UiButton';
+import { UiInput } from '../components/UiInput';
+import { UiSelect } from '../components/UiSelect';
+import { UiText } from '../components/Typography';
 import { useText } from '../i18n/useText';
 import { Icon } from '../components/Icon';
 import { BusinessSearchResults } from './BusinessSearchResults';
-import { useKyc, useKycStore, useTheme } from '../components/runtime';
+import { useFlowState, useVerificationStore, useTheme } from '../components/runtime';
 import { spacing } from '../config/theme';
 import type { BusinessSearchHit } from '../services/api';
 
@@ -41,10 +41,10 @@ export function BusinessSearch({
   onPicked: (hit: BusinessSearchHit) => void;
   onManualEntry: () => void;
 }): React.ReactElement {
-  const store = useKycStore();
+  const store = useVerificationStore();
   const { colors } = useTheme();
   const t = useText();
-  const region = useKyc((s) => s.business.subdivisionCode);
+  const region = useFlowState((s) => s.business.subdivisionCode);
   const [query, setQuery] = useState('');
   // Narrows what came back; it never replaces the search. Matches the name AND
   // the number — a box inviting either that answered only one looked broken.
@@ -111,10 +111,10 @@ export function BusinessSearch({
     <View>
       {regions.length > 0 && (
         <View style={{ marginBottom: 12 }}>
-          <MyazaText variant="label" style={{ marginBottom: spacing.sm }}>
+          <UiText variant="label" style={{ marginBottom: spacing.sm }}>
             State or region of registration
-          </MyazaText>
-          <MyazaSelect
+          </UiText>
+          <UiSelect
             value={region || undefined}
             sheetTitle="State or region"
             searchable
@@ -126,7 +126,7 @@ export function BusinessSearch({
 
       {/* No label: the placeholder says it, and the magnifier says what kind
           of field this is — the web SDK's exact arrangement. */}
-      <MyazaInput
+      <UiInput
         value={query}
         onChangeText={setQuery}
         placeholder="Search by company name"
@@ -136,7 +136,7 @@ export function BusinessSearch({
       <View style={{ height: 12 }} />
       {/* The spinner lives IN the button, as on web — a separate spinner row
           pushed the results down and said the same thing twice. */}
-      <MyazaButton
+      <UiButton
         label={searching ? 'Searching…' : 'Search'}
         leadingIcon={searching ? undefined : 'search'}
         loading={searching}
@@ -157,15 +157,15 @@ export function BusinessSearch({
       )}
 
       {state.phase === 'results' && state.hits.length === 0 && (
-        <MyazaText variant="bodyMedium" color={colors.textSecondary} style={{ marginTop: 12 }}>
+        <UiText variant="bodyMedium" color={colors.textSecondary} style={{ marginTop: 12 }}>
           Nothing found under that name. Try a shorter version of it, or enter the details
           yourself.
-        </MyazaText>
+        </UiText>
       )}
 
       {state.phase === 'unavailable' && (
         <View style={{ marginTop: 12 }}>
-          <MyazaAlert
+          <UiAlert
             variant="warning"
             title="Search is unavailable"
             message="We could not reach the company register just now. Try again, or enter the details yourself and we will check them when you submit."
@@ -188,9 +188,9 @@ export function BusinessSearch({
         }}
       >
         <Icon name="pencil" size={14} color={colors.textSecondary} />
-        <MyazaText variant="bodyMedium" color={colors.textSecondary} style={{ fontWeight: '500' }}>
+        <UiText variant="bodyMedium" color={colors.textSecondary} style={{ fontWeight: '500' }}>
           {t('business.search.manualEntry')}
-        </MyazaText>
+        </UiText>
       </Pressable>
     </View>
   );

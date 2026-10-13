@@ -6,7 +6,7 @@ import { initialWindowMetrics } from "react-native-safe-area-context";
 import { headerSurface, spacing } from "../config/theme";
 import { useKeyboardInset } from "../lib/use-keyboard-inset";
 import type { SupportedCountry } from "../types/config";
-import { useKycConfig, useTheme } from "./runtime";
+import { useVerificationConfig, useTheme } from "./runtime";
 import { useBranding } from "./useBranding";
 import { BrandBar } from "./BrandBar";
 import { PoweredBy } from "./PoweredBy";
@@ -22,14 +22,14 @@ import { ImmersiveSheetControls } from "./ImmersiveSheetControls";
 import { BrightScreen } from "./BrightScreen";
 import { ScrollLockContext } from "./ScrollLock";
 
-// Full-screen sheet shell — 1:1 with the Flutter SDK's KycBottomSheet:
+// Full-screen sheet shell — 1:1 with the Flutter SDK's VerificationBottomSheet:
 //   • a tinted header block (Liquid Glass on iOS 26) with a bottom border:
 //       row 1 → brand bar (left) + theme toggle + close (glass icon buttons)
 //       row 2 → StepHeader (back + title + country flag, description)
 //       row 3 → segmented step indicator
 //   • scrollable step body below.
 
-export interface KycSheetProps {
+export interface VerificationSheetProps {
   children: React.ReactNode;
   title: string;
   description?: string | null;
@@ -51,7 +51,7 @@ export interface KycSheetProps {
    * content outgrows the viewport, and the outer view scrolls the "pinned"
    * element off the top. `flexGrow: 1` cannot prevent that: it sets a minimum
    * height, not a maximum. Flutter hits the same wall and solves it the same
-   * way (`KycBottomSheet.fillsViewport`).
+   * way (`VerificationBottomSheet.fillsViewport`).
    */
   fillsViewport?: boolean;
   /**
@@ -73,7 +73,7 @@ export interface KycSheetProps {
   immersiveControls?: boolean;
 }
 
-export function KycSheet({
+export function VerificationSheet({
   children,
   title,
   description,
@@ -86,9 +86,9 @@ export function KycSheet({
   fillsViewport,
   immersive = false,
   immersiveControls = false,
-}: KycSheetProps): React.ReactElement {
+}: VerificationSheetProps): React.ReactElement {
   const { colors, mode, toggle, forced: themeForced } = useTheme();
-  const config = useKycConfig();
+  const config = useVerificationConfig();
   const { logoUri, companyName } = useBranding();
   // Android-only (0 on iOS): the translucent Modal blocks adjustResize there,
   // so the keyboard height is added to the scroll padding by hand.

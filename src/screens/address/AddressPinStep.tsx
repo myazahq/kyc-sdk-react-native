@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useWindowDimensions, View } from 'react-native';
 
 import { spacing } from '../../config/theme';
-import { useKyc, useKycStore, useTheme } from '../../components/runtime';
-import { MyazaText } from '../../components/Typography';
-import { MyazaButton } from '../../components/MyazaButton';
+import { useFlowState, useVerificationStore, useTheme } from '../../components/runtime';
+import { UiText } from '../../components/Typography';
+import { UiButton } from '../../components/UiButton';
 import { FramedMapPicker } from '../../components/FramedMapPicker';
 import { StickyActions } from '../../components/StickyActions';
 import { displayAddressLine, shouldAskLabelDecision, addressVendorsStubbed } from '../../lib/address-flow';
@@ -35,18 +35,18 @@ import { useText } from '../../i18n/useText';
  * missing fields rather than pointing at a closed drawer.
  */
 export function AddressPinStep(): React.ReactElement {
-  const store = useKycStore();
+  const store = useVerificationStore();
   const { colors } = useTheme();
   const t = useText();
   const viewport = useWindowDimensions();
   const flow = useAddressFlow();
   // The framed Google picker when the platform serves one; the OSM picker
   // otherwise (and whenever the page never says ready).
-  const mapsFrameUrl = useKyc((s) => s.serverConfig.mapsFrameUrl ?? null);
+  const mapsFrameUrl = useFlowState((s) => s.serverConfig.mapsFrameUrl ?? null);
   // SANDBOX renders the stand-in (the web SDK's vendor-stub rule): verdicts
   // are canned server-side, so a live map on a test key only spends quota.
   const vendorsStubbed = addressVendorsStubbed({
-    environment: useKyc((s) => s.serverConfig.environment ?? null),
+    environment: useFlowState((s) => s.serverConfig.environment ?? null),
   });
   const [sheetOpen, setSheetOpen] = useState(false);
   const [missingNudge, setMissingNudge] = useState(false);
@@ -98,7 +98,7 @@ export function AddressPinStep(): React.ReactElement {
       <StickyActions
         actions={
           <>
-            <MyazaButton
+            <UiButton
               label={t('common.continue')}
               loading={flow.confirming}
               disabled={!flow.pin}
@@ -148,14 +148,14 @@ export function AddressPinStep(): React.ReactElement {
         )}
 
         {flow.error ? (
-          <MyazaText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.sm }}>
+          <UiText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.sm }}>
             {flow.error}
-          </MyazaText>
+          </UiText>
         ) : null}
         {missingNudge && missingRequired.length > 0 ? (
-          <MyazaText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.sm }}>
+          <UiText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.sm }}>
             {missingFieldsNudge(missingRequired)}
-          </MyazaText>
+          </UiText>
         ) : null}
       </StickyActions>
 

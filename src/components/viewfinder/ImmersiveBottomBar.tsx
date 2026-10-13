@@ -5,7 +5,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../runtime';
 import { useText } from '../../i18n';
-import { MyazaText } from '../Typography';
+import { UiText } from '../Typography';
 import { Icon } from '../Icon';
 import { CHROME_SCRIM, ChromeGlass } from '../glass/ChromeGlass';
 import { Spinner } from '../Spinner';
@@ -84,9 +84,9 @@ export function BottomBar({
           maxWidth: '92%',
         }}
       >
-        <MyazaText variant="bodyMedium" color="#FFFFFF" style={{ textAlign: 'center' }}>
+        <UiText variant="bodyMedium" color="#FFFFFF" style={{ textAlign: 'center' }}>
           {hint}
-        </MyazaText>
+        </UiText>
       </View>
 
       {allowUpload ? (
@@ -94,9 +94,9 @@ export function BottomBar({
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Icon name="upload" size={18} color="#FFFFFF" />
             <View style={{ width: 8 }} />
-            <MyazaText variant="bodyMedium" color="#FFFFFF">
+            <UiText variant="bodyMedium" color="#FFFFFF">
               {t('uploadDocument.camera.uploadInstead')}
-            </MyazaText>
+            </UiText>
           </View>
         </Pressable>
       ) : null}

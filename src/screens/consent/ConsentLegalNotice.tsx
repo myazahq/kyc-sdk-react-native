@@ -2,8 +2,8 @@ import React from 'react';
 import { Linking } from 'react-native';
 
 import { PRIVACY_URL, TERMS_URL } from '../../config/brand';
-import { useKyc, useKycConfig, useTheme } from '../../components/runtime';
-import { MyazaText } from '../../components/Typography';
+import { useFlowState, useVerificationConfig, useTheme } from '../../components/runtime';
+import { UiText } from '../../components/Typography';
 import { consentLegalNotice, PRIVACY_LABEL, TERMS_LABEL } from './legal';
 
 // The consent notice above Continue. Consent is given by ACTING now, so the
@@ -22,8 +22,8 @@ export function ConsentLegalNotice({
   recordsVideo: boolean;
 }): React.ReactElement {
   const { colors } = useTheme();
-  const config = useKycConfig();
-  const branding = useKyc((s) => s.serverConfig.branding);
+  const config = useVerificationConfig();
+  const branding = useFlowState((s) => s.serverConfig.branding);
   const parts = consentLegalNotice({
     isBusiness,
     capturesFace,
@@ -33,7 +33,7 @@ export function ConsentLegalNotice({
     brandingCompanyName: branding?.companyName,
   });
   const link = (label: string, url: string, key: number): React.ReactElement => (
-    <MyazaText
+    <UiText
       key={key}
       variant="bodySmall"
       color={colors.textDark}
@@ -41,11 +41,11 @@ export function ConsentLegalNotice({
       onPress={() => void Linking.openURL(url).catch(() => undefined)}
     >
       {label}
-    </MyazaText>
+    </UiText>
   );
 
   return (
-    <MyazaText variant="bodySmall" style={{ lineHeight: 18 }}>
+    <UiText variant="bodySmall" style={{ lineHeight: 18 }}>
       {parts.map((part, i) =>
         part.kind === 'terms'
           ? link(TERMS_LABEL, TERMS_URL, i)
@@ -53,6 +53,6 @@ export function ConsentLegalNotice({
             ? link(PRIVACY_LABEL, PRIVACY_URL, i)
             : part.text,
       )}
-    </MyazaText>
+    </UiText>
   );
 }

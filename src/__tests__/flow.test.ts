@@ -1,19 +1,19 @@
-import { nextStepAfter, previousStepBefore, livenessEnabled, type KycState } from '../store/kycStore';
+import { nextStepAfter, previousStepBefore, livenessEnabled, type VerificationState } from '../store/verificationStore';
 import { INITIAL_SERVER_CONFIG } from '../store/serverConfig';
-import type { ResolvedKYCConfig } from '../types/config';
+import type { ResolvedVerificationConfig } from '../types/config';
 
-// Build a minimal KycState for exercising the pure navigation helpers. The
+// Build a minimal VerificationState for exercising the pure navigation helpers. The
 // helpers only read currentStep/selectedIdType/serverConfig/config, so we cast a
 // partial object (the unused action fields are never touched).
-function makeState(over: Partial<KycState>): KycState {
-  const config = { apiKey: 'pk_test_x', country: 'NG', ...(over.config ?? {}) } as ResolvedKYCConfig;
+function makeState(over: Partial<VerificationState>): VerificationState {
+  const config = { apiKey: 'pk_test_x', country: 'NG', ...(over.config ?? {}) } as ResolvedVerificationConfig;
   return {
     config,
     selectedIdType: null,
     serverConfig: INITIAL_SERVER_CONFIG,
     currentStep: 'consent',
     ...over,
-  } as KycState;
+  } as VerificationState;
 }
 
 describe('flow navigation', () => {
@@ -28,10 +28,10 @@ describe('flow navigation', () => {
   });
 
   it('reaches liveness when enabled, else jumps to submitted', () => {
-    const enabled = makeState({ selectedIdType: 'bvn', config: { apiKey: 'pk_test_x', country: 'NG', enableLiveness: true } as ResolvedKYCConfig });
+    const enabled = makeState({ selectedIdType: 'bvn', config: { apiKey: 'pk_test_x', country: 'NG', enableLiveness: true } as ResolvedVerificationConfig });
     expect(nextStepAfter('id-input', enabled)).toBe('liveness');
 
-    const disabled = makeState({ selectedIdType: 'bvn', config: { apiKey: 'pk_test_x', country: 'NG', enableLiveness: false } as ResolvedKYCConfig });
+    const disabled = makeState({ selectedIdType: 'bvn', config: { apiKey: 'pk_test_x', country: 'NG', enableLiveness: false } as ResolvedVerificationConfig });
     expect(nextStepAfter('id-input', disabled)).toBe('submitted');
     expect(livenessEnabled(disabled)).toBe(false);
   });
@@ -39,7 +39,7 @@ describe('flow navigation', () => {
   it('server livenessCheck=false wins over the consumer baseline', () => {
     const s = makeState({
       selectedIdType: 'bvn',
-      config: { apiKey: 'pk_test_x', country: 'NG', enableLiveness: true } as ResolvedKYCConfig,
+      config: { apiKey: 'pk_test_x', country: 'NG', enableLiveness: true } as ResolvedVerificationConfig,
       serverConfig: {
         status: 'ready',
         fatal: false,

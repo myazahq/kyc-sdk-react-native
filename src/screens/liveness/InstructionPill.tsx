@@ -3,7 +3,7 @@ import { AccessibilityInfo, Animated, Easing, Platform, View } from 'react-nativ
 
 import { useTheme } from '../../components/runtime';
 import { useReduceMotion } from '../../components/StaggerIn';
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 import { Icon } from '../../components/Icon';
 import { Pill } from './ImmersiveSurfaces';
 
@@ -78,13 +78,13 @@ export function InstructionPill({
           {/* The green of a finished step does not reach 4.5:1 on a light
               surface, so the tick carries it and the words stay the text
               colour. */}
-          <MyazaText
+          <UiText
             variant="heading3"
             color={tone === 'warning' ? colors.error : colors.textDark}
             style={{ textAlign: 'center', flexShrink: 1 }}
           >
             {text}
-          </MyazaText>
+          </UiText>
         </Animated.View>
       </Pill>
     </View>

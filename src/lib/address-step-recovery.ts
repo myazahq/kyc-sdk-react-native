@@ -1,5 +1,5 @@
 import { isAddressStep } from './address-flow';
-import type { KYCStep } from '../types/config';
+import type { VerificationStep } from '../types/config';
 
 // ---------------------------------------------------------------------------
 // Recovering an attempt resumed onto an address step the flow no longer has.
@@ -18,7 +18,7 @@ import type { KYCStep } from '../types/config';
 // ---------------------------------------------------------------------------
 
 /** The address flow's four screens, in the order they are always walked. */
-const CANONICAL: readonly KYCStep[] = [
+const CANONICAL: readonly VerificationStep[] = [
   'address-search',
   'address-collection',
   'address-entrance',
@@ -31,7 +31,7 @@ const CANONICAL: readonly KYCStep[] = [
  * altogether. Computed from the real order rather than guessed, so it is the
  * step they would have reached had they finished.
  */
-export function addressExitStep(orderWithAddress: readonly KYCStep[]): KYCStep | null {
+export function addressExitStep(orderWithAddress: readonly VerificationStep[]): VerificationStep | null {
   for (let i = orderWithAddress.length - 1; i >= 0; i -= 1) {
     if (isAddressStep(orderWithAddress[i]!)) return orderWithAddress[i + 1] ?? null;
   }
@@ -46,10 +46,10 @@ export function addressExitStep(orderWithAddress: readonly KYCStep[]): KYCStep |
  * to go when it has none left (see `addressExitStep`).
  */
 export function recoverAddressStep(
-  current: KYCStep,
-  inFlow: readonly KYCStep[],
-  exit: KYCStep | null,
-): KYCStep | null {
+  current: VerificationStep,
+  inFlow: readonly VerificationStep[],
+  exit: VerificationStep | null,
+): VerificationStep | null {
   if (!isAddressStep(current) || inFlow.includes(current)) return null;
   const from = CANONICAL.indexOf(current);
   for (let i = from + 1; i < CANONICAL.length; i += 1) {

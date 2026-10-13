@@ -3,9 +3,9 @@ import { Keyboard, Platform, ScrollView, useWindowDimensions, View } from 'react
 
 import { spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 import { useText } from '../../i18n/useText';
-import { MyazaButton } from '../../components/MyazaButton';
+import { UiButton } from '../../components/UiButton';
 import { FloatingSheet } from '../../components/glass/FloatingSheet';
 import { addressFieldModes, type AddressFieldKey } from '../../lib/address-field-modes';
 import type { AddressCollectionConfig } from '../../types/workflow';
@@ -90,14 +90,14 @@ export function DetailsSheet({
       <View style={{ paddingHorizontal: spacing.md, paddingTop: spacing.xs, paddingBottom: spacing.sm }}>
         {/* One close control, not two: FloatingSheet already carries its own
             in the same corner, and the pair read as a mis-render. */}
-        <MyazaText variant="body" style={{ fontWeight: '700' }}>
+        <UiText variant="body" style={{ fontWeight: '700' }}>
           {t('address.details.title')}
-        </MyazaText>
-        <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 2 }}>
+        </UiText>
+        <UiText variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 2 }}>
           {anyRequired
             ? 'Correct anything the map got wrong. Fields marked * are required.'
             : t('address.details.hint')}
-        </MyazaText>
+        </UiText>
       </View>
 
       <ScrollView
@@ -154,7 +154,7 @@ export function DetailsSheet({
           distance off the home indicator as the web drawer sits off the
           bottom of the window. */}
       <View style={{ paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.md }}>
-        <MyazaButton label={t('common.done')} onPress={onClose} />
+        <UiButton label={t('common.done')} onPress={onClose} />
       </View>
     </FloatingSheet>
   );

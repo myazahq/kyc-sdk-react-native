@@ -4,7 +4,7 @@ import { Pressable, View } from 'react-native';
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
 import { Icon } from '../../components/Icon';
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 import type { AddressSearchHit, PlaceSuggestion } from '../../services/api';
 
 /**
@@ -46,7 +46,7 @@ export function SearchResults({
   if (rows.length === 0) {
     return (
       <View style={frame}>
-        <MyazaText
+        <UiText
           variant="bodyMedium"
           color={colors.textSecondary}
           style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 }}
@@ -54,7 +54,7 @@ export function SearchResults({
           {autocomplete
             ? 'No matches. Use your location or place the pin by hand.'
             : 'No matches. Drag the map to place the pin instead.'}
-        </MyazaText>
+        </UiText>
       </View>
     );
   }
@@ -88,13 +88,13 @@ export function SearchResults({
               <Icon name="map-pin" size={15} color={colors.primary} />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
-              <MyazaText variant="bodyMedium" style={{ fontWeight: '500' }}>
+              <UiText variant="bodyMedium" style={{ fontWeight: '500' }}>
                 {primary}
-              </MyazaText>
+              </UiText>
               {secondary ? (
-                <MyazaText variant="bodySmall" color={colors.textSecondary}>
+                <UiText variant="bodySmall" color={colors.textSecondary}>
                   {secondary}
-                </MyazaText>
+                </UiText>
               ) : null}
             </View>
           </Pressable>

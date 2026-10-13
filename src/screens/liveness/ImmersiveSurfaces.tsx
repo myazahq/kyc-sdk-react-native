@@ -4,7 +4,7 @@ import { Animated, Easing, View, type ViewStyle } from 'react-native';
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
 import { useReduceMotion } from '../../components/StaggerIn';
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 import { Icon } from '../../components/Icon';
 
 // ---------------------------------------------------------------------------
@@ -95,9 +95,9 @@ export function Reassurance({ visible = true }: { visible?: boolean }): React.Re
       <Pill>
         <Icon name="lock" size={13} color={colors.textSecondary} />
         <View style={{ width: 6 }} />
-        <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ flexShrink: 1 }}>
+        <UiText variant="bodySmall" color={colors.textSecondary} style={{ flexShrink: 1 }}>
           Your selfie is sent over a secure connection
-        </MyazaText>
+        </UiText>
       </Pill>
     </Animated.View>
   );
@@ -109,9 +109,9 @@ export function StepCount({ step, total }: { step: number; total: number }): Rea
   return (
     <View style={{ alignItems: 'center' }}>
       <Pill>
-        <MyazaText variant="bodySmall" style={{ fontWeight: '600', fontVariant: ['tabular-nums'] }}>
+        <UiText variant="bodySmall" style={{ fontWeight: '600', fontVariant: ['tabular-nums'] }}>
           {`Step ${step} of ${total}`}
-        </MyazaText>
+        </UiText>
       </Pill>
     </View>
   );

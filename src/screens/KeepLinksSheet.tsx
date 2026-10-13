@@ -5,9 +5,9 @@ import * as Clipboard from 'expo-clipboard';
 import { spacing } from '../config/theme';
 import { FloatingSheet } from '../components/glass/FloatingSheet';
 import { Icon } from '../components/Icon';
-import { MyazaAlert } from '../components/MyazaAlert';
-import { MyazaButton } from '../components/MyazaButton';
-import { MyazaText } from '../components/Typography';
+import { UiAlert } from '../components/UiAlert';
+import { UiButton } from '../components/UiButton';
+import { UiText } from '../components/Typography';
 import { useTheme } from '../components/runtime';
 
 // Shown when the applicant taps Done while key people still owe a check.
@@ -51,12 +51,12 @@ export function KeepLinksSheet({
         </View>
 
         <View style={{ height: spacing.md }} />
-        <MyazaText variant="heading3" style={{ textAlign: 'center' }}>
+        <UiText variant="heading3" style={{ textAlign: 'center' }}>
           Keep a way back to these links
-        </MyazaText>
+        </UiText>
         <View style={{ height: spacing.md }} />
         <View style={{ width: '100%' }}>
-          <MyazaAlert
+          <UiAlert
             variant="warning"
             title="This screen will not be shown again"
             message="Your key people's links live on a web page made for you. Open it in your browser or copy the address somewhere safe, then check who has finished and share the links from there at any time."
@@ -65,12 +65,12 @@ export function KeepLinksSheet({
 
         <View style={{ height: spacing.lg }} />
         <View style={{ width: '100%', gap: spacing.sm }}>
-          <MyazaButton
+          <UiButton
             label="Open in my browser"
             leadingIcon="globe"
             onPress={() => void Linking.openURL(url).catch(() => undefined)}
           />
-          <MyazaButton
+          <UiButton
             label={copied ? 'Link copied' : 'Copy the page link'}
             variant="outline"
             leadingIcon={copied ? 'check' : 'copy'}
@@ -80,7 +80,7 @@ export function KeepLinksSheet({
                 .catch(() => undefined);
             }}
           />
-          <MyazaButton label="I'm done here" variant="ghost" onPress={onDone} />
+          <UiButton label="I'm done here" variant="ghost" onPress={onDone} />
         </View>
       </View>
     </FloatingSheet>

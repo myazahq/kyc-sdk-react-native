@@ -4,7 +4,7 @@ import * as Clipboard from 'expo-clipboard';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
+import { UiText } from '../components/Typography';
 import { Icon } from '../components/Icon';
 import { CountryFlag } from '../components/CountryFlag';
 import { regionCountryName } from '../config/regions';
@@ -72,18 +72,18 @@ export function AwaitCard({ row }: { row: AwaitRow }): React.ReactElement {
       <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
         <View style={{ flex: 1, minWidth: 0, marginRight: spacing.sm }}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <MyazaText
+            <UiText
               variant="bodyMedium"
               numberOfLines={1}
               style={{ fontWeight: '700', flexShrink: 1 }}
             >
               {row.name}
               {row.isApplicant ? (
-                <MyazaText variant="bodySmall" color={colors.textMuted}>
+                <UiText variant="bodySmall" color={colors.textMuted}>
                   {'  (you)'}
-                </MyazaText>
+                </UiText>
               ) : null}
-            </MyazaText>
+            </UiText>
             {row.isCorporate ? (
               // Readability over subtlety: foreground text on a bordered chip.
               // The muted-on-muted version disappeared on dark org themes.
@@ -101,30 +101,30 @@ export function AwaitCard({ row }: { row: AwaitRow }): React.ReactElement {
                 }}
               >
                 <Icon name="building-2" size={12} color={colors.textDark} />
-                <MyazaText
+                <UiText
                   variant="bodySmall"
                   color={colors.textDark}
                   style={{ fontSize: 12, fontWeight: '600', marginLeft: 4 }}
                 >
                   Company
-                </MyazaText>
+                </UiText>
               </View>
             ) : null}
           </View>
           <View
             style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginTop: 2 }}
           >
-            <MyazaText variant="bodySmall" color={colors.textMuted}>
+            <UiText variant="bodySmall" color={colors.textMuted}>
               {ROLE_LABELS[row.role] ?? 'Key person'}
               {row.pct ? ` · ${row.pct}%` : ''}
               {row.country ? ' · ' : ''}
-            </MyazaText>
+            </UiText>
             {row.country ? (
               <>
                 <CountryFlag country={row.country} size={14} />
-                <MyazaText variant="bodySmall" color={colors.textMuted}>
+                <UiText variant="bodySmall" color={colors.textMuted}>
                   {` ${regionCountryName(row.country)}`}
-                </MyazaText>
+                </UiText>
               </>
             ) : null}
           </View>
@@ -137,13 +137,13 @@ export function AwaitCard({ row }: { row: AwaitRow }): React.ReactElement {
             backgroundColor: status.bg,
           }}
         >
-          <MyazaText
+          <UiText
             variant="bodySmall"
             color={status.fg}
             style={{ fontWeight: '700', fontSize: 11, letterSpacing: 0.6 }}
           >
             {status.label}
-          </MyazaText>
+          </UiText>
         </View>
       </View>
 
@@ -166,13 +166,13 @@ export function AwaitCard({ row }: { row: AwaitRow }): React.ReactElement {
             }}
           >
             <Icon name={copied ? 'check' : 'copy'} size={15} color={colors.primary} />
-            <MyazaText
+            <UiText
               variant="bodySmall"
               color={colors.primary}
               style={{ fontWeight: '600', marginLeft: 6 }}
             >
               {copied ? 'Copied' : 'Copy link'}
-            </MyazaText>
+            </UiText>
           </Pressable>
           <Pressable
             onPress={share}
@@ -189,13 +189,13 @@ export function AwaitCard({ row }: { row: AwaitRow }): React.ReactElement {
             }}
           >
             <Icon name="share" size={15} color={colors.primary} />
-            <MyazaText
+            <UiText
               variant="bodySmall"
               color={colors.primary}
               style={{ fontWeight: '600', marginLeft: 6 }}
             >
               Share
-            </MyazaText>
+            </UiText>
           </Pressable>
         </View>
       ) : null}

@@ -4,7 +4,7 @@ import { Animated, Pressable, View } from 'react-native';
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
 import { Icon, type IconName } from '../../components/Icon';
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 import { useReduceMotion } from '../../components/StaggerIn';
 import { useText } from '../../i18n/useText';
 import type { TextFn } from '../../i18n/types';
@@ -132,9 +132,9 @@ function DisclosureRow({
         >
           <Icon name={icon} size={15} color={open ? colors.primary : colors.textSecondary} />
         </View>
-        <MyazaText variant="bodyMedium" style={{ flex: 1, fontWeight: '500' }}>
+        <UiText variant="bodyMedium" style={{ flex: 1, fontWeight: '500' }}>
           {title}
-        </MyazaText>
+        </UiText>
         <Animated.View
           style={{
             transform: [
@@ -186,13 +186,13 @@ function DisclosureRow({
             paddingBottom: spacing.md,
           }}
         >
-          <MyazaText
+          <UiText
             variant="bodyMedium"
             color={colors.textSecondary}
             style={{ lineHeight: 21 }}
           >
             {body}
-          </MyazaText>
+          </UiText>
         </View>
       </Animated.View>
     </View>

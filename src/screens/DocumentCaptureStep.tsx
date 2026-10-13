@@ -6,16 +6,16 @@ import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { spacing } from '../config/theme';
 import { ID_TYPES, documentGuideAspect, getScanSides } from '../config/idTypes';
 import { withRetry } from '../services/retry';
-import { mapToKycError, safeReportError } from '../services/errors';
+import { mapToVerificationError, safeReportError } from '../services/errors';
 import { compressDocumentImage, compressVideo, cropCardRegion } from '../services/mediaCompress';
 import { MAX_VIDEO_BYTES } from '../config/captureSettings';
-import type { DocumentCapturePhase } from '../store/kycStore';
+import type { DocumentCapturePhase } from '../store/verificationStore';
 import { documentCaptureMethods } from '../config/documentCaptureMethods';
-import { useEffectiveCountry, useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
-import { MyazaButton } from '../components/MyazaButton';
+import { useEffectiveCountry, useFlowState, useVerificationConfig, useVerificationStore, useTheme } from '../components/runtime';
+import { UiText } from '../components/Typography';
+import { UiButton } from '../components/UiButton';
 import { useToast } from '../components/toast';
-import { MyazaPulseLoader } from '../components/MyazaPulseLoader';
+import { UiPulseLoader } from '../components/UiPulseLoader';
 import { CameraPhase } from './document/CameraPhase';
 import { CameraPermissionView, CameraUnavailableView, CameraPermissionPrimingView } from '../components/CameraPermissionView';
 import { ReadyPrimer } from '../components/ReadyPrimer';
@@ -51,7 +51,7 @@ import type { DocumentCaptureCheckRequest, DocumentCaptureSide } from '../servic
 // a gate: "Continue anyway" always advances, and a failed or slow check reads
 // as no problem.
 //
-// The per-phase title/description live in the SHEET HEADER (KycFlow reads the
+// The per-phase title/description live in the SHEET HEADER (VerificationFlow reads the
 // synced `documentCapturePhase` from the store and calls `documentCaptureMeta` in components/stepHeaderCopy),
 // not in the body — mirroring Flutter's header `docReviewPhase` sync.
 
@@ -66,7 +66,7 @@ function cameraBottomInset(): number {
 }
 
 export function DocumentCaptureStep(): React.ReactElement {
-  const config = useKycConfig();
+  const config = useVerificationConfig();
   const methods = documentCaptureMethods(config);
   // The camera's hooks live in their own wrapper so an upload-only workflow
   // (`allowDocumentScan: false`) never mounts them: no permission read, no
@@ -80,7 +80,7 @@ export function DocumentCaptureStep(): React.ReactElement {
 }
 
 function ScanningDocumentCapture({ allowUpload }: { allowUpload: boolean }): React.ReactElement {
-  const config = useKycConfig();
+  const config = useVerificationConfig();
   const camera = useDocumentCamera(config.onError);
   return <DocumentCapture camera={camera} allowUpload={allowUpload} />;
 }
@@ -96,18 +96,18 @@ function DocumentCapture({
   const { colors } = useTheme();
   const t = useText();
   const toast = useToast();
-  const config = useKycConfig();
-  const selectedIdType = useKyc((s) => s.selectedIdType);
-  const api = useKyc((s) => s.api);
-  const setMediaId = useKyc((s) => s.setMediaId);
-  const setMrzScan = useKyc((s) => s.setMrzScan);
-  const mrzScan = useKyc((s) => s.mrzScan);
+  const config = useVerificationConfig();
+  const selectedIdType = useFlowState((s) => s.selectedIdType);
+  const api = useFlowState((s) => s.api);
+  const setMediaId = useFlowState((s) => s.setMediaId);
+  const setMrzScan = useFlowState((s) => s.setMrzScan);
+  const mrzScan = useFlowState((s) => s.mrzScan);
   const country = useEffectiveCountry();
-  const setDocumentCapturePhase = useKyc((s) => s.setDocumentCapturePhase);
-  const setImmersiveCapture = useKyc((s) => s.setImmersiveCapture);
-  const store = useKycStore();
-  const nextStep = useKyc((s) => s.nextStep);
-  const sessionId = useKyc((s) => s.sessionId);
+  const setDocumentCapturePhase = useFlowState((s) => s.setDocumentCapturePhase);
+  const setImmersiveCapture = useFlowState((s) => s.setImmersiveCapture);
+  const store = useVerificationStore();
+  const nextStep = useFlowState((s) => s.nextStep);
+  const sessionId = useFlowState((s) => s.sessionId);
 
   const documentLabel =
     (selectedIdType && Object.values(ID_TYPES).flat().find((d) => d.key === selectedIdType)?.label) || 'Document';
@@ -143,7 +143,7 @@ function DocumentCapture({
   const frontVideoRef = useRef<string | null>(null);
   const backVideoRef = useRef<string | null>(null);
 
-  // Publish the sub-phase so the sheet header (KycFlow) shows the right title.
+  // Publish the sub-phase so the sheet header (VerificationFlow) shows the right title.
   useEffect(() => {
     setDocumentCapturePhase(phase);
   }, [phase, setDocumentCapturePhase]);
@@ -160,7 +160,7 @@ function DocumentCapture({
   // only the live preview earns the whole display — the ready primer, the
   // permission screens, the previews and the review all keep their chrome.
   //
-  // No unmount cleanup: KycFlow already scopes the flag to this step, and a
+  // No unmount cleanup: VerificationFlow already scopes the flag to this step, and a
   // cleanup here would fire during any remount and fight the effect that had
   // just raised it.
   const cameraLive =
@@ -286,7 +286,7 @@ function DocumentCapture({
     [api, setMediaId],
   );
 
-  // ── Advance (KycFlow routes to liveness/submitted, or the next multi-ID ID) ─
+  // ── Advance (VerificationFlow routes to liveness/submitted, or the next multi-ID ID) ─
   // Shared by a clean Continue and "Continue anyway". The media ids are already
   // in the store, so moving on never uploads or checks a second time.
   const advance = useCallback(() => {
@@ -317,10 +317,10 @@ function DocumentCapture({
     } catch (err) {
       setRetryInfo(null);
       setUploading(false);
-      const kycError = mapToKycError(err, 'upload');
-      setUploadError(kycError.message);
-      toast.show({ variant: 'error', title: 'Upload failed', message: kycError.message });
-      safeReportError(config.onError, kycError);
+      const verificationError = mapToVerificationError(err, 'upload');
+      setUploadError(verificationError.message);
+      toast.show({ variant: 'error', title: 'Upload failed', message: verificationError.message });
+      safeReportError(config.onError, verificationError);
       return;
     }
     setRetryInfo(null);
@@ -493,7 +493,7 @@ function DocumentCapture({
         <DocImage uri={frontUri!} />
         <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.md }}>
           <View style={{ flex: 1 }}>
-            <MyazaButton
+            <UiButton
               label={camera ? t('common.retake') : 'Replace'}
               variant="outline"
               leadingIcon="refresh"
@@ -501,7 +501,7 @@ function DocumentCapture({
             />
           </View>
           <View style={{ flex: 1 }}>
-            <MyazaButton label={camera ? 'Next: Scan Back' : 'Next: Add Back'} onPress={() => setPhase('back')} />
+            <UiButton label={camera ? 'Next: Scan Back' : 'Next: Add Back'} onPress={() => setPhase('back')} />
           </View>
         </View>
       </View>
@@ -538,7 +538,7 @@ function DocumentCapture({
             backgroundColor: 'rgba(0,0,0,0.45)',
           }}
         >
-          <MyazaPulseLoader size={48} />
+          <UiPulseLoader size={48} />
         </View>
       }
       onRetakeFront={() => retake('front')}
@@ -546,13 +546,13 @@ function DocumentCapture({
       footer={
         <>
           {retryInfo && uploading ? (
-            <MyazaText variant="bodySmall" color={colors.warning} style={{ textAlign: 'center', marginBottom: spacing.sm }}>
+            <UiText variant="bodySmall" color={colors.warning} style={{ textAlign: 'center', marginBottom: spacing.sm }}>
               {`Upload failed. Retrying (${retryInfo.attempt}/${retryInfo.total})…`}
-            </MyazaText>
+            </UiText>
           ) : null}
           {uploadError ? (
             // The error message is shown as a top toast; keep a retry action here.
-            <MyazaButton label="Try Again" onPress={handleContinue} loading={uploading} />
+            <UiButton label="Try Again" onPress={handleContinue} loading={uploading} />
           ) : captureProblems ? (
             // A side will not read: retake it, or carry on with what was sent.
             <CaptureCheckNotice
@@ -562,7 +562,7 @@ function DocumentCapture({
               onContinueAnyway={advance}
             />
           ) : (
-            <MyazaButton label={t('common.continue')} onPress={handleContinue} loading={uploading} />
+            <UiButton label={t('common.continue')} onPress={handleContinue} loading={uploading} />
           )}
         </>
       }

@@ -2,9 +2,9 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
-import { useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
-import { MyazaButton } from '../components/MyazaButton';
+import { useFlowState, useVerificationConfig, useVerificationStore, useTheme } from '../components/runtime';
+import { UiText } from '../components/Typography';
+import { UiButton } from '../components/UiButton';
 import { useText } from '../i18n/useText';
 import { MediaSourceSheet } from '../components/MediaSourceSheet';
 import { BusinessDocumentSlot } from './BusinessDocumentSlot';
@@ -30,11 +30,11 @@ import { useBusinessDocumentAttach } from './useBusinessDocumentAttach';
 // ---------------------------------------------------------------------------
 
 export function BusinessDocumentsStep(): React.ReactElement {
-  const config = useKycConfig();
+  const config = useVerificationConfig();
   const t = useText();
-  const store = useKycStore();
+  const store = useVerificationStore();
   const { colors } = useTheme();
-  const uploaded = useKyc((s) => s.businessApplication.documents);
+  const uploaded = useFlowState((s) => s.businessApplication.documents);
   const [busySlot, setBusySlot] = useState<string | null>(null);
   const [pickingSlot, setPickingSlot] = useState<ResolvedBusinessDocumentType | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -101,13 +101,13 @@ export function BusinessDocumentsStep(): React.ReactElement {
       })}
 
       {error ? (
-        <MyazaText variant="bodySmall" color={colors.error} style={{ marginBottom: spacing.sm }}>
+        <UiText variant="bodySmall" color={colors.error} style={{ marginBottom: spacing.sm }}>
           {error}
-        </MyazaText>
+        </UiText>
       ) : null}
 
       <View style={{ height: spacing.xs }} />
-      <MyazaButton
+      <UiButton
         label={t('common.continue')}
         onPress={handleContinue}
         disabled={missing.length > 0 || busySlot !== null}

@@ -2,7 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
-import { MyazaButton } from '../components/MyazaButton';
+import { UiButton } from '../components/UiButton';
 import { VerifiedNotice } from '../components/VerifiedNotice';
 import { useText } from '../i18n/useText';
 
@@ -32,7 +32,7 @@ export function ContactVerifiedPanel({
         }
       />
       <View style={{ height: spacing.md }} />
-      <MyazaButton label={t('common.continue')} onPress={onContinue} />
+      <UiButton label={t('common.continue')} onPress={onContinue} />
     </View>
   );
 }

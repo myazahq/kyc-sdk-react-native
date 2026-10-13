@@ -1,8 +1,8 @@
-import type { BusinessCheckResult, KycState } from './state';
+import type { BusinessCheckResult, VerificationState } from './state';
 import { EMPTY_BUSINESS_CHECK } from './state';
 
 // ---------------------------------------------------------------------------
-// The paid registry check at SELECTION, split from kycStore.ts (200-line rule).
+// The paid registry check at SELECTION, split from verificationStore.ts (200-line rule).
 //
 // Run when the applicant confirms their company, so the register answers
 // BEFORE the details screen asks them to confirm what it said — and its key
@@ -13,10 +13,10 @@ import { EMPTY_BUSINESS_CHECK } from './state';
 // two in lockstep.
 // ---------------------------------------------------------------------------
 
-type Set = (partial: Partial<KycState> | ((s: KycState) => Partial<KycState>)) => void;
+type Set = (partial: Partial<VerificationState> | ((s: VerificationState) => Partial<VerificationState>)) => void;
 
 export async function runBusinessCheck(
-  get: () => KycState,
+  get: () => VerificationState,
   set: Set,
 ): Promise<BusinessCheckResult> {
   const s = get();

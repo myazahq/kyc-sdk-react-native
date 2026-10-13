@@ -1,7 +1,7 @@
 import { Platform, StatusBar } from 'react-native';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 
-import { useKycConfig } from './runtime';
+import { useVerificationConfig } from './runtime';
 import { useSandboxBannerVisible } from './SandboxBanner';
 
 // ---------------------------------------------------------------------------
@@ -10,7 +10,7 @@ import { useSandboxBannerVisible } from './SandboxBanner';
 // A step that takes the sheet (the full-screen liveness camera) has no header
 // above it and no footer below it, so it has to keep clear of the status bar
 // and the home indicator itself. These are the sheet's own numbers
-// (KycSheet computes the same ones for its header and footer):
+// (VerificationSheet computes the same ones for its header and footer):
 //
 //   • Android: an edge-to-edge modal, so the status bar's inset applies.
 //   • iOS pageSheet: already below the status bar, so nothing to clear at the
@@ -24,7 +24,7 @@ import { useSandboxBannerVisible } from './SandboxBanner';
 // ---------------------------------------------------------------------------
 
 export function useSheetInsets(): { top: number; bottom: number } {
-  const config = useKycConfig();
+  const config = useVerificationConfig();
   const bannerVisible = useSandboxBannerVisible();
   const sa = initialWindowMetrics?.insets;
   const iosFullScreen = Platform.OS === 'ios' && config.disableClose === true;

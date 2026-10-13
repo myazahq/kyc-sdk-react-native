@@ -7,7 +7,7 @@
 // here gives an immediate, specific message instead of a slow 413. A THREE-WAY
 // MIRROR with the web SDK's `lib/upload-limits.ts` and Flutter's
 // `config/upload_limits.dart`, pinned to
-// `kyc-sdk-flutter/test/upload_limits_vectors.json`.
+// `sdk-flutter/test/upload_limits_vectors.json`.
 // ---------------------------------------------------------------------------
 
 export const IMAGE_MAX_BYTES = 5 * 1024 * 1024;

@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, View } from 'react-native';
 
 import { spacing, radius } from '../../config/theme';
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 import { Icon } from '../../components/Icon';
 import { AMBER_50, AMBER_200, AMBER_800 } from './constants';
 
@@ -39,9 +39,9 @@ export function LightingBanner({ text }: { text: string }): React.ReactElement {
         }}
       >
         <Icon name="lightbulb" size={16} color={AMBER_800} />
-        <MyazaText variant="bodySmall" color={AMBER_800} style={{ flexShrink: 1, lineHeight: 17 }}>
+        <UiText variant="bodySmall" color={AMBER_800} style={{ flexShrink: 1, lineHeight: 17 }}>
           {text}
-        </MyazaText>
+        </UiText>
       </View>
     </Animated.View>
   );

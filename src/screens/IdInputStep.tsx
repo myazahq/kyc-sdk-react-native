@@ -5,10 +5,10 @@ import { spacing } from '../config/theme';
 import { ID_TYPES } from '../config/idTypes';
 import { validateIdNumber } from '../services/validators';
 import type { IdType } from '../types/config';
-import { useEffectiveCountry, useKyc, useKycConfig } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
-import { MyazaInput } from '../components/MyazaInput';
-import { MyazaButton } from '../components/MyazaButton';
+import { useEffectiveCountry, useFlowState, useVerificationConfig } from '../components/runtime';
+import { UiText } from '../components/Typography';
+import { UiInput } from '../components/UiInput';
+import { UiButton } from '../components/UiButton';
 import { useText } from '../i18n/useText';
 
 // Number-only ID entry (BVN / NIN / vNIN) — 1:1 with the Flutter SDK's
@@ -24,13 +24,13 @@ function hintFor(def: { label: string; inputLabel?: string; digits?: number } | 
 }
 
 export function IdInputStep(): React.ReactElement {
-  const config = useKycConfig();
+  const config = useVerificationConfig();
   const t = useText();
   const country = useEffectiveCountry();
-  const selectedIdType = useKyc((s) => s.selectedIdType);
-  const storedIdNumber = useKyc((s) => s.idNumber);
-  const setIdNumber = useKyc((s) => s.setIdNumber);
-  const nextStep = useKyc((s) => s.nextStep);
+  const selectedIdType = useFlowState((s) => s.selectedIdType);
+  const storedIdNumber = useFlowState((s) => s.idNumber);
+  const setIdNumber = useFlowState((s) => s.setIdNumber);
+  const nextStep = useFlowState((s) => s.nextStep);
 
   // Seeded from the store so a back-and-forward through the flow never loses
   // what was already typed — everything persists until submission, or until
@@ -70,11 +70,11 @@ export function IdInputStep(): React.ReactElement {
   return (
     <View>
       {def ? (
-        <MyazaText variant="label" style={{ marginBottom: spacing.sm }}>
+        <UiText variant="label" style={{ marginBottom: spacing.sm }}>
           {def.inputLabel ?? def.label}
-        </MyazaText>
+        </UiText>
       ) : null}
-      <MyazaInput
+      <UiInput
         value={value}
         onChangeText={handleChange}
         placeholder={hintFor(def)}
@@ -85,7 +85,7 @@ export function IdInputStep(): React.ReactElement {
         autoFocus
       />
       <View style={{ height: spacing.xl }} />
-      <MyazaButton label={t('common.continue')} onPress={valid ? handleContinue : undefined} disabled={!valid} />
+      <UiButton label={t('common.continue')} onPress={valid ? handleContinue : undefined} disabled={!valid} />
     </View>
   );
 }

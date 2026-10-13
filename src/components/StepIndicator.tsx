@@ -4,7 +4,7 @@ import { PixelRatio, useWindowDimensions, View, type LayoutChangeEvent } from 'r
 import { spacing } from '../config/theme';
 import { fitStepCircles, windowedSteps, type StepSlot } from '../lib/step-window';
 import { useTheme } from './runtime';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 import { Icon } from './Icon';
 
 // Segmented numbered step indicator — 1:1 with the Flutter SDK's _StepIndicator.
@@ -90,14 +90,14 @@ export function StepIndicator({ progress, stepCount }: StepIndicatorProps): Reac
                 style={{ height: size, justifyContent: 'center', paddingHorizontal: 2 }}
                 importantForAccessibility="no"
               >
-                <MyazaText
+                <UiText
                   variant="bodySmall"
                   color={colors.textMuted}
                   style={{ fontSize: 13, letterSpacing: 1 }}
                   allowFontScaling={false}
                 >
                   ···
-                </MyazaText>
+                </UiText>
               </View>
             ) : (
               // Positioning context for the badge, which straddles the circle's
@@ -119,7 +119,7 @@ export function StepIndicator({ progress, stepCount }: StepIndicatorProps): Reac
                       step is done but not WHICH step — and once the row is
                       windowed ("1 ··· 5 6 7 ··· 10") that is precisely what the
                       numbers are there to answer. */}
-                  <MyazaText
+                  <UiText
                     variant="bodySmall"
                     color={filled ? '#FFFFFF' : colors.textMuted}
                     style={{ fontSize: 12, fontWeight: '700' }}
@@ -128,7 +128,7 @@ export function StepIndicator({ progress, stepCount }: StepIndicatorProps): Reac
                     allowFontScaling={false}
                   >
                     {slot + 1}
-                  </MyazaText>
+                  </UiText>
                 </View>
 
                 {/* Completion rides as a badge tucked onto the circle's corner.

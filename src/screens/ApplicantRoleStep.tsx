@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
-import { useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
-import { MyazaButton } from '../components/MyazaButton';
+import { useFlowState, useVerificationConfig, useVerificationStore, useTheme } from '../components/runtime';
+import { UiText } from '../components/Typography';
+import { UiButton } from '../components/UiButton';
 import { useText } from '../i18n/useText';
-import { MyazaInput } from '../components/MyazaInput';
-import { MyazaSelect } from '../components/MyazaSelect';
+import { UiInput } from '../components/UiInput';
+import { UiSelect } from '../components/UiSelect';
 import { Pressable } from 'react-native';
 import { Icon } from '../components/Icon';
 import { CountryFlag } from '../components/CountryFlag';
@@ -40,11 +40,11 @@ const APPLICANT_ROLE_LABELS: Record<ApplicantRole, string> = {
 };
 
 export function ApplicantRoleStep(): React.ReactElement {
-  const store = useKycStore();
-  const config = useKycConfig();
+  const store = useVerificationStore();
+  const config = useVerificationConfig();
   const { colors } = useTheme();
   const t = useText();
-  const stored = useKyc((s) => s.businessApplication);
+  const stored = useFlowState((s) => s.businessApplication);
 
   // The valid entered PEOPLE, keeping their ORIGINAL index — the payload flag
   // is index-based, so the list and the submission can never disagree. A
@@ -126,17 +126,17 @@ export function ApplicantRoleStep(): React.ReactElement {
         >
           <Icon name="scan-face" size={18} color={colors.primary} />
         </View>
-        <MyazaText variant="bodySmall" style={{ flex: 1 }}>
+        <UiText variant="bodySmall" style={{ flex: 1 }}>
           {t('business.applicant.notice')}
-        </MyazaText>
+        </UiText>
       </View>
 
       {hasPeople ? (
         <>
           <View style={{ height: spacing.lg }} />
-          <MyazaText variant="bodySmall" style={{ fontWeight: '600', marginBottom: spacing.sm }}>
+          <UiText variant="bodySmall" style={{ fontWeight: '600', marginBottom: spacing.sm }}>
             {t('business.applicant.whoLabel')}
-          </MyazaText>
+          </UiText>
           {people.map(({ row, index }) => (
             <SelfCard
               key={index}
@@ -167,9 +167,9 @@ export function ApplicantRoleStep(): React.ReactElement {
               }}
             >
               <Icon name="check" size={14} color={colors.primary} />
-              <MyazaText variant="bodySmall" style={{ flex: 1, marginLeft: spacing.xs + 2 }}>
+              <UiText variant="bodySmall" style={{ flex: 1, marginLeft: spacing.xs + 2 }}>
                 {t('business.applicant.selfNote')}
-              </MyazaText>
+              </UiText>
             </View>
           ) : null}
         </>
@@ -178,10 +178,10 @@ export function ApplicantRoleStep(): React.ReactElement {
       {!hasPeople || selection === 'other' ? (
         <>
           <View style={{ height: spacing.lg }} />
-          <MyazaText variant="bodySmall" style={{ fontWeight: '600', marginBottom: spacing.xs }}>
+          <UiText variant="bodySmall" style={{ fontWeight: '600', marginBottom: spacing.xs }}>
             {t('business.applicant.roleLabel')}
-          </MyazaText>
-          <MyazaSelect
+          </UiText>
+          <UiSelect
             value={role}
             hint="Select your role"
             sheetTitle="Your role"
@@ -193,7 +193,7 @@ export function ApplicantRoleStep(): React.ReactElement {
           />
 
           <View style={{ height: spacing.md }} />
-          <MyazaInput
+          <UiInput
             label="Full name (optional)"
             value={name}
             onChangeText={setName}
@@ -204,7 +204,7 @@ export function ApplicantRoleStep(): React.ReactElement {
       ) : null}
 
       <View style={{ height: spacing.xl }} />
-      <MyazaButton label={t('common.continue')} onPress={handleContinue} disabled={!canContinue} />
+      <UiButton label={t('common.continue')} onPress={handleContinue} disabled={!canContinue} />
     </View>
   );
 }
@@ -266,9 +266,9 @@ function SelfCard({
         {other ? (
           <Icon name="user-plus" size={18} color={selected ? colors.primary : colors.textMuted} />
         ) : (
-          <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '700' }}>
+          <UiText variant="bodySmall" color={colors.primary} style={{ fontWeight: '700' }}>
             {initialsOf(name)}
-          </MyazaText>
+          </UiText>
         )}
         {country ? (
           <View
@@ -288,14 +288,14 @@ function SelfCard({
       </View>
 
       <View style={{ flex: 1, minWidth: 0, marginLeft: spacing.sm + 4 }}>
-        <MyazaText variant="bodyMedium" numberOfLines={1} style={{ fontWeight: '600' }}>
+        <UiText variant="bodyMedium" numberOfLines={1} style={{ fontWeight: '600' }}>
           {name}
-        </MyazaText>
+        </UiText>
         {subtitle ? (
-          <MyazaText variant="bodySmall" color={colors.textMuted} numberOfLines={1} style={{ marginTop: 1 }}>
+          <UiText variant="bodySmall" color={colors.textMuted} numberOfLines={1} style={{ marginTop: 1 }}>
             {subtitle}
             {ownershipPct ? ` · ${ownershipPct}% ownership` : ''}
-          </MyazaText>
+          </UiText>
         ) : null}
       </View>
 

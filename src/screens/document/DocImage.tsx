@@ -3,8 +3,8 @@ import { Image, View } from 'react-native';
 
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
-import { MyazaText } from '../../components/Typography';
-import { MyazaPulseLoader } from '../../components/MyazaPulseLoader';
+import { UiText } from '../../components/Typography';
+import { UiPulseLoader } from '../../components/UiPulseLoader';
 
 /** One captured side as a card-shaped photo, e.g. the two-sided front preview. */
 export function DocImage({ uri, label, uploading }: { uri: string; label?: string; uploading?: boolean }): React.ReactElement {
@@ -12,9 +12,9 @@ export function DocImage({ uri, label, uploading }: { uri: string; label?: strin
   return (
     <View>
       {label ? (
-        <MyazaText variant="bodySmall" color={colors.textMuted} style={{ textAlign: 'center', marginBottom: spacing.xs }}>
+        <UiText variant="bodySmall" color={colors.textMuted} style={{ textAlign: 'center', marginBottom: spacing.xs }}>
           {label}
-        </MyazaText>
+        </UiText>
       ) : null}
       <View style={{ borderRadius: radius.md, overflow: 'hidden', borderWidth: 1, borderColor: colors.border }}>
         <Image source={{ uri }} style={{ width: '100%', aspectRatio: 1.586 }} resizeMode="cover" />
@@ -34,7 +34,7 @@ export function DocImage({ uri, label, uploading }: { uri: string; label?: strin
               backgroundColor: 'rgba(0,0,0,0.45)',
             }}
           >
-            <MyazaPulseLoader size={64} />
+            <UiPulseLoader size={64} />
           </View>
         ) : null}
       </View>

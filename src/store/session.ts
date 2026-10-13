@@ -1,4 +1,4 @@
-import type { KycState, KycStore } from './state';
+import type { VerificationState, VerificationStore } from './state';
 import { withoutRestoredSelfie } from '../lib/livenessResume';
 import { collectDeviceMetadata } from '../services/deviceMetadata';
 import { restoreAddress } from './address';
@@ -12,7 +12,7 @@ import { cancelledRefusalOf, shouldStopOnSessionStartFailure } from '../lib/sess
 // ---------------------------------------------------------------------------
 // The attempt SESSION: minting at launch, and progress writes as the user moves.
 //
-// Ported from the web SDK (MyazaKYC.tsx beginSession + useSessionProgress),
+// Ported from the web SDK (Verification.tsx beginSession + useSessionProgress),
 // with the same contracts:
 //
 //   Best-effort throughout. Sessions power resumability, the dashboard's live
@@ -42,7 +42,7 @@ const SAVE_DEBOUNCE_MS = 800;
 const inflightStarts = new Map<string, Promise<SessionStartResponse>>();
 
 /** Mint (or resume) the attempt session and remember its id. Fire-and-forget. */
-export function startAttemptSession(store: KycStore): void {
+export function startAttemptSession(store: VerificationStore): void {
   const s = store.getState();
   if (s.sessionId) return;
   const externalUserId = s.config.userId ?? s.config.metadata?.['userId'];
@@ -93,7 +93,7 @@ export function startAttemptSession(store: KycStore): void {
  * snapshot degrades to restoring less, never to breaking the flow.
  */
 export function restoreAttemptProgress(
-  store: KycStore,
+  store: VerificationStore,
   progress: NonNullable<SessionStartResponse['progress']>,
 ): void {
   const s = store.getState();
@@ -117,7 +117,7 @@ export function restoreAttemptProgress(
       )
     : null;
   const app = d['businessApplication'] as
-    | (Partial<KycState['businessApplication']> & { keyPeople?: Array<Record<string, unknown>> })
+    | (Partial<VerificationState['businessApplication']> & { keyPeople?: Array<Record<string, unknown>> })
     | undefined;
 
   store.setState({
@@ -129,14 +129,14 @@ export function restoreAttemptProgress(
     // caught mid-flight across a republish walks the CURRENT steps rather than
     // submitting against rules they were never shown.
     ...(typeof capture.step === 'string' && capture.step !== 'submitted'
-      ? { currentStep: capture.step as KycState['currentStep'] }
+      ? { currentStep: capture.step as VerificationState['currentStep'] }
       : {}),
     ...(capture.mediaIds ? { mediaIds: { ...s.mediaIds, ...capture.mediaIds } } : {}),
     ...(typeof d['selectedCountry'] === 'string'
       ? { selectedCountry: d['selectedCountry'] as string }
       : {}),
     ...(typeof d['selectedIdType'] === 'string'
-      ? { selectedIdType: d['selectedIdType'] as KycState['selectedIdType'] }
+      ? { selectedIdType: d['selectedIdType'] as VerificationState['selectedIdType'] }
       : {}),
     ...(typeof d['idNumber'] === 'string' ? { idNumber: d['idNumber'] as string } : {}),
     ...(d['business'] && typeof d['business'] === 'object'
@@ -167,7 +167,7 @@ export function restoreAttemptProgress(
                   })),
                 }
               : {}),
-          } as KycState['businessApplication'],
+          } as VerificationState['businessApplication'],
         }
       : {}),
     ...(d['contact'] && typeof d['contact'] === 'object'
@@ -193,7 +193,7 @@ export function restoreAttemptProgress(
 
 /** The progress snapshot the server stores — mirrors the web SDK's shape, so
  *  the dashboard's attempt page reads both without branching. */
-export function progressFromState(s: ReturnType<KycStore['getState']>): Record<string, unknown> {
+export function progressFromState(s: ReturnType<VerificationStore['getState']>): Record<string, unknown> {
   const mediaIds = Object.fromEntries(
     Object.entries(s.mediaIds ?? {}).filter(([, v]) => typeof v === 'string' && v),
   );
@@ -239,7 +239,7 @@ export function isUntouchedProgress(payload: Record<string, unknown>, opening: s
  * Persist progress as the user advances. Debounced, deduped by snapshot, and
  * a no-op until the session exists.
  */
-export function watchSessionProgress(store: KycStore): () => void {
+export function watchSessionProgress(store: VerificationStore): () => void {
   let timer: ReturnType<typeof setTimeout> | null = null;
   let lastSaved = '';
 

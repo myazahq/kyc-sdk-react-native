@@ -1,5 +1,5 @@
 import { buildConsentModel } from '../screens/consent/model';
-import type { MyazaKYCConfig } from '../types/config';
+import type { VerificationConfig } from '../types/config';
 
 // ---------------------------------------------------------------------------
 // The consent screen's copy is a LEGAL NOTICE derived from what the flow
@@ -10,9 +10,9 @@ import type { MyazaKYCConfig } from '../types/config';
 // Mirrors the web SDK's consent-disclosure tests.
 // ---------------------------------------------------------------------------
 
-const base = { apiKey: 'pk_test_x', country: 'NG' } as MyazaKYCConfig;
+const base = { apiKey: 'pk_test_x', country: 'NG' } as VerificationConfig;
 
-const labels = (config: MyazaKYCConfig) => buildConsentModel(config).steps.map((s) => s.label);
+const labels = (config: VerificationConfig) => buildConsentModel(config).steps.map((s) => s.label);
 
 describe('individual flow', () => {
   it('defaults to the identity copy with document + selfie rows', () => {
@@ -36,7 +36,7 @@ describe('individual flow', () => {
       userData: { firstName: 'Ada' },
       enableSelfie: false,
       enableDocumentCapture: false,
-    } as MyazaKYCConfig;
+    } as VerificationConfig;
     const m = buildConsentModel(config);
     expect(m.title).toBe('Welcome, Ada');
     expect(labels(config)).toHaveLength(2);
@@ -46,32 +46,32 @@ describe('individual flow', () => {
   });
 
   it('lists the NFC chip row only when the flow enables it', () => {
-    const config = { ...base, nfc: { enabled: true } } as MyazaKYCConfig;
+    const config = { ...base, nfc: { enabled: true } } as VerificationConfig;
     expect(labels(config)).toContain('Scan your document’s security chip (NFC)');
     expect(labels(base)).not.toContain('Scan your document’s security chip (NFC)');
   });
 
   it('lists the contact-code row, naming the channel it will actually use', () => {
-    const config = { ...base, emailVerification: { enabled: true } } as MyazaKYCConfig;
+    const config = { ...base, emailVerification: { enabled: true } } as VerificationConfig;
     // Channel-specific: "contact details" promised both when only one runs.
     expect(labels(config)).toContain('Confirm your email with a one-time code');
     const both = {
       ...base,
       emailVerification: { enabled: true },
       phoneVerification: { enabled: true },
-    } as MyazaKYCConfig;
+    } as VerificationConfig;
     expect(labels(both)).toContain('Confirm your email and phone number with a one-time code');
     expect(labels(base)).not.toContain('Confirm your contact details with a one-time code');
   });
 });
 
 describe('business (KYB) flow', () => {
-  const business = (extra?: object): MyazaKYCConfig =>
+  const business = (extra?: object): VerificationConfig =>
     ({
       ...base,
       subjectType: 'business',
       business: { country: 'NG', ...extra },
-    }) as MyazaKYCConfig;
+    }) as VerificationConfig;
 
   it('shows the business copy, never the identity step list', () => {
     const m = buildConsentModel(business());
@@ -116,14 +116,14 @@ describe('business (KYB) flow', () => {
       ...business(),
       userData: { businessName: 'Acme Ltd' },
       consent: { title: 'Verify {businessName}' },
-    } as MyazaKYCConfig;
+    } as VerificationConfig;
     expect(buildConsentModel(config).title).toBe('Verify Acme Ltd');
   });
 });
 
 describe('address scope bullets follow the evidence the flow asks for', () => {
   const addressScope = (over: Record<string, unknown>) =>
-    ({ ...base, scope: 'address', ...over }) as MyazaKYCConfig;
+    ({ ...base, scope: 'address', ...over }) as VerificationConfig;
 
   it('promises no map when the flow only asks for a document', () => {
     // The bullets were a fixed pair assuming the pin, so a proof-of-address

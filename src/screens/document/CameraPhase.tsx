@@ -3,7 +3,7 @@ import { Modal, Pressable, View } from 'react-native';
 
 import { spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 import { Icon } from '../../components/Icon';
 import { CameraViewfinder } from '../../components/CameraViewfinder';
 import { RequiredPill } from './RequiredPill';
@@ -120,9 +120,9 @@ export function CameraPhase(p: CameraPhaseProps): React.ReactElement {
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm, marginBottom: spacing.xs }}>
           <Icon name="credit-card" size={14} color={colors.primary} />
           <View style={{ width: 4 }} />
-          <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '500' }}>
+          <UiText variant="bodySmall" color={colors.primary} style={{ fontWeight: '500' }}>
             {t('uploadDocument.flipBanner')}
-          </MyazaText>
+          </UiText>
         </View>
       ) : null}
       <View style={{ height: spacing.md }} />
@@ -130,18 +130,18 @@ export function CameraPhase(p: CameraPhaseProps): React.ReactElement {
       {!p.busy ? (
         <>
           <View style={{ height: spacing.md }} />
-          <MyazaText variant="bodySmall" style={{ textAlign: 'center' }}>
+          <UiText variant="bodySmall" style={{ textAlign: 'center' }}>
             Tap the button to capture manually
-          </MyazaText>
+          </UiText>
           {p.allowUpload ? (
             <Pressable onPress={p.onUpload} style={{ marginTop: spacing.sm }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                <MyazaText variant="bodySmall">{`${t('uploadDocument.camera.havingTrouble')} `}</MyazaText>
+                <UiText variant="bodySmall">{`${t('uploadDocument.camera.havingTrouble')} `}</UiText>
                 <Icon name="upload" size={14} color={colors.primary} />
                 <View style={{ width: 4 }} />
-                <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '700' }}>
+                <UiText variant="bodySmall" color={colors.primary} style={{ fontWeight: '700' }}>
                   {t('uploadDocument.camera.uploadInstead')}
-                </MyazaText>
+                </UiText>
               </View>
             </Pressable>
           ) : null}

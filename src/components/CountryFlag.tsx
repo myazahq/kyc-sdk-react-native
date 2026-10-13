@@ -12,7 +12,7 @@ import * as Flags from 'country-flag-icons/string/3x2';
 import { radius } from '../config/theme';
 
 // Circular country flag — the RN mirror of the web SDK's `CountryFlag` and
-// Flutter's `MyazaCountryFlag`. Renders the country-flag-icons 3:2 SVG via
+// Flutter's `UiCountryFlag`. Renders the country-flag-icons 3:2 SVG via
 // react-native-svg, cropped to a circle (cover-fit, like the web SDK's
 // `object-cover` + `rounded-full`). Works identically on iOS and Android (no
 // emoji-flag dependency, which Android does not render).

@@ -12,12 +12,12 @@ type BlurHandler = NonNullable<TextInputProps['onBlur']>;
 import { radius, sizing, spacing } from '../config/theme';
 import { useTheme } from './runtime';
 import { useInputFontFamily } from './fonts';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 
 // Branded text input with label, helper, and error states. Mirrors the Flutter
-// SDK's MyazaInput.
+// SDK's UiInput.
 
-export interface MyazaInputProps {
+export interface UiInputProps {
   value: string;
   onChangeText: (text: string) => void;
   label?: string;
@@ -61,7 +61,7 @@ export interface MyazaInputProps {
   onBlur?: BlurHandler;
 }
 
-export function MyazaInput({
+export function UiInput({
   value,
   onChangeText,
   label,
@@ -82,14 +82,14 @@ export function MyazaInput({
   autoCorrect = true,
   onFocus,
   onBlur,
-}: MyazaInputProps): React.ReactElement {
+}: UiInputProps): React.ReactElement {
   const { colors } = useTheme();
   // TextInput does not inherit fontFamily in RN — set it or the field (and its
   // placeholder) renders in the system face beside brand-font text.
   const fontFamily = useInputFontFamily();
   const [focused, setFocused] = useState(false);
 
-  // Mirror the Flutter SDK's MyazaInput border states:
+  // Mirror the Flutter SDK's UiInput border states:
   //   focused + error → error / 2px   ·   focused → primary / 2px
   //   error           → error / 1.5px ·   default → border / 1px
   const borderColor = error ? colors.error : focused ? colors.primary : colors.border;
@@ -107,14 +107,14 @@ export function MyazaInput({
   return (
     <View>
       {label ? (
-        <MyazaText variant="label" style={{ marginBottom: spacing.sm }}>
+        <UiText variant="label" style={{ marginBottom: spacing.sm }}>
           {label}
           {required ? (
-            <MyazaText variant="label" color={colors.error}>
+            <UiText variant="label" color={colors.error}>
               {' *'}
-            </MyazaText>
+            </UiText>
           ) : null}
-        </MyazaText>
+        </UiText>
       ) : null}
       {prefix || suffix ? (
         // Border on the ROW so the adornment sits inside the same outline as
@@ -186,13 +186,13 @@ export function MyazaInput({
         />
       )}
       {error ? (
-        <MyazaText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.xs }}>
+        <UiText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.xs }}>
           {error}
-        </MyazaText>
+        </UiText>
       ) : helper ? (
-        <MyazaText variant="bodySmall" style={{ marginTop: spacing.xs }}>
+        <UiText variant="bodySmall" style={{ marginTop: spacing.xs }}>
           {helper}
-        </MyazaText>
+        </UiText>
       ) : null}
     </View>
   );

@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 import { useText } from '../../i18n/useText';
 import { Icon } from '../../components/Icon';
 import { LineSkeleton } from '../../components/LineSkeleton';
@@ -49,9 +49,9 @@ export function ReviewAddressBand({
   const t = useText();
   const editLink = (
     <Pressable onPress={onEdit} accessibilityRole="button" accessibilityLabel={t('address.review.edit')} hitSlop={8}>
-      <MyazaText variant="bodyMedium" color={colors.primary}>
+      <UiText variant="bodyMedium" color={colors.primary}>
         {t('address.review.edit')}
-      </MyazaText>
+      </UiText>
     </Pressable>
   );
   return (
@@ -84,14 +84,14 @@ export function ReviewAddressBand({
                 <Icon name="map-pin" size={12} color={colors.primary} />
                 {/* One line, shrinking with an ellipsis when starved (a large
                     text scale), as Flutter's pill does. */}
-                <MyazaText
+                <UiText
                   variant="bodySmall"
                   color={colors.primary}
                   numberOfLines={1}
                   style={{ flexShrink: 1, fontSize: 11, fontWeight: '600', letterSpacing: 0.6, textTransform: 'uppercase' }}
                 >
                   {t(isBusiness ? 'address.review.badge.business' : 'address.review.badge')}
-                </MyazaText>
+                </UiText>
               </View>
 
               {/* Never coordinates: an unread pin shows a skeleton line while
@@ -100,15 +100,15 @@ export function ReviewAddressBand({
               {hasAddress && !line && labelling ? (
                 <LineSkeleton label={ADDRESS_LINE_PENDING} variant="body" barHeight={12} width="70%" style={{ marginTop: spacing.xs }} />
               ) : (
-                <MyazaText variant="body" style={{ marginTop: spacing.xs, fontWeight: '600' }}>
+                <UiText variant="body" style={{ marginTop: spacing.xs, fontWeight: '600' }}>
                   {!hasAddress ? 'No pin placed' : line || ADDRESS_LINE_UNAVAILABLE}
-                </MyazaText>
+                </UiText>
               )}
 
               {directions ? (
-                <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 2 }}>
+                <UiText variant="bodySmall" color={colors.textSecondary} style={{ marginTop: 2 }}>
                   {`“${directions}”`}
-                </MyazaText>
+                </UiText>
               ) : null}
 
               {clearsHero ? <View style={{ alignSelf: 'flex-start', marginTop: spacing.sm }}>{editLink}</View> : null}

@@ -3,7 +3,7 @@
 //
 // A workflow's custom copy is keyed by language then text key. The keys are a
 // shared contract with the web and Flutter SDKs (the vector file
-// kyc-sdk-flutter/test/customisable_texts_vectors.json): the same key means the
+// sdk-flutter/test/customisable_texts_vectors.json): the same key means the
 // same place on every SDK, while each SDK keeps its own default wording.
 // ---------------------------------------------------------------------------
 

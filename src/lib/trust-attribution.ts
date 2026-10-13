@@ -41,7 +41,7 @@ export function resolveTrustAttribution(attribution: unknown, dark = false): Res
  * Myaza's in the footer, Myaza still processes the applicant's data, so the
  * notice keeps it disclosed with a link to its terms.
  */
-export function needsMyazaDisclosure(attribution: unknown): boolean {
+export function needsProcessorDisclosure(attribution: unknown): boolean {
   return resolveTrustAttribution(attribution).mode === 'custom';
 }
 

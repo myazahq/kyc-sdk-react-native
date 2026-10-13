@@ -4,7 +4,7 @@ import { Pressable, View } from 'react-native';
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
 import { Icon } from '../../components/Icon';
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 import { LineReveal, LineSkeleton } from '../../components/LineSkeleton';
 import { ADDRESS_LINE_PENDING, ADDRESS_LINE_UNAVAILABLE } from '../../lib/address-line';
 import { detailCount } from './DetailsSheet';
@@ -62,21 +62,21 @@ export function PinSummaryRow({
           <LineSkeleton label={ADDRESS_LINE_PENDING} variant="bodyMedium" textStyle={{ fontWeight: '600' }} />
         ) : (
           <LineReveal key={title}>
-            <MyazaText
+            <UiText
               variant="bodyMedium"
               style={{ fontWeight: '600' }}
               color={line ? undefined : colors.textSecondary}
               numberOfLines={1}
             >
               {title}
-            </MyazaText>
+            </UiText>
           </LineReveal>
         )}
-        <MyazaText variant="bodySmall" color={colors.textSecondary} numberOfLines={1}>
+        <UiText variant="bodySmall" color={colors.textSecondary} numberOfLines={1}>
           {count > 0
             ? `${count} detail${count === 1 ? '' : 's'} added`
             : t('address.pin.detailsHint')}
-        </MyazaText>
+        </UiText>
       </View>
 
       <Pressable
@@ -98,9 +98,9 @@ export function PinSummaryRow({
         })}
       >
         <Icon name="pencil-line" size={14} color={colors.primary} />
-        <MyazaText variant="bodyMedium" color={colors.primary} style={{ fontWeight: '600' }}>
+        <UiText variant="bodyMedium" color={colors.primary} style={{ fontWeight: '600' }}>
           {t('address.pin.editDetails')}
-        </MyazaText>
+        </UiText>
       </Pressable>
     </View>
   );

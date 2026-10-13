@@ -2,8 +2,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { spacing } from '../../config/theme';
-import { useKycStore, useTheme } from '../../components/runtime';
-import { MyazaText } from '../../components/Typography';
+import { useVerificationStore, useTheme } from '../../components/runtime';
+import { UiText } from '../../components/Typography';
 import { useText } from '../../i18n/useText';
 import { uuid } from '../../utils/uuid';
 import { AUTOCOMPLETE_DEBOUNCE_MS, SEARCH_MIN_QUERY_LENGTH } from '../../lib/address-flow';
@@ -62,7 +62,7 @@ export function SearchScreen({
   onUseMyLocation: () => void;
   onPinInstead: () => void;
 }): React.ReactElement {
-  const store = useKycStore();
+  const store = useVerificationStore();
   const { colors } = useTheme();
   const t = useText();
   const [query, setQuery] = useState('');
@@ -165,13 +165,13 @@ export function SearchScreen({
         accessibilityRole="button"
         style={{ alignItems: 'center', paddingVertical: spacing.sm }}
       >
-        <MyazaText
+        <UiText
           variant="bodyMedium"
           color={colors.textSecondary}
           style={{ textDecorationLine: 'underline' }}
         >
           {t('address.search.pinInstead')}
-        </MyazaText>
+        </UiText>
       </Pressable>
     </View>
   );

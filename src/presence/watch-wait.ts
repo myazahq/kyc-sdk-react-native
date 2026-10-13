@@ -61,7 +61,7 @@ export async function fetchWatchState(
   try {
     const base = resolveBaseUrl(apiKey, devUrl);
     const response = await fetch(
-      `${base}/api/kyc/address/presence/${encodeURIComponent(externalUserId)}`,
+      `${base}/api/v1/address/presence/${encodeURIComponent(externalUserId)}`,
       { headers: { Authorization: `Bearer ${apiKey}` } },
     );
     if (!response.ok) return null;

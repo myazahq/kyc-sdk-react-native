@@ -2,9 +2,9 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
-import { useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
-import { MyazaButton } from '../components/MyazaButton';
+import { useFlowState, useVerificationConfig, useVerificationStore, useTheme } from '../components/runtime';
+import { UiText } from '../components/Typography';
+import { UiButton } from '../components/UiButton';
 import { MediaSourceSheet } from '../components/MediaSourceSheet';
 import { SupportingDocumentCard } from './SupportingDocumentCard';
 import { withRetry } from '../services/retry';
@@ -16,7 +16,7 @@ import {
 } from '../config/supportingDocuments';
 import { useBusinessDocumentAttach } from './useBusinessDocumentAttach';
 import { useText } from '../i18n/useText';
-import { KYCApiError } from '../services/api';
+import { VerificationApiError } from '../services/api';
 import { hasSignature, type SignatureDrawing } from '../lib/signature';
 
 // ---------------------------------------------------------------------------
@@ -41,14 +41,14 @@ const SIGNATURE_FAILED =
   'Your signature could not be saved. Please check your connection and try again.';
 
 export function SupportingDocumentsStep(): React.ReactElement {
-  const config = useKycConfig();
+  const config = useVerificationConfig();
   const t = useText();
-  const store = useKycStore();
+  const store = useVerificationStore();
   const { colors } = useTheme();
-  const uploaded = useKyc((s) => s.supportingDocuments);
-  const selectedCountry = useKyc((s) => s.selectedCountry);
-  const selectedIdType = useKyc((s) => s.selectedIdType);
-  const multiIdSlots = useKyc((s) => s.multiIdSlots);
+  const uploaded = useFlowState((s) => s.supportingDocuments);
+  const selectedCountry = useFlowState((s) => s.selectedCountry);
+  const selectedIdType = useFlowState((s) => s.selectedIdType);
+  const multiIdSlots = useFlowState((s) => s.multiIdSlots);
   const [busySlot, setBusySlot] = useState<string | null>(null);
   const [pickingSlot, setPickingSlot] = useState<RequestedSupportingDocument | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -122,7 +122,7 @@ export function SupportingDocumentsStep(): React.ReactElement {
           method: 'drawn',
         });
       } catch (err) {
-        const empty = err instanceof KYCApiError && err.code === 'signature_empty';
+        const empty = err instanceof VerificationApiError && err.code === 'signature_empty';
         setError(empty ? SIGNATURE_EMPTY : SIGNATURE_FAILED);
         setErrorSlot(slot.key);
       } finally {
@@ -178,13 +178,13 @@ export function SupportingDocumentsStep(): React.ReactElement {
       })}
 
       {error && errorSlot === null ? (
-        <MyazaText variant="bodySmall" color={colors.error} style={{ marginBottom: spacing.sm }}>
+        <UiText variant="bodySmall" color={colors.error} style={{ marginBottom: spacing.sm }}>
           {error}
-        </MyazaText>
+        </UiText>
       ) : null}
 
       <View style={{ height: spacing.xs }} />
-      <MyazaButton
+      <UiButton
         label={t(optionalOnly && uploaded.length === 0 ? 'common.skip' : 'common.continue')}
         onPress={handleContinue}
         disabled={missing.length > 0 || busySlot !== null}

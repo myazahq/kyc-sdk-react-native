@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
+import { UiText } from '../components/Typography';
 import { Icon } from '../components/Icon';
 import { CountryFlag } from '../components/CountryFlag';
 import {
@@ -96,9 +96,9 @@ export function KeyPersonCard({
           justifyContent: 'center',
         }}
       >
-        <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '700' }}>
+        <UiText variant="bodySmall" color={colors.primary} style={{ fontWeight: '700' }}>
           {initialsOf(name)}
-        </MyazaText>
+        </UiText>
         {country ? (
           <View
             style={{
@@ -117,20 +117,20 @@ export function KeyPersonCard({
       </View>
 
       <View style={{ flex: 1, minWidth: 0, marginLeft: spacing.sm + 4 }}>
-        <MyazaText variant="bodyMedium" numberOfLines={1} style={{ fontWeight: '600' }}>
+        <UiText variant="bodyMedium" numberOfLines={1} style={{ fontWeight: '600' }}>
           {name}
-        </MyazaText>
-        <MyazaText variant="bodySmall" color={colors.textMuted} numberOfLines={1} style={{ marginTop: 1 }}>
+        </UiText>
+        <UiText variant="bodySmall" color={colors.textMuted} numberOfLines={1} style={{ marginTop: 1 }}>
           {meta}
-        </MyazaText>
+        </UiText>
         {incomplete ? (
-          <MyazaText variant="bodySmall" color={colors.error} numberOfLines={1} style={{ marginTop: 1 }}>
+          <UiText variant="bodySmall" color={colors.error} numberOfLines={1} style={{ marginTop: 1 }}>
             {problem}
-          </MyazaText>
+          </UiText>
         ) : detail !== '' ? (
-          <MyazaText variant="bodySmall" color={colors.textMuted} numberOfLines={1} style={{ marginTop: 1 }}>
+          <UiText variant="bodySmall" color={colors.textMuted} numberOfLines={1} style={{ marginTop: 1 }}>
             {detail}
-          </MyazaText>
+          </UiText>
         ) : null}
       </View>
 

@@ -1,13 +1,13 @@
 import { brandMarkColor } from '../config/brand';
 
 /**
- * The footer mark is Myaza's attribution, so it must never take a colour from
+ * The footer mark is our attribution, so it must never take a colour from
  * the ORG's palette — an org whose brand sits near ours would otherwise get a
- * mark that stops reading as Myaza, or vanishes into their background.
+ * mark that stops reading as ours, or vanishes into their background.
  *
  * Mirrors the web SDK's brand.test.ts; the two implementations must agree.
  */
-const NEUTRALS = ['#070330', '#F6F5FE'];
+const NEUTRALS = ['#080A12', '#F6F5FE'];
 
 const lum = (h: string) => {
   const x = h.replace('#', '');
@@ -25,14 +25,14 @@ const cr = (a: string, b: string) => {
 
 describe('brandMarkColor (React Native)', () => {
   it('only ever returns a neutral tone', () => {
-    for (const bg of ['#FFFFFF', '#040218', '#fcf7f2', '#FF6B00', '#0EA5E9']) {
+    for (const bg of ['#FFFFFF', '#080A12', '#fcf7f2', '#FF6B00', '#0EA5E9']) {
       expect(NEUTRALS).toContain(brandMarkColor(bg));
     }
   });
 
   it('stays legible on the SDK defaults', () => {
     expect(cr(brandMarkColor('#FFFFFF'), '#FFFFFF')).toBeGreaterThanOrEqual(4.5);
-    expect(cr(brandMarkColor('#040218'), '#040218')).toBeGreaterThanOrEqual(4.5);
+    expect(cr(brandMarkColor('#080A12'), '#080A12')).toBeGreaterThanOrEqual(4.5);
   });
 
   it('stays legible on a saturated brand background', () => {

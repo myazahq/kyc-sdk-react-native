@@ -1,5 +1,5 @@
 import type { ResubmitConfig } from '../lib/resubmit';
-import type { KYCTextsConfig } from './texts';
+import type { VerificationTextsConfig } from './texts';
 // ---------------------------------------------------------------------------
 // The SDK's public configuration.
 //
@@ -8,12 +8,12 @@ import type { KYCTextsConfig } from './texts';
 // `types/config` remains the single import for consumers.
 // ---------------------------------------------------------------------------
 
-import type { KYCSubmission, KYCError, KYCResult } from './verification';
+import type { VerificationSubmission, VerificationError, VerificationResult } from './verification';
 import type { IdType, IdTypeForCountry, SupportedCountry } from './id-types';
 import type {
-  KYCAppearance,
-  KYCConsentContent,
-  KYCSuccessContent,
+  VerificationAppearance,
+  VerificationConsentContent,
+  VerificationSuccessContent,
   VoiceGuidanceOption,
 } from './appearance';
 import type { SubjectType, WorkflowBusinessConfig } from './business';
@@ -39,7 +39,7 @@ export type * from './business';
 // KYC flow steps
 // ---------------------------------------------------------------------------
 
-export type KYCStep =
+export type VerificationStep =
   | 'consent'
   // Contact-verification OTP steps — right after consent (a cheap pre-filter
   // before capture/registry spend). Present when the workflow enables them.
@@ -71,13 +71,13 @@ export type KYCStep =
   | 'submitted';
 
 // ---------------------------------------------------------------------------
-// Client-side SDK config  (MyazaKYC.show() / useMyazaKYC options)
+// Client-side SDK config  (Verification.show() / useVerification options)
 // ---------------------------------------------------------------------------
 
-/** How flow progress is drawn — see {@link MyazaKYCConfig.progressStyle}. */
+/** How flow progress is drawn — see {@link VerificationConfig.progressStyle}. */
 export type ProgressStyle = 'steps' | 'bar' | 'none';
 
-export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> extends KYCTextsConfig {
+export interface VerificationConfig<C extends SupportedCountry = SupportedCountry> extends VerificationTextsConfig {
   /**
    * Bearer token. The key prefix is the single source of truth for the
    * environment — the SDK derives it (and the base URL) automatically:
@@ -338,19 +338,19 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> e
    * Hide the close (X) button and block all user-initiated dismissal of the
    * sheet — the X button, Android hardware back, and the iOS swipe-down drag.
    * When `true`, the flow can only be closed programmatically via the `close()`
-   * returned by {@link useMyazaKYC}. Default `false`. The terminal "Submitted"
+   * returned by {@link useVerification}. Default `false`. The terminal "Submitted"
    * step is already non-dismissible regardless of this flag.
    */
   disableClose?: boolean;
 
   /** Visual customisation. */
-  appearance?: KYCAppearance;
+  appearance?: VerificationAppearance;
 
   /** Override the consent (welcome) screen copy. */
-  consent?: KYCConsentContent;
+  consent?: VerificationConsentContent;
 
   /** Override the success (submitted) screen copy. */
-  success?: KYCSuccessContent;
+  success?: VerificationSuccessContent;
 
   /**
    * Arbitrary, free-form metadata forwarded verbatim with every verification
@@ -361,12 +361,12 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> e
 
   // Callbacks
   onStart?: () => void;
-  onStepChange?: (step: KYCStep) => void;
+  onStepChange?: (step: VerificationStep) => void;
   /**
    * Fires immediately after the user submits. The submission is always
    * status: 'processing' — results arrive async via webhook.
    */
-  onSubmit?: (submission: KYCSubmission) => void;
+  onSubmit?: (submission: VerificationSubmission) => void;
   /**
    * Fires once with the verdict when the flow WAITS for it in-app (a
    * biometric re-authentication on `resultDelivery: 'both'`, the default, or 'app').
@@ -374,13 +374,13 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> e
    * the webhook stays the record either way. Carries state and reason only,
    * never result data.
    */
-  onResult?: (result: KYCResult) => void;
+  onResult?: (result: VerificationResult) => void;
   onClose?: () => void;
   /**
-   * Fires for technical errors only. Receives a {@link KYCError} carrying a
+   * Fires for technical errors only. Receives a {@link VerificationError} carrying a
    * typed `code`. Verification *outcomes* never come through here.
    */
-  onError?: (error: KYCError) => void;
+  onError?: (error: VerificationError) => void;
 }
 
 /**
@@ -392,18 +392,18 @@ export interface MyazaKYCConfig<C extends SupportedCountry = SupportedCountry> e
  * the "is it there yet?" question at the single place that answers it (the
  * gate) instead of in every screen.
  */
-export type ResolvedKYCConfig<C extends SupportedCountry = SupportedCountry> = Omit<
-  MyazaKYCConfig<C>,
+export type ResolvedVerificationConfig<C extends SupportedCountry = SupportedCountry> = Omit<
+  VerificationConfig<C>,
   'country'
 > & { country: C };
 
 // ---------------------------------------------------------------------------
-// useMyazaKYC() hook return type
+// useVerification() hook return type
 // ---------------------------------------------------------------------------
 
-export interface UseMyazaKYCReturn {
+export interface UseVerificationReturn {
   open: () => void;
   close: () => void;
   isOpen: boolean;
-  currentStep: KYCStep | null;
+  currentStep: VerificationStep | null;
 }

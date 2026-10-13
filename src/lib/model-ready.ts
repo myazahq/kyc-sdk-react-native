@@ -41,7 +41,7 @@ const POLL_INTERVAL_MS = 500;
  * run, and `'unavailable'` when it could not be obtained within
  * {@link MODEL_WAIT_MS} — no Play Services, no network, or a declined install.
  *
- * The flow primes the download at open (see `MyazaKYC.tsx`), so by the time the
+ * The flow primes the download at open (see `Verification.tsx`), so by the time the
  * user reaches the step this is normally already `'ready'` and no waiting screen
  * is ever shown.
  *

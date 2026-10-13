@@ -83,7 +83,7 @@ export interface KeyPersonInvite {
 }
 
 /**
- * The one status vocabulary, shared by `GET /api/kyc/status/:id`, the
+ * The one status vocabulary, shared by `GET /api/v1/status/:id`, the
  * secret-key result route and every verification webhook.
  *
  * `status` is what happened; `checkStatus` beside it is what the CHECKS found.
@@ -121,7 +121,7 @@ export interface VerifyResponse {
 }
 
 /**
- * Minimal, publishable-safe status from `GET /api/kyc/status/:id` — no PII,
+ * Minimal, publishable-safe status from `GET /api/v1/status/:id` — no PII,
  * scores, or result data; only the lifecycle state and an org-safe reason.
  */
 export interface VerificationStatusResponse {
@@ -165,7 +165,7 @@ export interface SdkConfigBranding {
   logo?: string;
   companyName?: string;
   primaryColor?: string;
-  trustAttribution?: import('../lib/trust-attribution').SdkTrustAttribution; // absent = Myaza
+  trustAttribution?: import('../lib/trust-attribution').SdkTrustAttribution; // absent = Toden
 }
 
 export interface SdkConfigResponse {
@@ -205,7 +205,7 @@ export interface DeviceAttestationConfig {
   playIntegrityCloudProjectNumber?: string | null;
 }
 
-/** `POST /api/kyc/device/challenge`. `challenge` is base64 of 32 bytes. */
+/** `POST /api/v1/device/challenge`. `challenge` is base64 of 32 bytes. */
 export interface DeviceChallengeResponse {
   challengeId: string;
   challenge: string;
@@ -298,7 +298,7 @@ export interface ApplicantWorkflowPayload {
   config: WorkflowConfigPayload;
 }
 
-/** Response from `GET /api/kyc/workflows/:workflowId` — one round trip hydrates
+/** Response from `GET /api/v1/workflows/:workflowId` — one round trip hydrates
  *  the SDK, so `/config` is skipped entirely. */
 export interface WorkflowResolutionResponse {
   workflow: { id: string; name: string; version: number };

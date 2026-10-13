@@ -8,7 +8,7 @@
 // THREE implementations of this fold exist — this file, the Flutter plugin's
 // PresenceFold.kt (Android) and PresenceFold.swift (iOS) — because the
 // killed-app flush must fold natively. All three are pinned to ONE vector
-// file, packages/kyc-sdk-flutter/test/presence_fold_vectors.json, which is
+// file, packages/sdk-flutter/test/presence_fold_vectors.json, which is
 // why the maths is integer arithmetic on an EXPLICIT UTC offset rather than
 // platform date APIs: identical inputs must fold identically in every
 // language. The offset is captured once per fold (east-positive minutes), a

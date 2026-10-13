@@ -4,7 +4,7 @@ import { Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'rea
 import { radius, spacing } from '../config/theme';
 import { useTheme } from './runtime';
 import { useInputFontFamily } from './fonts';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 import { Icon } from './Icon';
 import { FloatingSheet } from './glass/FloatingSheet';
 
@@ -17,11 +17,11 @@ import { FloatingSheet } from './glass/FloatingSheet';
 // fields — the proof-of-address document kind sits above an upload zone, and
 // four stacked cards there push the actual task off the screen.
 //
-// Mirrors the Flutter SDK's MyazaSelect so the two platforms present the same
+// Mirrors the Flutter SDK's UiSelect so the two platforms present the same
 // control for the same job.
 // ---------------------------------------------------------------------------
 
-export interface MyazaSelectOption<T> {
+export interface UiSelectOption<T> {
   value: T;
   label: string;
   /** Something before the label — a flag, an icon. */
@@ -34,7 +34,7 @@ export interface MyazaSelectOption<T> {
   description?: string;
 }
 
-export function MyazaSelect<T extends string | number>({
+export function UiSelect<T extends string | number>({
   value,
   options,
   onChange,
@@ -46,7 +46,7 @@ export function MyazaSelect<T extends string | number>({
   searchable = false,
 }: {
   value: T | null | undefined;
-  options: Array<MyazaSelectOption<T>>;
+  options: Array<UiSelectOption<T>>;
   onChange: (value: T) => void;
   /** Shown when nothing is selected yet. */
   hint?: string;
@@ -119,7 +119,7 @@ export function MyazaSelect<T extends string | number>({
             <View style={{ width: spacing.sm }} />
           </>
         ) : null}
-        <MyazaText
+        <UiText
           variant="body"
           color={selected ? undefined : colors.textMuted}
           // Compact sizes to its content, so the value is never ellipsised.
@@ -127,7 +127,7 @@ export function MyazaSelect<T extends string | number>({
           numberOfLines={1}
         >
           {selected?.label ?? hint}
-        </MyazaText>
+        </UiText>
         <View style={{ width: spacing.sm }} />
         <Icon name="chevron-down" size={18} color={colors.textSecondary} />
       </Pressable>
@@ -142,7 +142,7 @@ export function MyazaSelect<T extends string | number>({
         maxHeight={windowHeight * 0.6}
         closeLabel={`Close ${sheetTitle ?? hint}`}
       >
-            <MyazaText
+            <UiText
               variant="body"
               style={{
                 fontWeight: '700',
@@ -153,7 +153,7 @@ export function MyazaSelect<T extends string | number>({
               }}
             >
               {sheetTitle ?? hint}
-            </MyazaText>
+            </UiText>
 
             {searchable ? (
               // Pinned above the list, so it stays put while results scroll.
@@ -203,13 +203,13 @@ export function MyazaSelect<T extends string | number>({
               contentContainerStyle={{ paddingBottom: spacing.lg }}
             >
               {visible.length === 0 ? (
-                <MyazaText
+                <UiText
                   variant="bodySmall"
                   color={colors.textMuted}
                   style={{ padding: spacing.md, textAlign: 'center' }}
                 >
                   No matches
-                </MyazaText>
+                </UiText>
               ) : null}
               {visible.map((option) => {
                 const isSelected = option.value === value;
@@ -237,21 +237,21 @@ export function MyazaSelect<T extends string | number>({
                       </>
                     ) : null}
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <MyazaText
+                      <UiText
                         variant="body"
                         color={isSelected ? colors.primary : undefined}
                         style={{ fontWeight: isSelected ? '600' : '400' }}
                       >
                         {option.label}
-                      </MyazaText>
+                      </UiText>
                       {option.description ? (
-                        <MyazaText
+                        <UiText
                           variant="bodySmall"
                           color={colors.textSecondary}
                           numberOfLines={1}
                         >
                           {option.description}
-                        </MyazaText>
+                        </UiText>
                       ) : null}
                     </View>
                     {isSelected ? <Icon name="check" size={18} color={colors.primary} /> : null}

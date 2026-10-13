@@ -1,5 +1,37 @@
 # Changelog
 
+## 3.6.0
+
+The entry point is now `Verification`, and the flow carries the Toden brand. The package name is unchanged.
+
+No native code changed in this version.
+
+**Deploy note for Toden:** this version calls the verification API under `/api/v1`. Production and Sandbox both serve it.
+
+### New names
+
+- The entry points are `Verification`, `useVerification` and `VerificationConfig`.
+- `KYC`-prefixed names are now `Verification`-prefixed: `VerificationError`, `VerificationSubmission`, `VerificationResult`, `VerificationStep`.
+
+Every earlier name still works as a deprecated alias (`MyazaKYC`, `useMyazaKYC`, the hook's `MyazaKYCModal`, `KYCError` and the rest). Existing code needs no change.
+
+Not renamed: the package, the native library names, the iOS pod (`KycSdkReactNative`) and the Android package id.
+
+### Brand
+
+- The flow says Toden where it said Myaza: the footer logo, the consent notice (which now links to toden.co/legal) and the default wording.
+- New default colours: a neutral grey scale in place of the purple-tinted one. Colours set through `appearance` or a workflow are unchanged.
+- Headings, and text at 16px and up, are set in Bricolage Grotesque. Smaller text and anything typed into a field is Geist. Both ship inside the package. An organisation's own font still replaces both.
+- The NFC step uses the phone-and-chip icon, matching the dashboard.
+
+### API address
+
+The SDK calls the verification API under `/api/v1` (for example `/api/v1/verify`). The earlier `/api/kyc` addresses keep working on the server, so older versions of the SDK are unaffected.
+
+### Fixes
+
+- The dark header uses the same surface colour as the cards. It was a pale purple band.
+
 ## 3.5.0
 
 A full-screen liveness camera, signing on screen, and no selfie review by default.

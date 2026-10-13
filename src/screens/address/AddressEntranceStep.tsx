@@ -2,9 +2,9 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { spacing } from '../../config/theme';
-import { useKyc, useKycStore, useTheme } from '../../components/runtime';
-import { MyazaText } from '../../components/Typography';
-import { MyazaButton } from '../../components/MyazaButton';
+import { useFlowState, useVerificationStore, useTheme } from '../../components/runtime';
+import { UiText } from '../../components/Typography';
+import { UiButton } from '../../components/UiButton';
 import { MediaSourceSheet } from '../../components/MediaSourceSheet';
 import { StickyActions } from '../../components/StickyActions';
 import { withRetry } from '../../services/retry';
@@ -28,11 +28,11 @@ import { useText } from '../../i18n/useText';
  * AddressEntranceStep.
  */
 export function AddressEntranceStep(): React.ReactElement | null {
-  const store = useKycStore();
+  const store = useVerificationStore();
   const flow = useAddressFlow();
-  const mapsFrameUrl = useKyc((s) => s.serverConfig.mapsFrameUrl ?? null);
+  const mapsFrameUrl = useFlowState((s) => s.serverConfig.mapsFrameUrl ?? null);
   const vendorsStubbed = addressVendorsStubbed({
-    environment: useKyc((s) => s.serverConfig.environment ?? null),
+    environment: useFlowState((s) => s.serverConfig.environment ?? null),
   });
   const svFrameUrl = mapsFrameUrl ? streetViewFrameUrlOf(mapsFrameUrl) : null;
   // Street View can be shown: offered by the flow, a pin to look from, and
@@ -96,11 +96,11 @@ function EntrancePhoto({
   flow: ReturnType<typeof useAddressFlow>;
   skipped: boolean;
 }): React.ReactElement {
-  const store = useKycStore();
+  const store = useVerificationStore();
   const { colors } = useTheme();
   const t = useText();
-  const photoId = useKyc((s) => s.mediaIds.addressPhoto);
-  const previewUri = useKyc((s) => s.addressPhotoPreview);
+  const photoId = useFlowState((s) => s.mediaIds.addressPhoto);
+  const previewUri = useFlowState((s) => s.addressPhotoPreview);
   const { pickPhoto, setError } = flow;
 
   const upload = useCallback(
@@ -121,7 +121,7 @@ function EntrancePhoto({
   return (
     <StickyActions
       actions={
-        <MyazaButton
+        <UiButton
           label={uploaded || required ? t('common.continue') : t('address.entrance.continueWithoutPhoto')}
           disabled={flow.uploading || (required && !uploaded)}
           onPress={() => flow.goNext()}
@@ -139,9 +139,9 @@ function EntrancePhoto({
       />
 
       {skipped ? (
-        <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ marginBottom: spacing.sm }}>
+        <UiText variant="bodySmall" color={colors.textSecondary} style={{ marginBottom: spacing.sm }}>
           No problem. A quick photo of the entrance works just as well.
-        </MyazaText>
+        </UiText>
       ) : null}
 
       <EntranceDropzone
@@ -154,9 +154,9 @@ function EntrancePhoto({
       />
 
       {flow.error ? (
-        <MyazaText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.sm }}>
+        <UiText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.sm }}>
           {flow.error}
-        </MyazaText>
+        </UiText>
       ) : null}
     </StickyActions>
   );

@@ -2,12 +2,12 @@ import React from 'react';
 import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
-import { KYCError } from '../types/verification';
-import type { MyazaKYCConfig } from '../types/config';
-import { MyazaThemeProvider, useTheme } from './theme-provider';
-import { MyazaPulseLoader } from './MyazaPulseLoader';
-import { MyazaText } from './Typography';
-import { MyazaButton } from './MyazaButton';
+import { VerificationError } from '../types/verification';
+import type { VerificationConfig } from '../types/config';
+import { UiThemeProvider, useTheme } from './theme-provider';
+import { UiPulseLoader } from './UiPulseLoader';
+import { UiText } from './Typography';
+import { UiButton } from './UiButton';
 import { Icon } from './Icon';
 import type { MountState, ResolvedMount } from './useWorkflowMount';
 
@@ -38,7 +38,7 @@ export function WorkflowGate({
   onClose,
   children,
 }: {
-  config: MyazaKYCConfig;
+  config: VerificationConfig;
   state: MountState;
   onRetry: () => void;
   onClose: () => void;
@@ -50,13 +50,13 @@ export function WorkflowGate({
   // theme from the props' appearance — the flow's own appearance is precisely
   // the thing being waited on.
   return (
-    <MyazaThemeProvider appearance={config.appearance}>
+    <UiThemeProvider appearance={config.appearance}>
       {state.status === 'resolving' ? (
         <GateLoading />
       ) : (
         <GateError error={state.error} onRetry={onRetry} onClose={onClose} />
       )}
-    </MyazaThemeProvider>
+    </UiThemeProvider>
   );
 }
 
@@ -73,11 +73,11 @@ function GateLoading(): React.ReactElement {
         padding: spacing.xl,
       }}
     >
-      <MyazaPulseLoader size={64} />
+      <UiPulseLoader size={64} />
       <View style={{ height: spacing.md }} />
-      <MyazaText variant="bodySmall" color={colors.textMuted}>
+      <UiText variant="bodySmall" color={colors.textMuted}>
         Preparing your verification…
-      </MyazaText>
+      </UiText>
     </View>
   );
 }
@@ -87,7 +87,7 @@ function GateError({
   onRetry,
   onClose,
 }: {
-  error: KYCError;
+  error: VerificationError;
   onRetry: () => void;
   onClose: () => void;
 }): React.ReactElement {
@@ -108,21 +108,21 @@ function GateError({
     >
       <Icon name="alert" size={40} color={colors.error} />
       <View style={{ height: spacing.md }} />
-      <MyazaText variant="heading3" style={{ textAlign: 'center' }}>
+      <UiText variant="heading3" style={{ textAlign: 'center' }}>
         Verification unavailable
-      </MyazaText>
+      </UiText>
       <View style={{ height: spacing.sm }} />
-      <MyazaText variant="bodySmall" color={colors.textMuted} style={{ textAlign: 'center' }}>
+      <UiText variant="bodySmall" color={colors.textMuted} style={{ textAlign: 'center' }}>
         {error.message}
-      </MyazaText>
+      </UiText>
       <View style={{ height: spacing.lg }} />
       {retryable ? (
         <>
-          <MyazaButton label="Try Again" onPress={onRetry} />
+          <UiButton label="Try Again" onPress={onRetry} />
           <View style={{ height: spacing.sm }} />
         </>
       ) : null}
-      <MyazaButton label="Close" variant="outline" onPress={onClose} />
+      <UiButton label="Close" variant="outline" onPress={onClose} />
     </View>
   );
 }

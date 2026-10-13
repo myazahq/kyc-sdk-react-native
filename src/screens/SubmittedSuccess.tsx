@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
-import { useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
+import { useFlowState, useVerificationConfig, useVerificationStore, useTheme } from '../components/runtime';
 import { useText } from '../i18n/useText';
-import { MyazaText } from '../components/Typography';
-import { MyazaButton } from '../components/MyazaButton';
+import { UiText } from '../components/Typography';
+import { UiButton } from '../components/UiButton';
 import { Icon } from '../components/Icon';
 import { fillTokens } from '../utils/tokens';
 import { configScope } from '../lib/scope';
@@ -36,13 +36,13 @@ const SCOPE_DESCRIPTIONS: Record<string, string> = {
 
 export function SubmittedSuccess({ showDone, onClose }: { showDone: boolean; onClose: () => void }): React.ReactElement {
   const { colors } = useTheme();
-  const config = useKycConfig();
+  const config = useVerificationConfig();
   const t = useText();
-  const store = useKycStore();
+  const store = useVerificationStore();
   // The people list comes from the SERVER once registry discovery settles —
   // the submit-time invites are a first draft the register can contradict
   // (it adds people the applicant never listed, including ones they removed).
-  const sessionId = useKyc((s) => s.sessionId);
+  const sessionId = useFlowState((s) => s.sessionId);
   const settled = useAwaitingPeople(store.getState().api, sessionId, true);
   const [keepLinksOpen, setKeepLinksOpen] = useState(false);
 
@@ -83,15 +83,15 @@ export function SubmittedSuccess({ showDone, onClose }: { showDone: boolean; onC
         </StaggerIn>
         <View style={{ height: spacing.lg }} />
         <StaggerIn delayMs={200}>
-          <MyazaText variant="heading1" style={{ textAlign: 'center' }}>
+          <UiText variant="heading1" style={{ textAlign: 'center' }}>
             {title}
-          </MyazaText>
+          </UiText>
         </StaggerIn>
         <View style={{ height: spacing.sm }} />
         <StaggerIn delayMs={320}>
-          <MyazaText variant="bodyMedium" style={{ textAlign: 'center' }}>
+          <UiText variant="bodyMedium" style={{ textAlign: 'center' }}>
             {description}
-          </MyazaText>
+          </UiText>
         </StaggerIn>
         {config.addressCollection?.presence?.enabled === true && store.getState().address ? (
           <PresenceExpectations />
@@ -106,7 +106,7 @@ export function SubmittedSuccess({ showDone, onClose }: { showDone: boolean; onC
       </View>
       {showDone ? (
         <StaggerIn delayMs={600}>
-          <MyazaButton label={t('common.done')} onPress={() => (offerRecovery ? setKeepLinksOpen(true) : onClose())} />
+          <UiButton label={t('common.done')} onPress={() => (offerRecovery ? setKeepLinksOpen(true) : onClose())} />
         </StaggerIn>
       ) : (
         <View />

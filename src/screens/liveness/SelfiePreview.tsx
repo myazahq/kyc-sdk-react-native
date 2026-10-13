@@ -3,8 +3,8 @@ import { Image, View } from 'react-native';
 
 import { spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
-import { MyazaText } from '../../components/Typography';
-import { MyazaPulseLoader } from '../../components/MyazaPulseLoader';
+import { UiText } from '../../components/Typography';
+import { UiPulseLoader } from '../../components/UiPulseLoader';
 import { StyleAbsFill } from './constants';
 import { Spinner } from '../../components/Spinner';
 
@@ -35,14 +35,14 @@ export function SelfiePreview({
         {uri ? (
           <Image source={{ uri }} style={{ width: '100%', height: '100%', borderRadius: S / 2 }} resizeMode="cover" />
         ) : (
-          <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ textAlign: 'center', paddingHorizontal: spacing.lg }}>
+          <UiText variant="bodySmall" color={colors.textSecondary} style={{ textAlign: 'center', paddingHorizontal: spacing.lg }}>
             Selfie already captured
-          </MyazaText>
+          </UiText>
         )}
         {/* Standard upload loader inside the preview circle (mirrors web/Flutter). */}
         {uploading ? (
           <View style={[StyleAbsFill, { backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }]}>
-            <MyazaPulseLoader size={64} />
+            <UiPulseLoader size={64} />
           </View>
         ) : null}
       </View>
@@ -51,14 +51,14 @@ export function SelfiePreview({
           not read "Looking good!". Continue stays available either way: the
           floor is uncalibrated, and a wrong one should cost a sentence, never
           a retake loop. */}
-      <MyazaText variant="heading3" color={soft ? colors.warning : undefined} style={{ textAlign: 'center' }}>
+      <UiText variant="heading3" color={soft ? colors.warning : undefined} style={{ textAlign: 'center' }}>
         {soft ? 'This photo looks blurry' : 'Looking good!'}
-      </MyazaText>
-      <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ textAlign: 'center' }}>
+      </UiText>
+      <UiText variant="bodySmall" color={colors.textSecondary} style={{ textAlign: 'center' }}>
         {soft
           ? 'For the best chance of a match, retake it holding the phone steady until your face is sharp.'
           : 'Tap Continue to submit, or Retake to try again.'}
-      </MyazaText>
+      </UiText>
     </View>
   );
 }

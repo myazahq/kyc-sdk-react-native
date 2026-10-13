@@ -1,5 +1,5 @@
 import { configScope, isFaceScope } from '../../lib/scope';
-import type { MyazaKYCConfig } from '../../types/config';
+import type { VerificationConfig } from '../../types/config';
 import type { IconName } from '../../components/Icon';
 import { fillTokens } from '../../utils/tokens';
 import { defaultText } from '../../i18n/translate';
@@ -60,7 +60,7 @@ export interface ConsentModel {
  * titles and descriptions (business, a scope, a greeting by name) are not
  * customisable, as on web, but the older `consent.*` fields still win there.
  */
-export function buildConsentModel(config: MyazaKYCConfig, t: TextFn = defaultText): ConsentModel {
+export function buildConsentModel(config: VerificationConfig, t: TextFn = defaultText): ConsentModel {
   const bullet = (b: Bullet): ConsentProcessStep => ({ icon: b.icon, label: t(b.key) });
   const isBusiness = config.subjectType === 'business';
   const scope = isBusiness ? null : configScope(config);

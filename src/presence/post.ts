@@ -25,7 +25,7 @@ export async function postObservations(
   if (observations.length === 0) return true;
   try {
     const base = resolveBaseUrl(apiKey, devUrl);
-    const response = await fetch(`${base}/api/kyc/address/observations`, {
+    const response = await fetch(`${base}/api/v1/address/observations`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

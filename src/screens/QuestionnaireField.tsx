@@ -3,10 +3,10 @@ import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
-import { MyazaDateField } from '../components/MyazaDateField';
-import { MyazaInput } from '../components/MyazaInput';
-import { MyazaSelect } from '../components/MyazaSelect';
+import { UiText } from '../components/Typography';
+import { UiDateField } from '../components/UiDateField';
+import { UiInput } from '../components/UiInput';
+import { UiSelect } from '../components/UiSelect';
 import { OptionRow } from '../components/OptionRow';
 import { MoneyField as QuestionnaireMoneyField } from './QuestionnaireMoneyField';
 import { QuestionnaireBooleanField } from './QuestionnaireBooleanField';
@@ -77,7 +77,7 @@ export function QuestionnaireFieldView({
       />
 
       {isPlainInput ? (
-        <MyazaInput
+        <UiInput
           value={value === undefined ? '' : String(value)}
           onChangeText={(text) => onChange(text === '' ? undefined : text)}
           placeholder={field.placeholder}
@@ -89,8 +89,8 @@ export function QuestionnaireFieldView({
 
       {field.type === 'date' ? (
         // A real calendar, not a "type YYYY-MM-DD" text box — same picker
-        // contract as the Flutter SDK's _DateField / showMyazaDatePicker.
-        <MyazaDateField
+        // contract as the Flutter SDK's _DateField / showUiDatePicker.
+        <UiDateField
           value={typeof value === 'string' ? value : undefined}
           onChange={(iso) => onChange(iso)}
           placeholder={field.placeholder}
@@ -112,7 +112,7 @@ export function QuestionnaireFieldView({
       {field.type === 'boolean' ? <QuestionnaireBooleanField value={value} onChange={onChange} /> : null}
 
       {field.type === 'select' ? (
-        <MyazaSelect<string>
+        <UiSelect<string>
           value={typeof value === 'string' ? value : null}
           hint={field.placeholder ?? 'Select an option'}
           sheetTitle={field.label}
@@ -150,7 +150,7 @@ export function QuestionnaireFieldView({
           most needs spelled out. */}
       {detailOption ? (
         <View style={{ marginTop: spacing.sm }}>
-          <MyazaInput
+          <UiInput
             label={detailOption.detailLabel || t('questionnaire.detailLabel')}
             value={detailValue ?? ''}
             maxLength={200}
@@ -164,9 +164,9 @@ export function QuestionnaireFieldView({
 
       {/* Inputs draw their own error; the rest need one underneath. */}
       {error && !isPlainInput && field.type !== 'money' ? (
-        <MyazaText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.xs }}>
+        <UiText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.xs }}>
           {error}
-        </MyazaText>
+        </UiText>
       ) : null}
     </View>
   );
@@ -184,14 +184,14 @@ function FieldLabel({
   const { colors } = useTheme();
   return (
     <View style={{ marginBottom: spacing.xs }}>
-      <MyazaText variant="body" style={{ fontWeight: '600' }}>
+      <UiText variant="body" style={{ fontWeight: '600' }}>
         {text}
-        {required ? <MyazaText color={colors.error}> *</MyazaText> : null}
-      </MyazaText>
+        {required ? <UiText color={colors.error}> *</UiText> : null}
+      </UiText>
       {helpText ? (
-        <MyazaText variant="bodySmall" color={colors.textSecondary}>
+        <UiText variant="bodySmall" color={colors.textSecondary}>
           {helpText}
-        </MyazaText>
+        </UiText>
       ) : null}
     </View>
   );

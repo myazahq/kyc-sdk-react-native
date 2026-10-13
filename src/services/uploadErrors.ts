@@ -1,4 +1,4 @@
-import { KYCApiError } from './api';
+import { VerificationApiError } from './api';
 import { UPLOAD_HINT } from '../config/uploadLimits';
 
 // ---------------------------------------------------------------------------
@@ -12,7 +12,7 @@ import { UPLOAD_HINT } from '../config/uploadLimits';
 
 /** The refusal, as something the applicant can do something about. */
 export function uploadFailureMessage(error: unknown): string {
-  const status = error instanceof KYCApiError ? error.statusCode : null;
+  const status = error instanceof VerificationApiError ? error.statusCode : null;
   const raw = error instanceof Error ? error.message.toLowerCase() : '';
 
   if (status === 413 || raw.includes('too large')) {

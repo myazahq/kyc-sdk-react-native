@@ -3,19 +3,19 @@ import { View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from './runtime';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 
-// Info / success / warning / error banner. Mirrors the Flutter SDK's MyazaAlert.
+// Info / success / warning / error banner. Mirrors the Flutter SDK's UiAlert.
 
 export type AlertVariant = 'info' | 'success' | 'warning' | 'error';
 
-export interface MyazaAlertProps {
+export interface UiAlertProps {
   variant: AlertVariant;
   title?: string;
   message: string;
 }
 
-export function MyazaAlert({ variant, title, message }: MyazaAlertProps): React.ReactElement {
+export function UiAlert({ variant, title, message }: UiAlertProps): React.ReactElement {
   const { colors } = useTheme();
   const bg =
     variant === 'success'
@@ -45,13 +45,13 @@ export function MyazaAlert({ variant, title, message }: MyazaAlertProps): React.
       }}
     >
       {title ? (
-        <MyazaText variant="label" color={accent} style={{ marginBottom: 2 }}>
+        <UiText variant="label" color={accent} style={{ marginBottom: 2 }}>
           {title}
-        </MyazaText>
+        </UiText>
       ) : null}
-      <MyazaText variant="bodyMedium" color={colors.textDark}>
+      <UiText variant="bodyMedium" color={colors.textDark}>
         {message}
-      </MyazaText>
+      </UiText>
     </View>
   );
 }

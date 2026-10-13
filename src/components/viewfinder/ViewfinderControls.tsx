@@ -4,7 +4,7 @@ import Svg, { Circle } from 'react-native-svg';
 
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../runtime';
-import { MyazaText } from '../Typography';
+import { UiText } from '../Typography';
 import { Icon } from '../Icon';
 import { ChromeGlass } from '../glass/ChromeGlass';
 import { Spinner } from '../Spinner';
@@ -54,9 +54,9 @@ export function HintBanner({
           maxWidth: '90%',
         }}
       >
-        <MyazaText variant="bodySmall" color="#FFFFFF" style={{ textAlign: 'center' }}>
+        <UiText variant="bodySmall" color="#FFFFFF" style={{ textAlign: 'center' }}>
           {text}
-        </MyazaText>
+        </UiText>
       </View>
     </View>
   );

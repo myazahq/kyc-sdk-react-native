@@ -8,8 +8,8 @@ import {
   resetCurrentFix,
   type FixSource,
 } from '../lib/address-current-location';
-import { createKycStore } from '../store/kycStore';
-import type { ResolvedKYCConfig } from '../types/config';
+import { createVerificationStore } from '../store/verificationStore';
+import type { ResolvedVerificationConfig } from '../types/config';
 
 // ─── The shared current-fix cache ────────────────────────────────────────────
 //
@@ -145,11 +145,11 @@ describe('the scope of "one verification"', () => {
     expect(currentFix()).not.toBeNull();
     expect(claimAutoLocate()).toBe(true);
 
-    createKycStore({
+    createVerificationStore({
       apiKey: 'pk_test_x',
       country: 'NG',
       metadata: {},
-    } as unknown as ResolvedKYCConfig);
+    } as unknown as ResolvedVerificationConfig);
 
     expect(currentFix()).toBeNull();
     expect(claimAutoLocate()).toBe(true);

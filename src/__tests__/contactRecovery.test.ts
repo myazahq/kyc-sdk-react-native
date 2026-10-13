@@ -1,4 +1,4 @@
-import { KYCApiError } from '../services/api';
+import { VerificationApiError } from '../services/api';
 import {
   contactStepFor,
   expiredContactChannels,
@@ -7,25 +7,25 @@ import {
 
 describe('expiredContactChannels', () => {
   it('reads the missing channels off a contact_verification_required 422', () => {
-    const err = new KYCApiError('required', 422, 'contact_verification_required', {
+    const err = new VerificationApiError('required', 422, 'contact_verification_required', {
       missing: ['email'],
     });
     expect(expiredContactChannels(err)).toEqual(['email']);
   });
 
   it('keeps both channels and drops anything unrecognised', () => {
-    const err = new KYCApiError('required', 422, 'contact_verification_required', {
+    const err = new VerificationApiError('required', 422, 'contact_verification_required', {
       missing: ['phone', 'email', 'fax'],
     });
     expect(expiredContactChannels(err)).toEqual(['phone', 'email']);
   });
 
   it('returns nothing for other errors or malformed bodies', () => {
-    expect(expiredContactChannels(new KYCApiError('x', 422, 'questionnaire_invalid', {}))).toEqual([]);
+    expect(expiredContactChannels(new VerificationApiError('x', 422, 'questionnaire_invalid', {}))).toEqual([]);
     expect(expiredContactChannels(new Error('network'))).toEqual([]);
-    expect(expiredContactChannels(new KYCApiError('x', 422, 'contact_verification_required'))).toEqual([]);
+    expect(expiredContactChannels(new VerificationApiError('x', 422, 'contact_verification_required'))).toEqual([]);
     expect(
-      expiredContactChannels(new KYCApiError('x', 422, 'contact_verification_required', { missing: 'email' })),
+      expiredContactChannels(new VerificationApiError('x', 422, 'contact_verification_required', { missing: 'email' })),
     ).toEqual([]);
   });
 });

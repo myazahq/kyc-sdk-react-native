@@ -6,7 +6,7 @@ import { describeInMonorepo, readPackageFile as read } from './helpers/monorepo'
 //
 // Web, Flutter and React Native all render Hugeicons now, so they can be held
 // to the GLYPH and not merely to a shared vocabulary. Each names icons its own
-// way - web exports Lucide-style names, Flutter exposes `MyazaIcons.x`, this
+// way - web exports Lucide-style names, Flutter exposes `UiIcons.x`, this
 // SDK maps semantic roles - so the comparison is done on the glyph each one
 // actually resolves to.
 //
@@ -41,7 +41,7 @@ function exportToFile(): Map<string, string> {
 
 /** Web: the Hugeicons export each barrel entry is built from. */
 function webGlyphs(files: Map<string, string>): Set<string> {
-  const source = read('kyc-sdk-react/src/components/icons/index.ts');
+  const source = read('sdk-react/src/components/icons/index.ts');
   const alias = new Map(
     [...source.matchAll(/(\w+) as (\w+),/g)].map(([, huge, local]) => [local!, huge!]),
   );
@@ -56,10 +56,10 @@ function webGlyphs(files: Map<string, string>): Set<string> {
 
 /** Flutter: `HugeIcons.strokeRoundedX` → the same module file. */
 function flutterGlyphs(files: Map<string, string>): Set<string> {
-  const source = read('kyc-sdk-flutter/lib/src/widgets/icons/icons.dart');
+  const source = read('sdk-flutter/lib/src/widgets/icons/icons.dart');
   const out = new Set<string>();
   for (const [, name] of source.matchAll(
-    /static const MyazaIconData \w+\s*=\s*\n?\s*HugeIcons\.strokeRounded(\w+);/g,
+    /static const UiIconData \w+\s*=\s*\n?\s*HugeIcons\.strokeRounded(\w+);/g,
   )) {
     const file = files.get(`${name!}Icon`);
     if (file) out.add(file);
@@ -69,7 +69,7 @@ function flutterGlyphs(files: Map<string, string>): Set<string> {
 
 /** This SDK: the per-icon modules the map deep-imports. */
 function reactNativeGlyphs(): Set<string> {
-  const source = read('kyc-sdk-react-native/src/components/icons/map.ts');
+  const source = read('sdk-react-native/src/components/icons/map.ts');
   return new Set(
     [...source.matchAll(/from '@hugeicons\/core-free-icons\/([A-Za-z0-9_]+)'/g)].map((m) => m[1]!),
   );

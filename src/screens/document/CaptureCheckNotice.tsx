@@ -2,8 +2,8 @@ import React from 'react';
 import { View } from 'react-native';
 
 import { spacing } from '../../config/theme';
-import { MyazaAlert } from '../../components/MyazaAlert';
-import { MyazaButton } from '../../components/MyazaButton';
+import { UiAlert } from '../../components/UiAlert';
+import { UiButton } from '../../components/UiButton';
 import { documentReviewCopy } from '../../components/documentReviewCopy';
 import { useText } from '../../i18n/useText';
 import {
@@ -55,10 +55,10 @@ export function CaptureCheckNotice({
         accessibilityLiveRegion="polite"
         accessibilityLabel={`${title}. ${messages.join(' ')}`}
       >
-        <MyazaAlert variant="warning" title={title} message={messages.join('\n\n')} />
+        <UiAlert variant="warning" title={title} message={messages.join('\n\n')} />
       </View>
       {sides.map((side, i) => (
-        <MyazaButton
+        <UiButton
           key={side}
           label={captureRetakeLabel(side, uploadOnly)}
           variant={i === 0 ? 'primary' : 'outline'}
@@ -67,7 +67,7 @@ export function CaptureCheckNotice({
           onPress={() => onRetake(side)}
         />
       ))}
-      <MyazaButton
+      <UiButton
         label={continueAnyway}
         variant="outline"
         accessibilityLabel={continueAnyway}

@@ -5,8 +5,8 @@ import { radius, spacing } from '../config/theme';
 import { resolveIdTypeDefinition } from '../config/idTypes';
 import type { MultiIdPlan } from '../lib/multi-id';
 import type { MultiIdSlot } from '../store/state';
-import { useEffectiveCountry, useKyc, useTheme } from './runtime';
-import { MyazaText } from './Typography';
+import { useEffectiveCountry, useFlowState, useTheme } from './runtime';
+import { UiText } from './Typography';
 import { Icon } from './Icon';
 
 // The multi-ID run's position strip: one chip per check, filling in with the
@@ -20,8 +20,8 @@ import { Icon } from './Icon';
 export function MultiIdProgress({ plan }: { plan: MultiIdPlan }): React.ReactElement {
   const { colors } = useTheme();
   const country = useEffectiveCountry();
-  const serverConfig = useKyc((s) => s.serverConfig);
-  const slots: MultiIdSlot[] = useKyc((s) => s.multiIdSlots);
+  const serverConfig = useFlowState((s) => s.serverConfig);
+  const slots: MultiIdSlot[] = useFlowState((s) => s.multiIdSlots);
 
   const labelFor = (idType: string): string => {
     const row = serverConfig.idTypes.find(
@@ -84,21 +84,21 @@ export function MultiIdProgress({ plan }: { plan: MultiIdPlan }): React.ReactEle
               {committed ? (
                 <Icon name="check" size={12} color={colors.onPrimary} />
               ) : (
-                <MyazaText
+                <UiText
                   variant="bodySmall"
                   color={active ? colors.primary : colors.textMuted}
                 >
                   {String(i + 1)}
-                </MyazaText>
+                </UiText>
               )}
             </View>
-            <MyazaText
+            <UiText
               variant="bodySmall"
               color={active ? colors.textDark : colors.textMuted}
               numberOfLines={1}
             >
               {committed ? labelFor(committed.idType) : `ID ${i + 1}`}
-            </MyazaText>
+            </UiText>
           </View>
         );
       })}

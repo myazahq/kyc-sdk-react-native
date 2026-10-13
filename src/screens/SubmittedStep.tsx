@@ -1,19 +1,19 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import { mapToKycError, safeReportError } from '../services/errors';
+import { mapToVerificationError, safeReportError } from '../services/errors';
 import { contactStepFor, expiredContactChannels } from '../lib/contact-recovery';
 import { recoveryStepFor, serverRefusalOf } from '../lib/submit-recovery';
 import { cancelledRefusalOf } from '../lib/session-cancelled';
 import { buildStepOrder } from '../config/stepOrder';
 import { stepOrderOptions } from '../store/derive';
-import type { KYCStep } from '../types/config';
-import { KYCError, type KYCSubmission } from '../types/verification';
-import { useKyc, useKycConfig, useKycStore } from '../components/runtime';
+import type { VerificationStep } from '../types/config';
+import { VerificationError, type VerificationSubmission } from '../types/verification';
+import { useFlowState, useVerificationConfig, useVerificationStore } from '../components/runtime';
 import { useText } from '../i18n/useText';
 import { configScope } from '../lib/scope';
 import { describeWaiting } from '../lib/result-copy';
 import { biometricCopyFor } from '../lib/biometric-copy';
-import { awaitSelfieUpload, IDLE_SELFIE_UPLOAD } from '../lib/selfie-upload-wait';
+import { awaitSelfieUpload, IDLE_SELFIE_UPLOAD, selfieUploadExpected } from '../lib/selfie-upload-wait';
 import { showsDoneButton, showsSelfieReview, waitsForResult } from '../config/biometricOptions';
 import { SubmittedWaiting } from './SubmittedWaiting';
 import { SubmittedResult } from './SubmittedResult';
@@ -31,17 +31,17 @@ import { autoReportPresence } from '../presence/auto-report';
 type Phase = 'submitting' | 'success' | 'error';
 
 export function SubmittedStep({ onClose }: { onClose: () => void }): React.ReactElement {
-  const config = useKycConfig();
+  const config = useVerificationConfig();
   const t = useText();
-  const store = useKycStore();
-  const existingResult = useKyc((s) => s.submissionResult);
+  const store = useVerificationStore();
+  const existingResult = useFlowState((s) => s.submissionResult);
 
   const [phase, setPhase] = useState<Phase>('submitting');
-  const [error, setError] = useState<KYCError | null>(null);
+  const [error, setError] = useState<VerificationError | null>(null);
   const [retry, setRetry] = useState<{ attempt: number; total: number } | null>(null);
   // Where Go back lands after a refusal (lib/submit-recovery.ts); null when
   // going back cannot help.
-  const [recoverTo, setRecoverTo] = useState<KYCStep | null>(null);
+  const [recoverTo, setRecoverTo] = useState<VerificationStep | null>(null);
   const reportedRef = useRef(false);
   const kickedRef = useRef(false);
 
@@ -53,21 +53,27 @@ export function SubmittedStep({ onClose }: { onClose: () => void }): React.React
     // The biometric scopes hand over BEFORE the selfie upload lands (the
     // review is off, so nothing on the liveness step gated on it): wait for
     // the upload's own record here, under the same loading screen. A failed
-    // upload was already reported to onError by the hook that ran it.
-    if (!showsSelfieReview(config)) {
+    // upload was already reported to onError by the hook that ran it. A flow
+    // with no liveness step has no selfie to wait for.
+    const readUpload = () => ({
+      selfieUpload: store.getState().selfieUpload,
+      selfieMediaId: store.getState().mediaIds.selfie,
+    });
+    const hasLiveness = buildStepOrder(stepOrderOptions(store.getState())).includes('liveness');
+    if (!showsSelfieReview(config) && selfieUploadExpected(readUpload(), hasLiveness)) {
       const upload = await awaitSelfieUpload({
-        read: () => ({ selfieUpload: store.getState().selfieUpload, selfieMediaId: store.getState().mediaIds.selfie }),
+        read: readUpload,
         subscribe: (listener) => store.subscribe(listener),
       });
       if (!upload.ok) {
-        setError(new KYCError('upload_failed', upload.message));
+        setError(new VerificationError('upload_failed', upload.message));
         setPhase('error');
         return;
       }
     }
     try {
       const result = await store.getState().submitAsync((attempt, total) => setRetry({ attempt, total }));
-      const submission: KYCSubmission = {
+      const submission: VerificationSubmission = {
         verificationId: result.verificationId,
         status: 'processing',
         metadata: config.metadata ?? {},
@@ -95,7 +101,7 @@ export function SubmittedStep({ onClose }: { onClose: () => void }): React.React
         store.getState().goToStep(contactStepFor(expired[0]!));
         return;
       }
-      const kycError = mapToKycError(err, 'verify');
+      const verificationError = mapToVerificationError(err, 'verify');
       // Retries (if any) are exhausted. Read Go back's target off the SERVER's
       // refusal code, not the mapped client one.
       const refusal = serverRefusalOf(err);
@@ -106,10 +112,10 @@ export function SubmittedStep({ onClose }: { onClose: () => void }): React.React
             })
           : null,
       );
-      setError(kycError);
+      setError(verificationError);
       if (!reportedRef.current) {
         reportedRef.current = true;
-        safeReportError(config.onError, kycError);
+        safeReportError(config.onError, verificationError);
       }
       setPhase('error');
     }

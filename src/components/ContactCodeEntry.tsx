@@ -3,8 +3,8 @@ import { Pressable, TextInput, View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from './runtime';
-import { MyazaText } from './Typography';
-import { MyazaInput } from './MyazaInput';
+import { UiText } from './Typography';
+import { UiInput } from './UiInput';
 import type { OtpInputStyle } from '../types/workflow';
 import { useText } from '../i18n/useText';
 
@@ -47,7 +47,7 @@ export function ContactCodeEntry({
 
   if (style === 'text') {
     return (
-      <MyazaInput
+      <UiInput
         label={t('contact.code.label')}
         value={code}
         onChangeText={handle}
@@ -103,7 +103,7 @@ function SegmentedCode({
                 justifyContent: 'center',
               }}
             >
-              <MyazaText variant="heading2">{code[i] ?? ''}</MyazaText>
+              <UiText variant="heading2">{code[i] ?? ''}</UiText>
             </View>
           );
         })}

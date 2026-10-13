@@ -10,7 +10,7 @@ import { Spinner } from '../../components/Spinner';
 /**
  * The address search box.
  *
- * Its own field rather than MyazaInput because it needs the return key to
+ * Its own field rather than UiInput because it needs the return key to
  * submit (the basic backend is explicit-submit only) and a trailing spinner
  * while a details call is out — neither of which belongs on the generic input.
  * The border, radius and height are the SAME tokens, so it reads as one family.

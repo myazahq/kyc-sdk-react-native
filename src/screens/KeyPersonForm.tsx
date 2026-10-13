@@ -3,8 +3,8 @@ import { Pressable, View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
-import { MyazaInput } from '../components/MyazaInput';
+import { UiText } from '../components/Typography';
+import { UiInput } from '../components/UiInput';
 import { Icon } from '../components/Icon';
 import { OwnershipSlider } from '../components/OwnershipSlider';
 import { CountryField } from '../components/CountryField';
@@ -129,7 +129,7 @@ export function KeyPersonForm({
           <View style={{ height: spacing.sm }} />
         </>
       ) : null}
-      <MyazaInput
+      <UiInput
         label={corp ? 'Company name' : 'Full name'}
         value={entry.name}
         onChangeText={(name) => onChange({ name })}
@@ -153,7 +153,7 @@ export function KeyPersonForm({
       {!corp ? (
         <>
           <View style={{ height: spacing.sm }} />
-          <MyazaInput
+          <UiInput
             label="Position or title (optional)"
             value={entry.title}
             onChangeText={(title) => onChange({ title })}
@@ -165,16 +165,16 @@ export function KeyPersonForm({
       ) : null}
 
       <View style={{ height: spacing.sm }} />
-      <MyazaInput
+      <UiInput
         label="Ownership % (optional)"
         value={entry.ownershipPct}
         onChangeText={(ownershipPct) => onChange({ ownershipPct })}
         placeholder="0"
         keyboardType="decimal-pad"
         suffix={
-          <MyazaText variant="bodySmall" color={colors.textMuted}>
+          <UiText variant="bodySmall" color={colors.textMuted}>
             %
-          </MyazaText>
+          </UiText>
         }
         error={pctInvalid ? 'Enter a value between 0 and 100.' : combinedPctError}
         helper={
@@ -196,7 +196,7 @@ export function KeyPersonForm({
       {corp ? (
         <>
           <View style={{ height: spacing.sm }} />
-          <MyazaInput
+          <UiInput
             label="Registration number (optional)"
             value={entry.registrationNumber}
             onChangeText={(registrationNumber) => onChange({ registrationNumber })}
@@ -207,12 +207,12 @@ export function KeyPersonForm({
       ) : null}
 
       <View style={{ height: spacing.sm }} />
-      <MyazaText variant="label" style={{ marginBottom: spacing.sm }}>
+      <UiText variant="label" style={{ marginBottom: spacing.sm }}>
         Country{' '}
-        <MyazaText variant="bodyMedium" color={colors.textSecondary}>
+        <UiText variant="bodyMedium" color={colors.textSecondary}>
           {corp ? '(of incorporation)' : '(where their ID was issued)'}
-        </MyazaText>
-      </MyazaText>
+        </UiText>
+      </UiText>
       {/* The SAME sheet as the phone field's dial-code picker (keyboard-aware,
           autofocused search, results pinned above the keys) — minus the dial
           codes. Two country pickers that feel different would read as a bug. */}
@@ -232,13 +232,13 @@ export function KeyPersonForm({
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' }}
           >
             <Icon name="chevron-right" size={16} color={colors.textSecondary} />
-            <MyazaText
+            <UiText
               variant="bodyMedium"
               color={colors.textSecondary}
               style={{ fontWeight: '500' }}
             >
               Add the people who own it (optional)
-            </MyazaText>
+            </UiText>
           </Pressable>
         </>
       ) : null}
@@ -254,7 +254,7 @@ export function KeyPersonForm({
       ) : null}
 
       <View style={{ height: spacing.sm }} />
-      <MyazaInput
+      <UiInput
         label={
           needsEmail
             ? 'Email *'
@@ -295,11 +295,11 @@ export function KeyPersonForm({
           <View style={{ marginTop: 2 }}>
             <Icon name="info" size={16} color={colors.primary} />
           </View>
-          <MyazaText variant="bodyMedium" color={colors.textSecondary} style={{ flex: 1 }}>
+          <UiText variant="bodyMedium" color={colors.textSecondary} style={{ flex: 1 }}>
             {corporateKyb
               ? 'This company will need its own KYB verification: it receives a link to a business application of its own, where the people who own it are identified. We also screen it against sanctions lists.'
               : 'A company is never asked to verify an identity. We check it against sanctions lists, and the people who own it are reviewed separately, so list its owners above if you know them.'}
-          </MyazaText>
+          </UiText>
         </View>
       ) : null}
     </View>

@@ -29,7 +29,7 @@ interface Vector {
 }
 
 const vectors = sharedVectors<{ address: Record<string, unknown>; vectors: Vector[] }>(
-  'kyc-sdk-flutter/test/address_field_modes_vectors.json',
+  'sdk-flutter/test/address_field_modes_vectors.json',
   { address: {}, vectors: [] },
 );
 

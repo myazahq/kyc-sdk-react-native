@@ -9,9 +9,9 @@ import { describeInMonorepo, readPackageFile as read } from './helpers/monorepo'
 // Flutter fixture. The second group pins this SDK's own wiring.
 
 const MIRRORS = {
-  web: 'kyc-sdk-react/src/lib/map-frame.ts',
-  rn: 'kyc-sdk-react-native/src/lib/map-frame.ts',
-  flutter: 'kyc-sdk-flutter/lib/src/config/street_view_frame.dart',
+  web: 'sdk-react/src/lib/map-frame.ts',
+  rn: 'sdk-react-native/src/lib/map-frame.ts',
+  flutter: 'sdk-flutter/lib/src/config/street_view_frame.dart',
 };
 
 describeInMonorepo('the street-view protocol is mirrored on every SDK', () => {
@@ -25,20 +25,20 @@ describeInMonorepo('the street-view protocol is mirrored on every SDK', () => {
 
 describe('this SDK offers the framed street view', () => {
   it('the entrance step renders FramedStreetView and falls back to the photo', () => {
-    const step = read('kyc-sdk-react-native/src/screens/address/AddressEntranceStep.tsx');
+    const step = read('sdk-react-native/src/screens/address/AddressEntranceStep.tsx');
     expect(step).toMatch(/<FramedStreetView/);
     expect(step).toMatch(/onUnavailable=/);
     expect(step).toMatch(/streetViewFrameUrlOf\(/);
   });
 
   it('the flow model derives the offer from the maps frame URL and an installed WebView', () => {
-    for (const rel of ['kyc-sdk-react-native/src/store/derive.ts', 'kyc-sdk-react-native/src/screens/address/use-address-flow.ts']) {
+    for (const rel of ['sdk-react-native/src/store/derive.ts', 'sdk-react-native/src/screens/address/use-address-flow.ts']) {
       const source = read(rel);
       expect(source).toMatch(/mapsFrameUrl\)\s*&&\s*webViewAvailable\(\)/);
     }
   });
 
   it('the entrance step fills the viewport so its actions can stick', () => {
-    expect(read('kyc-sdk-react-native/src/components/KycFlow.tsx')).toMatch(/currentStep === 'address-entrance'/);
+    expect(read('sdk-react-native/src/components/VerificationFlow.tsx')).toMatch(/currentStep === 'address-entrance'/);
   });
 });

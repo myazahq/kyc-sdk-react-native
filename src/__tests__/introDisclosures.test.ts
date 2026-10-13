@@ -16,12 +16,12 @@ import { describeInMonorepo, readPackageFile as read } from './helpers/monorepo'
 // line must be in one of them.
 
 const COPY_SOURCES: Record<string, string[]> = {
-  web: ['kyc-sdk-react/src/i18n/groups/address-intro.ts'],
-  rn: ['kyc-sdk-react-native/src/i18n/defaults/address-intro.ts'],
+  web: ['sdk-react/src/i18n/groups/address-intro.ts'],
+  rn: ['sdk-react-native/src/i18n/defaults/address-intro.ts'],
   flutter: [
-    'kyc-sdk-flutter/lib/src/screens/address/address_intro_disclosures.dart',
-    'kyc-sdk-flutter/lib/src/i18n/defaults_address_intro.dart',
-    'kyc-sdk-flutter/lib/src/i18n/defaults_address.dart',
+    'sdk-flutter/lib/src/screens/address/address_intro_disclosures.dart',
+    'sdk-flutter/lib/src/i18n/defaults_address_intro.dart',
+    'sdk-flutter/lib/src/i18n/defaults_address.dart',
   ],
 };
 
@@ -37,12 +37,12 @@ const readAll = (rels: string[]) =>
     })
     .join('\n');
 
-const RN_DISCLOSURES = 'kyc-sdk-react-native/src/screens/address/IntroDisclosures.tsx';
+const RN_DISCLOSURES = 'sdk-react-native/src/screens/address/IntroDisclosures.tsx';
 
 const GATES = {
-  web: 'kyc-sdk-react/src/steps/address/AddressIntroGate.tsx',
-  rn: 'kyc-sdk-react-native/src/screens/address/AddressIntroGate.tsx',
-  flutter: 'kyc-sdk-flutter/lib/src/screens/address/address_intro_gate.dart',
+  web: 'sdk-react/src/steps/address/AddressIntroGate.tsx',
+  rn: 'sdk-react-native/src/screens/address/AddressIntroGate.tsx',
+  flutter: 'sdk-flutter/lib/src/screens/address/address_intro_gate.dart',
 };
 
 // Dart wraps a long body over adjacent string literals and the languages
@@ -101,7 +101,7 @@ describeInMonorepo('the eyebrow pill wears the same mark everywhere', () => {
   it.each([
     ['web', GATES.web, /<MapPinCheck className=/],
     ['rn', GATES.rn, /name="map-pin-check"/],
-    ['flutter', GATES.flutter, /MyazaIcons\.mapPinCheck/],
+    ['flutter', GATES.flutter, /UiIcons\.mapPinCheck/],
   ])('%s', (_name, rel, pattern) => {
     expect(read(rel as string)).toMatch(pattern as RegExp);
   });

@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // Pure derivations over the flow state.
 //
-// Split from kycStore.ts (200-line rule). Everything here is a function of
+// Split from verificationStore.ts (200-line rule). Everything here is a function of
 // state alone — no `set`, no side effects — which is what makes the flow's
 // shape (which steps run, in what order, against which country) testable and
 // keeps a single answer to each of those questions.
@@ -32,10 +32,10 @@ import { hasConsentStep, openingStepOf } from '../config/consentStep';
 import { applicantSelfCountry, keyPeoplePayload } from '../config/keyPeople';
 import { featuresFor } from './serverConfig';
 import type { VerifyRequest } from '../services/api';
-import type { KYCStep, SupportedCountry } from '../types/config';
-import type { KycState } from './state';
+import type { VerificationStep, SupportedCountry } from '../types/config';
+import type { VerificationState } from './state';
 
-export function livenessEnabled(state: KycState): boolean {
+export function livenessEnabled(state: VerificationState): boolean {
   // Presence Intelligence off ⇒ no selfie step at all. This is the builder's
   // "Presence Intelligence step" switch (`enableSelfie`), and it outranks the
   // liveness-gesture question below: with no selfie there is nothing to run
@@ -60,7 +60,7 @@ export function livenessEnabled(state: KycState): boolean {
  * until an ID is selected, and the same default is what the web SDK's progress
  * bar uses.
  */
-export function stepOrderOptions(state: KycState): StepOrderOptions {
+export function stepOrderOptions(state: VerificationState): StepOrderOptions {
   const { config } = state;
   const idType = state.selectedIdType;
   return {
@@ -118,7 +118,7 @@ export function stepOrderOptions(state: KycState): StepOrderOptions {
  * (the KYB applicant leg's case — business configs carry no individual
  * country list). Empty while the server config is still loading.
  */
-export function countrySelectOptions(state: Pick<KycState, 'config' | 'serverConfig'>): string[] {
+export function countrySelectOptions(state: Pick<VerificationState, 'config' | 'serverConfig'>): string[] {
   const configured = (state.config.countries ?? []).map((entry) => entry.country.toUpperCase());
   if (configured.length > 0) return configured;
   if (state.serverConfig.status !== 'ready') return [];
@@ -139,7 +139,7 @@ export function countrySelectOptions(state: Pick<KycState, 'config' | 'serverCon
  * KYB configs carry no individual `country`, so the applicant's capture leg
  * falls back to the registry country until (or unless) a country is picked.
  */
-export function effectiveCountry(state: KycState): SupportedCountry {
+export function effectiveCountry(state: VerificationState): SupportedCountry {
   return (state.selectedCountry ??
     state.config.country ??
     state.business.country ??
@@ -154,7 +154,7 @@ export function effectiveCountry(state: KycState): SupportedCountry {
  * narrowed to that country — offering Nigeria's TIN after the visitor picks
  * Ghana produces a submission the server refuses.
  */
-export function businessSubmission(state: KycState): {
+export function businessSubmission(state: VerificationState): {
   country: string;
   product: string;
   payload: NonNullable<VerifyRequest['business']>;
@@ -218,7 +218,7 @@ export function businessSubmission(state: KycState): {
  * with a chip AND an NFC radio, so it is never a silent default. `idTypes` is
  * a list of "CC/idType" keys; absent/empty means every chip-capable ID.
  */
-export function nfcEnabled(state: KycState): boolean {
+export function nfcEnabled(state: VerificationState): boolean {
   return nfcDecision(state).enabled;
 }
 
@@ -235,7 +235,7 @@ export function nfcEnabled(state: KycState): boolean {
  * logged in dev. It costs nothing in production and turns "the NFC screen did
  * not show up" into a one-line answer.
  */
-export function nfcDecision(state: KycState): { enabled: boolean; reason?: string } {
+export function nfcDecision(state: VerificationState): { enabled: boolean; reason?: string } {
   const nfc = state.config.nfc;
   if (nfc?.enabled !== true) return { enabled: false, reason: 'workflow_nfc_disabled' };
   const idType = state.selectedIdType;
@@ -257,12 +257,12 @@ export function nfcDecision(state: KycState): { enabled: boolean; reason?: strin
 }
 
 /** The step that follows `step`, given the current selection + flags. */
-export function nextStepAfter(step: KYCStep, state: KycState): KYCStep {
+export function nextStepAfter(step: VerificationStep, state: VerificationState): VerificationStep {
   return nextStepInOrder(step, stepOrderOptions(state));
 }
 
 /** The step before `step` (for the back button). */
-export function previousStepBefore(step: KYCStep, state: KycState): KYCStep {
+export function previousStepBefore(step: VerificationStep, state: VerificationState): VerificationStep {
   return previousStepInOrder(step, stepOrderOptions(state));
 }
 
@@ -273,11 +273,11 @@ export function previousStepBefore(step: KYCStep, state: KycState): KYCStep {
  * and the flow hides Back on it. Never depends on anything the applicant has
  * yet to choose: only later steps do.
  */
-export function openingStep(state: KycState): KYCStep {
+export function openingStep(state: VerificationState): VerificationStep {
   return openingStepOf(buildStepOrder(stepOrderOptions(state)));
 }
 
 /** Percentage complete, for the sheet's progress indicator. */
-export function stepProgress(step: KYCStep, state: KycState): number {
+export function stepProgress(step: VerificationStep, state: VerificationState): number {
   return getStepProgress(step, stepOrderOptions(state));
 }

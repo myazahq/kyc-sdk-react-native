@@ -8,8 +8,8 @@ import { cachedDeviceId } from './ids';
 // obey: nothing is collected while the workflow's `deviceIntelligence` is off
 // (an absent flag means on, as it always has).
 //
-//   • the submission's fingerprint (kycStore.submitAsync);
-//   • every upload's `X-Myaza-Device-Id` header (createKYCApi's `deviceId`).
+//   • the submission's fingerprint (verificationStore.submitAsync);
+//   • every upload's `X-Myaza-Device-Id` header (createVerificationApi's `deviceId`).
 // ---------------------------------------------------------------------------
 
 export interface DeviceIntelGate {

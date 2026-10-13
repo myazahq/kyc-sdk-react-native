@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 
 import { CountryFlag } from '../components/CountryFlag';
 import { Icon } from '../components/Icon';
-import { MyazaText } from '../components/Typography';
+import { UiText } from '../components/Typography';
 import { useTheme } from '../components/runtime';
 import { radius, spacing } from '../config/theme';
 
@@ -29,9 +29,9 @@ export function BusinessPickedCard({
   const { colors } = useTheme();
   return (
     <View>
-      <MyazaText variant="label" style={{ marginBottom: spacing.sm }}>
+      <UiText variant="label" style={{ marginBottom: spacing.sm }}>
         Business
-      </MyazaText>
+      </UiText>
       <View
         style={{
           flexDirection: 'row',
@@ -59,14 +59,14 @@ export function BusinessPickedCard({
           <Icon name="building-2" size={20} color={colors.onPrimary} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <MyazaText variant="label" color={colors.textDark} numberOfLines={1}>
+          <UiText variant="label" color={colors.textDark} numberOfLines={1}>
             {name.trim() || 'We will confirm the name with the register'}
-          </MyazaText>
+          </UiText>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
             <CountryFlag country={country} size={14} />
-            <MyazaText variant="bodySmall" color={colors.textSecondary}>
+            <UiText variant="bodySmall" color={colors.textSecondary}>
               {registrationNumber}
-            </MyazaText>
+            </UiText>
           </View>
         </View>
         <Pressable
@@ -76,9 +76,9 @@ export function BusinessPickedCard({
           style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 4 }}
         >
           <Icon name="pencil" size={14} color={colors.textDark} />
-          <MyazaText variant="bodyMedium" style={{ fontWeight: '500' }} color={colors.textDark}>
+          <UiText variant="bodyMedium" style={{ fontWeight: '500' }} color={colors.textDark}>
             Change
-          </MyazaText>
+          </UiText>
         </Pressable>
       </View>
     </View>

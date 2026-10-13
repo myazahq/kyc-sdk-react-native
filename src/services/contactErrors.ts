@@ -1,4 +1,4 @@
-import { KYCApiError } from './api';
+import { VerificationApiError } from './api';
 
 // ---------------------------------------------------------------------------
 // User-facing copy for the contact-verification send/check failures.
@@ -22,7 +22,7 @@ const SEND_ERRORS: Record<string, string> = {
 };
 
 function describe(err: unknown, map: Record<string, string>): string {
-  if (err instanceof KYCApiError && err.code && map[err.code]) return map[err.code]!;
+  if (err instanceof VerificationApiError && err.code && map[err.code]) return map[err.code]!;
   if (err instanceof TypeError) return 'Network error. Check your connection and try again.';
   return 'Something went wrong. Please try again.';
 }
@@ -37,7 +37,7 @@ export const describeCheckError = (err: unknown): string => describe(err, CHECK_
  * absent it they have no signal that the code is about to die.
  */
 export function attemptsRemaining(err: unknown): number | undefined {
-  if (!(err instanceof KYCApiError)) return undefined;
+  if (!(err instanceof VerificationApiError)) return undefined;
   const value = err.body?.attemptsRemaining;
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }

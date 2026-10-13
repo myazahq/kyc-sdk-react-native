@@ -6,7 +6,7 @@ import { useTheme } from '../../components/runtime';
 import { DashedBorder } from '../../components/DashedBorder';
 import { Icon } from '../../components/Icon';
 import { OverlayPill, pillSurface } from './EntrancePills';
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 import { useText } from '../../i18n/useText';
 import { Spinner } from '../../components/Spinner';
 
@@ -63,9 +63,9 @@ export function EntranceDropzone({
           <>
             <Icon name="check" size={30} color={colors.success} />
             <View style={{ height: spacing.sm }} />
-            <MyazaText variant="bodyMedium" style={{ fontWeight: '600' }}>
+            <UiText variant="bodyMedium" style={{ fontWeight: '600' }}>
               Entrance photo added
-            </MyazaText>
+            </UiText>
           </>
         )}
 
@@ -86,13 +86,13 @@ export function EntranceDropzone({
           }}
         >
           <Icon name="circle-check" size={12} color={colors.primary} />
-          <MyazaText
+          <UiText
             variant="bodySmall"
             color={colors.primary}
             style={{ fontSize: 11, fontWeight: '600', letterSpacing: 0.6, textTransform: 'uppercase' }}
           >
             Entrance photo
-          </MyazaText>
+          </UiText>
         </View>
 
         <View
@@ -147,12 +147,12 @@ export function EntranceDropzone({
         )}
       </View>
       <View style={{ height: spacing.md }} />
-      <MyazaText variant="body" style={{ fontWeight: '600' }}>
+      <UiText variant="body" style={{ fontWeight: '600' }}>
         {uploading ? 'Uploading photo…' : t('address.photo.cta')}
-      </MyazaText>
+      </UiText>
       {uploading ? null : (
         <>
-          <MyazaText
+          <UiText
             variant="bodyMedium"
             color={colors.textSecondary}
             style={{ marginTop: spacing.xs, textAlign: 'center' }}
@@ -160,7 +160,7 @@ export function EntranceDropzone({
             {required
               ? t('address.photo.hint')
               : 'The gate, front door or the building itself. Optional.'}
-          </MyazaText>
+          </UiText>
           <View
             style={{
               marginTop: spacing.md,
@@ -170,9 +170,9 @@ export function EntranceDropzone({
               backgroundColor: colors.backgroundSecondary,
             }}
           >
-            <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ fontSize: 11, fontWeight: '500' }}>
+            <UiText variant="bodySmall" color={colors.textSecondary} style={{ fontSize: 11, fontWeight: '500' }}>
               JPEG · PNG · WebP
-            </MyazaText>
+            </UiText>
           </View>
         </>
       )}

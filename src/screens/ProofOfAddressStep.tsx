@@ -2,9 +2,9 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { spacing } from '../config/theme';
-import { useEffectiveCountry, useKyc, useKycConfig, useKycStore, useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
-import { MyazaButton } from '../components/MyazaButton';
+import { useEffectiveCountry, useFlowState, useVerificationConfig, useVerificationStore, useTheme } from '../components/runtime';
+import { UiText } from '../components/Typography';
+import { UiButton } from '../components/UiButton';
 import { MediaSourceSheet } from '../components/MediaSourceSheet';
 import { PoaDocumentTypeList } from './PoaDocumentTypeList';
 import { configScope } from '../lib/scope';
@@ -33,13 +33,13 @@ import { useText } from '../i18n/useText';
 // ---------------------------------------------------------------------------
 
 export function ProofOfAddressStep(): React.ReactElement {
-  const config = useKycConfig();
+  const config = useVerificationConfig();
   const t = useText();
-  const store = useKycStore();
+  const store = useVerificationStore();
   const { colors } = useTheme();
-  const mediaId = useKyc((s) => s.mediaIds.proofOfAddress);
-  const fileName = useKyc((s) => s.poaFileName);
-  const storedType = useKyc((s) => s.poaDocumentType);
+  const mediaId = useFlowState((s) => s.mediaIds.proofOfAddress);
+  const fileName = useFlowState((s) => s.poaFileName);
+  const storedType = useFlowState((s) => s.poaDocumentType);
 
   // The kinds on offer follow the country — on the address scope the picker
   // below changes it, and an org may accept different documents per market.
@@ -48,7 +48,7 @@ export function ProofOfAddressStep(): React.ReactElement {
   // The flag on the attachment area: on the address scope only a country the
   // applicant picked (the scope has no seeded country to show), else the
   // flow's effective country.
-  const selectedCountry = useKyc((s) => s.selectedCountry);
+  const selectedCountry = useFlowState((s) => s.selectedCountry);
   const flagCountry = configScope(config) === 'address' ? (selectedCountry ?? null) : (country ?? null);
   const [selectedType, setSelectedType] = useState<PoaDocumentType>(storedType ?? types[0]!);
   const typesKey = types.join(',');
@@ -141,9 +141,9 @@ export function ProofOfAddressStep(): React.ReactElement {
       <AddressCountryControl />
       {types.length > 1 ? (
         <>
-          <MyazaText variant="bodySmall" style={{ fontWeight: '600', marginBottom: spacing.xs }}>
+          <UiText variant="bodySmall" style={{ fontWeight: '600', marginBottom: spacing.xs }}>
             {t('proofOfAddress.documentType')}
-          </MyazaText>
+          </UiText>
           <PoaDocumentTypeList
             value={selectedType}
             // Locked once a file is attached: switching the kind afterwards
@@ -172,13 +172,13 @@ export function ProofOfAddressStep(): React.ReactElement {
       )}
 
       {error ? (
-        <MyazaText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.sm }}>
+        <UiText variant="bodySmall" color={colors.error} style={{ marginTop: spacing.sm }}>
           {error}
-        </MyazaText>
+        </UiText>
       ) : null}
 
       <View style={{ height: spacing.lg }} />
-      <MyazaButton
+      <UiButton
         label={t('common.continue')}
         disabled={!mediaId || busy || !countryDeclared}
         onPress={() => store.getState().nextStep()}

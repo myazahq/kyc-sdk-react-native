@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
-// kycStore — the flow store (mirrors Flutter's KYCNotifier + KYCState).
+// verificationStore — the flow store (mirrors Flutter's VerificationNotifier + VerificationState).
 //
-// One store per modal instance via `createKycStore(config)`, so the flow state
+// One store per modal instance via `createVerificationStore(config)`, so the flow state
 // and its resolved API client are scoped to a single launch. The React layer
 // exposes it through context + a `useStore` selector hook.
 //
@@ -12,42 +12,42 @@
 
 import { createStore } from 'zustand/vanilla';
 
-import { createKYCApi } from '../services/api';
+import { createVerificationApi } from '../services/api';
 
 import { resolveBaseUrl, normalizeBrandingUrls } from '../services/resolveUrl';
 import { withRetry } from '../services/retry';
 import { withoutAttestation } from '../services/fingerprint';
 import { submissionFingerprint, uploadDeviceIdSource } from '../services/device-intel/submission';
-import type { KYCStep, ResolvedKYCConfig } from '../types/config';
+import type { VerificationStep, ResolvedVerificationConfig } from '../types/config';
 import { INITIAL_SERVER_CONFIG, describeConfigError, type ServerConfigState } from './serverConfig';
 import {
   EMPTY_BUSINESS,
   EMPTY_BUSINESS_APPLICATION,
   EMPTY_BUSINESS_CHECK,
-  type KYCSubmissionResult,
-  type KycState,
-  type KycStore,
+  type VerificationSubmissionResult,
+  type VerificationState,
+  type VerificationStore,
 } from './state';
 import { nextStepAfter, nfcDecision, openingStep, previousStepBefore } from './derive';
 
 /** The steps that make up ONE ID's evidence. Leaving this set is what ends a
  *  multi-ID check — the leg has several exits depending on the ID. */
-const ID_EVIDENCE_STEPS = new Set<KYCStep>(['id-input', 'document-capture', 'nfc']);
+const ID_EVIDENCE_STEPS = new Set<VerificationStep>(['id-input', 'document-capture', 'nfc']);
 
 /** The 1-based check the applicant is on, or undefined outside a multi-ID run.
  *  Only emitted once a slot has been COMMITTED — on an ordinary run the field
  *  would be a constant 1 on every entry, which is noise. */
-function multiIdSlotOf(s: KycState): number | undefined {
+function multiIdSlotOf(s: VerificationState): number | undefined {
   return s.multiIdSlots.length > 0 ? s.multiIdSlots.length + 1 : undefined;
 }
 
 /** The ID selected at this moment — see StepLogEntry.idType. */
-function selectedIdTypeOf(s: KycState): string | undefined {
+function selectedIdTypeOf(s: VerificationState): string | undefined {
   return s.selectedIdType ?? undefined;
 }
 
 /** The active multi-ID plan for the store's current state, or null. */
-function multiIdPlanFor(s: KycState): ReturnType<typeof multiIdPlan> {
+function multiIdPlanFor(s: VerificationState): ReturnType<typeof multiIdPlan> {
   return multiIdPlan(
     { ...s.config, country: s.selectedCountry ?? s.config.country },
     { multiIdSlotIndex: s.multiIdSlotIndex, multiIdSlots: s.multiIdSlots },
@@ -83,17 +83,17 @@ export {
  * makes the separate `/config` call — and never renders the loading state for
  * data it already has.
  */
-export function createKycStore(
-  config: ResolvedKYCConfig,
+export function createVerificationStore(
+  config: ResolvedVerificationConfig,
   serverConfig?: ServerConfigState,
-): KycStore {
+): VerificationStore {
   const baseUrl = resolveBaseUrl(config.apiKey, config.devUrl);
   // Uploads carry the per-install device id (X-Myaza-Device-Id) while Device
   // Intelligence is on — the same value the fingerprint's deviceId carries.
-  const api = createKYCApi(baseUrl, config.apiKey, { deviceId: uploadDeviceIdSource(config) });
+  const api = createVerificationApi(baseUrl, config.apiKey, { deviceId: uploadDeviceIdSource(config) });
 
-  const store = createStore<KycState>((set, get) => {
-    function emitStepChange(step: KYCStep): void {
+  const store = createStore<VerificationState>((set, get) => {
+    function emitStepChange(step: VerificationStep): void {
       config.onStepChange?.(step);
     }
 
@@ -111,7 +111,7 @@ export function createKycStore(
       // A send-back that did not ask for the ID keeps the original one: the
       // ID steps are narrowed out, so the kept ID is selected here instead.
       // A restored session only overwrites it with a saved pick.
-      selectedIdType: keptIdType(config.resubmit) as KycState['selectedIdType'],
+      selectedIdType: keptIdType(config.resubmit) as VerificationState['selectedIdType'],
       idNumber: null,
       multiIdSlotIndex: 0,
       multiIdSlots: [],
@@ -631,7 +631,7 @@ export function createKycStore(
             get().selectedCountry ?? get().config.country ?? '',
             last.idType,
           );
-          const step: KYCStep = def?.requiresDocumentCapture === false ? 'id-input' : 'document-capture';
+          const step: VerificationStep = def?.requiresDocumentCapture === false ? 'id-input' : 'document-capture';
           get().uncommitMultiIdSlot(step);
           emitStepChange(step);
           return;
@@ -666,7 +666,7 @@ export function createKycStore(
         const request = buildVerifyRequest(state, fingerprint);
         try {
           const res = await withRetry(() => api.verify(request), { onRetry });
-          const result: KYCSubmissionResult = {
+          const result: VerificationSubmissionResult = {
             verificationId: res.verificationId,
             status: 'processing',
           };
@@ -691,7 +691,7 @@ export function createKycStore(
               ),
             ).catch((err) => {
               console.warn(
-                '[MyazaKYC] Applicant identity submission failed — the organization can re-invite the applicant from the dashboard:',
+                '[Verification] Applicant identity submission failed — the organization can re-invite the applicant from the dashboard:',
                 err,
               );
             });
@@ -724,7 +724,7 @@ export function createKycStore(
           countryAutoPicked: false,
           // Same kept ID as at creation: the narrowed flow has no picker to
           // choose it again.
-          selectedIdType: keptIdType(config.resubmit) as KycState['selectedIdType'],
+          selectedIdType: keptIdType(config.resubmit) as VerificationState['selectedIdType'],
           idNumber: null,
           multiIdSlotIndex: 0,
           multiIdSlots: [],

@@ -1,17 +1,19 @@
 # @myazahq/kyc-sdk-react-native
 
-Myaza KYC SDK for **React Native (Expo)** — ID verification with document
+Toden SDK for **React Native (Expo)** — ID verification with document
 auto-capture, **eMRTD chip reading (NFC)**, active **on-device** liveness,
 email/phone OTP verification, questionnaires, proof of address, and full
 business (**KYB**) verification, for any supported country. Mirrors the
 [web](https://www.npmjs.com/package/@myazahq/kyc-sdk-react) and Flutter SDKs
-feature-for-feature — including `workflowId` embeds — and calls the same Myaza
+feature-for-feature — including `workflowId` embeds — and calls the same Toden
 KYC API server.
 
 The SDK is a **thin UI layer**: it captures the user's data (ID number, document
 photos, a live selfie), uploads the media, and submits a verification request.
 All verification (OCR, facial comparison, gov-DB checks) happens server-side and
 is delivered asynchronously via webhook — the SDK is **fire-and-forget**.
+
+> **New names.** The entry points were renamed in 3.6.0 (`Verification`, `useVerification`, `VerificationError`). The earlier names (`MyazaKYC`, `useMyazaKYC`, the hook's `MyazaKYCModal`, `KYCError` and the rest) still work, so existing code needs no change. The package name is unchanged.
 
 ## Requirements
 
@@ -198,23 +200,23 @@ autolinked via React Native / Expo autolinking — no manual linking required.
 
 ## Usage
 
-`<MyazaKYC />` renders a "Verify Identity" trigger plus the full modal flow. Pass
+`<Verification />` renders a "Verify Identity" trigger plus the full modal flow. Pass
 `children` (a string) to relabel it. For a fully custom trigger, use the
-[`useMyazaKYC()` hook](#trigger-component--hook).
+[`useVerification()` hook](#trigger-component--hook).
 
 ### Recommended — mount a workflow
 
-Build the flow once in the Myaza dashboard as a **workflow**, then mount it by
+Build the flow once in the Toden dashboard as a **workflow**, then mount it by
 id. The country, ID types, capture steps, add-ons, branding and copy all come
 from the workflow, so changing the flow is a re-publish in the dashboard rather
 than a new app build and an app-store review. See [Workflows](#workflows).
 
 ```tsx
-import { MyazaKYC } from '@myazahq/kyc-sdk-react-native';
+import { Verification } from '@myazahq/kyc-sdk-react-native';
 
 export default function VerifyScreen() {
   return (
-    <MyazaKYC
+    <Verification
       apiKey="pk_live_xxx"          // prefix selects the env: pk_test_ → sandbox
       workflowId="wf_AbC123dEf456"
       // Runtime data — a workflow is a shared template and cannot carry any of it.
@@ -226,7 +228,7 @@ export default function VerifyScreen() {
       onClose={() => console.log('Modal closed')}
     >
       Verify my identity
-    </MyazaKYC>
+    </Verification>
   );
 }
 ```
@@ -244,11 +246,11 @@ Skip the workflow and pass the flow's shape as props. Useful for a quick start
 or a single fixed flow; anything you'd change later means shipping a new build.
 
 ```tsx
-import { MyazaKYC } from '@myazahq/kyc-sdk-react-native';
+import { Verification } from '@myazahq/kyc-sdk-react-native';
 
 export default function VerifyScreen() {
   return (
-    <MyazaKYC
+    <Verification
       apiKey="pk_live_xxx"          // prefix selects the env: pk_test_ → sandbox
       country="NG"
       idTypes={['passport', 'drivers-license', 'bvn', 'nin', 'pvc']}
@@ -259,7 +261,7 @@ export default function VerifyScreen() {
       showThemeToggle
       appearance={{
         primaryColor: '#5645F5',
-        companyName: 'Myaza',
+        companyName: 'Toden',
         logo: 'default',
         theme: 'dark',
       }}
@@ -278,14 +280,14 @@ export default function VerifyScreen() {
       onSubmit={(submission) => {
         // Fires as soon as the server accepts the request.
         // submission.status is always 'pending' — the result arrives later via
-        // webhook to your backend (or poll GET /api/kyc/status/:id).
+        // webhook to your backend (or poll GET /api/v1/status/:id).
         console.log('Submitted!', submission.verificationId);
       }}
       onClose={() => console.log('Modal closed')}
       onError={(err) => console.warn('SDK error:', err.code, err.message)}
     >
       Verify my identity
-    </MyazaKYC>
+    </Verification>
   );
 }
 ```
@@ -320,15 +322,15 @@ export default function VerifyScreen() {
 | `deviceIntelligence`    | `boolean`                                 | `true`              | Device + IP fraud signals (multi-accounting, emulator, velocity). **Billed per verification**; `false` disables the analysis, its charge, and the SDK's fingerprint collection. |
 | `requireMobileDevice`   | `boolean`                                 | `false`             | Refuse to run on a desktop/laptop — relevant because React Native also targets desktop runtimes and emulators. The server re-checks and rejects with `mobile_device_required`. |
 | `showThemeToggle`       | `boolean`                                 | `true`              | Show a light/dark toggle inside the modal header. When `false`, the flow stays on `appearance.theme`.                |
-| `disableClose`          | `boolean`                                 | `false`             | Hide the close (X) and block **all** user dismissal (X, Android back, iOS swipe-down). The flow can then only be closed programmatically via `useMyazaKYC().close()`. |
-| `appearance`            | `KYCAppearance`                           | brand defaults      | Brand & theme the modal — colors, logo, light/dark. See [Appearance & theming](#appearance--theming).                |
-| `consent`               | `KYCConsentContent`                       | built-in copy       | Override the consent/welcome screen `title` and `description`. See [Consent screen copy](#consent-screen-copy).      |
-| `success`               | `KYCSuccessContent`                       | built-in copy       | Override the success/submitted screen `title` and `description`. See [Success screen copy](#success-screen-copy).    |
+| `disableClose`          | `boolean`                                 | `false`             | Hide the close (X) and block **all** user dismissal (X, Android back, iOS swipe-down). The flow can then only be closed programmatically via `useVerification().close()`. |
+| `appearance`            | `VerificationAppearance`                           | brand defaults      | Brand & theme the modal — colors, logo, light/dark. See [Appearance & theming](#appearance--theming).                |
+| `consent`               | `VerificationConsentContent`                       | built-in copy       | Override the consent/welcome screen `title` and `description`. See [Consent screen copy](#consent-screen-copy).      |
+| `success`               | `VerificationSuccessContent`                       | built-in copy       | Override the success/submitted screen `title` and `description`. See [Success screen copy](#success-screen-copy).    |
 | `metadata`              | `Record<string, string>`                  | —                   | Forwarded with every verify request.                                                                                 |
 | `onStart`               | `() => void`                              | —                   | Called when the flow opens.                                                                                          |
-| `onStepChange`          | `(step: KYCStep) => void`                 | —                   | Called on each step transition.                                                                                      |
-| `onSubmit`              | `(submission: KYCSubmission) => void`     | —                   | Called when the server accepts the verification. `status` is always `'pending'`.                                     |
-| `onError`               | `(error: KYCError) => void`               | —                   | Called for **technical** errors only. Receives a typed [`KYCError`](#robustness--error-handling). Verification outcomes never come through here. |
+| `onStepChange`          | `(step: VerificationStep) => void`                 | —                   | Called on each step transition.                                                                                      |
+| `onSubmit`              | `(submission: VerificationSubmission) => void`     | —                   | Called when the server accepts the verification. `status` is always `'pending'`.                                     |
+| `onError`               | `(error: VerificationError) => void`               | —                   | Called for **technical** errors only. Receives a typed [`VerificationError`](#robustness--error-handling). Verification outcomes never come through here. |
 | `onClose`               | `() => void`                              | —                   | Called when the user closes the flow.                                                                                |
 | `children`              | `string`                                  | `Verify Identity`   | Trigger label. Defaults to `Verify with {companyName}` when `companyName` is set, else `Verify Identity`.            |
 | `disabled`              | `boolean`                                 | `false`             | Disable the trigger.                                                                                                 |
@@ -347,11 +349,11 @@ An unrecognized or malformed key throws at setup (it never silently defaults).
 
 ## Workflows
 
-The recommended integration (see [Usage](#usage)): build the flow in the Myaza
+The recommended integration (see [Usage](#usage)): build the flow in the Toden
 dashboard and reference it by id —
 
 ```tsx
-<MyazaKYC apiKey="pk_live_xxx" workflowId="wf_abc123" userId="usr_123" />
+<Verification apiKey="pk_live_xxx" workflowId="wf_abc123" userId="usr_123" />
 ```
 
 - **Workflow config wins** over any overlapping prop — country, ID types, step
@@ -399,7 +401,7 @@ Answers and outcomes arrive in the verification webhook
 `data.proofOfAddress`).
 
 ```tsx
-<MyazaKYC
+<Verification
   apiKey="pk_live_xxx"
   country="NG"
   nfc={{ enabled: true, allowSkip: true }}
@@ -431,24 +433,24 @@ back invite links for any directors or owners who need their own check.
 
 ## Trigger component & hook
 
-`<MyazaKYC />` renders a styled trigger that opens the modal. Beyond the config
+`<Verification />` renders a styled trigger that opens the modal. Beyond the config
 props it accepts `children` (a string label) and `disabled`:
 
 ```tsx
-<MyazaKYC {...config} disabled={!ready}>
+<Verification {...config} disabled={!ready}>
   Start verification
-</MyazaKYC>
+</Verification>
 ```
 
 For a **fully custom** trigger (your own `Pressable`, an icon, a list row, or to
-open the flow programmatically), use the `useMyazaKYC()` hook:
+open the flow programmatically), use the `useVerification()` hook:
 
 ```tsx
 import { Pressable, Text } from 'react-native';
-import { useMyazaKYC } from '@myazahq/kyc-sdk-react-native';
+import { useVerification } from '@myazahq/kyc-sdk-react-native';
 
 function CustomTrigger() {
-  const { open, close, isOpen, currentStep } = useMyazaKYC({
+  const { open, close, isOpen, currentStep } = useVerification({
     apiKey: 'pk_live_xxx',
     country: 'NG',
     onSubmit: (s) => console.log('submitted', s.verificationId),
@@ -462,7 +464,7 @@ function CustomTrigger() {
 }
 ```
 
-`useMyazaKYC(config)` returns `{ open, close, isOpen, currentStep }`. `close()` is
+`useVerification(config)` returns `{ open, close, isOpen, currentStep }`. `close()` is
 the only way to dismiss the flow when `disableClose` is set.
 
 ## Appearance & theming
@@ -490,7 +492,7 @@ The org logo renders as a small circular avatar in the modal header (top-left),
 persistent on every step, alongside `companyName`.
 
 - `logo: 'https://…/logo.png'` — uses that image directly.
-- `logo: 'default'` — pulls your organization's logo configured in the **Myaza dashboard**
+- `logo: 'default'` — pulls your organization's logo configured in the **Toden dashboard**
   (returned by the server on mount). If your org has no logo set, or the image fails
   to load, the avatar is hidden.
 - omitted — no header logo.
@@ -553,15 +555,15 @@ conditions, and reports technical failures through `onError` with a typed code.
 
 ### Typed errors (`onError`)
 
-`onError` receives a `KYCError` with a typed `code`, a human-readable `message`,
+`onError` receives a `VerificationError` with a typed `code`, a human-readable `message`,
 and optional `details`. The codes are **identical to the web and Flutter SDKs**:
 
 ```tsx
-import { MyazaKYC, type KYCError } from '@myazahq/kyc-sdk-react-native';
+import { Verification, type VerificationError } from '@myazahq/kyc-sdk-react-native';
 
-<MyazaKYC
+<Verification
   {...config}
-  onError={(error: KYCError) => {
+  onError={(error: VerificationError) => {
     switch (error.code) {
       case 'camera_permission_denied': /* ask the user to allow the camera */ break;
       case 'insufficient_credits':     /* error.details = { required, balance, currency } */ break;
@@ -583,7 +585,7 @@ import { MyazaKYC, type KYCError } from '@myazahq/kyc-sdk-react-native';
 | `unknown`                  | Anything else.                                                      |
 
 > Verification *outcomes* (identity not found, document mismatch, …) never come
-> through `onError` — they arrive asynchronously via webhook / `GET /api/kyc/status/:id`.
+> through `onError` — they arrive asynchronously via webhook / `GET /api/v1/status/:id`.
 
 ### Network resilience
 
@@ -660,13 +662,13 @@ entitlement to your app. In an Expo app:
 
 Without it, iOS attests in App Attest's development environment, which is not
 meant for apps in production. Simulators do not support App
-Attest; there the field is simply omitted. Send Myaza your Team ID and bundle
+Attest; there the field is simply omitted. Send Toden your Team ID and bundle
 ID so the server can recognise your app.
 
 **Android (Play Integrity).** In Play Console, link your app to the Google
-Cloud project Myaza gives you (App integrity, Play Integrity API). The SDK
+Cloud project Toden gives you (App integrity, Play Integrity API). The SDK
 reads that project number from the server and asks Play for a token; until the
-server serves one, the step is skipped. Send Myaza your package name. Devices
+server serves one, the step is skipped. Send Toden your package name. Devices
 without Google Play Services (Huawei, AOSP) send no token.
 
 ## App size
@@ -903,7 +905,7 @@ backend. The status endpoint is publishable-safe and enumeration-safe (an
 unknown user and a user with no watch answer the same `not_started` shape):
 
 ```ts
-const res = await fetch(`${serverUrl}/api/kyc/address/presence/${externalUserId}`, {
+const res = await fetch(`${serverUrl}/api/v1/address/presence/${externalUserId}`, {
   headers: { Authorization: `Bearer pk_live_…` },
 });
 const { status, progress, tier } = await res.json();

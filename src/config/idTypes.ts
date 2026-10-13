@@ -51,7 +51,7 @@ export function isNumberOnlyIdType(idType: string): boolean {
  * ID keys whose physical document carries an ICAO 9303 eMRTD chip.
  *
  * A FALLBACK only. Chip capability is catalogue-driven SERVER-side and arrives
- * per row on `/api/kyc/config` as `supportsNfc`; that answer is authoritative
+ * per row on `/api/v1/config` as `supportsNfc`; that answer is authoritative
  * and covers documents this local list has never heard of (every country's
  * passport, for one). This list is what the flow uses before config lands.
  *
@@ -62,7 +62,7 @@ const CHIP_CAPABLE_KEYS = new Set(['passport', 'ghana-card', 'cni']);
 /**
  * Whether the document behind this ID has a readable chip.
  *
- * `serverSupportsNfc` is the row from `/api/kyc/config` when it has loaded —
+ * `serverSupportsNfc` is the row from `/api/v1/config` when it has loaded —
  * pass it and it wins outright, including its `false`.
  */
 export function supportsNfcChip(

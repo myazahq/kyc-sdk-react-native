@@ -10,7 +10,7 @@
 // Appearance / theming
 // ---------------------------------------------------------------------------
 
-export interface KYCAppearance {
+export interface VerificationAppearance {
   /** Brand color — drives buttons, selected states, focus rings. */
   primaryColor?: string;
   /** Text/icon color rendered on top of `primaryColor` (e.g. button labels). */
@@ -35,7 +35,7 @@ export interface KYCAppearance {
    * Body font family.
    *
    * Unlike the web SDK this does NOT fetch the font: React Native renders from
-   * families registered by the HOST APP (the SDK's own Karla / Space Grotesk
+   * families registered by the HOST APP (the SDK's own Bricolage Grotesque and Geist
    * ship as bundled assets). Pass a family your app has loaded; an unknown name
    * falls back to the SDK default rather than rendering nothing.
    */
@@ -51,7 +51,7 @@ export interface KYCAppearance {
    * background simply overwrote the dark one.
    */
   dark?: Pick<
-    KYCAppearance,
+    VerificationAppearance,
     | 'primaryColor'
     | 'primaryTextColor'
     | 'accentColor'
@@ -78,14 +78,14 @@ export interface KYCAppearance {
 // Consent / success screen content
 // ---------------------------------------------------------------------------
 
-export interface KYCConsentContent {
+export interface VerificationConsentContent {
   /** Consent heading. Supports `{firstName}` / `{lastName}` tokens. */
   title?: string;
   /** Sub-text under the heading. Same tokens. */
   description?: string;
 }
 
-export interface KYCSuccessContent {
+export interface VerificationSuccessContent {
   /** Success heading. Supports `{firstName}` / `{lastName}` tokens. */
   title?: string;
   /** Sub-text under the heading. Same tokens. */

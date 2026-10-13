@@ -4,9 +4,9 @@ import { useWindowDimensions, View } from 'react-native';
 import { radius, spacing } from '../../config/theme';
 import { useTheme } from '../../components/runtime';
 import { Icon } from '../../components/Icon';
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 import { useText } from '../../i18n/useText';
-import { MyazaButton } from '../../components/MyazaButton';
+import { UiButton } from '../../components/UiButton';
 import { StickyActions } from '../../components/StickyActions';
 import { mapSurfaceHeight } from '../../lib/map-tiles';
 
@@ -34,11 +34,11 @@ export function EntrancePlaceholder({
         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
           {!hideSkip ? (
             <View style={{ flex: 1 }}>
-              <MyazaButton label={t('common.skip')} variant="outline" onPress={onSkip} />
+              <UiButton label={t('common.skip')} variant="outline" onPress={onSkip} />
             </View>
           ) : null}
           <View style={{ flex: 1 }}>
-            <MyazaButton label={t('address.entrance.useView')} onPress={onUse} />
+            <UiButton label={t('address.entrance.useView')} onPress={onUse} />
           </View>
         </View>
       }
@@ -59,9 +59,9 @@ export function EntrancePlaceholder({
         }}
       >
         <Icon name="landmark" size={32} color={`${colors.textSecondary}99`} />
-        <MyazaText variant="bodySmall" color={colors.textSecondary} style={{ textAlign: 'center', maxWidth: 288 }}>
+        <UiText variant="bodySmall" color={colors.textSecondary} style={{ textAlign: 'center', maxWidth: 288 }}>
           Applicants pan real street imagery to frame their entrance here. It loads only for real users.
-        </MyazaText>
+        </UiText>
       </View>
     </StickyActions>
   );

@@ -3,7 +3,7 @@ import { View } from 'react-native';
 
 import { radius, spacing } from '../config/theme';
 import { useTheme } from '../components/runtime';
-import { MyazaText } from '../components/Typography';
+import { UiText } from '../components/Typography';
 import { Icon } from '../components/Icon';
 import { useText } from '../i18n/useText';
 
@@ -43,9 +43,9 @@ export function DocumentMarker({
       {done ? (
         <Icon name="check" size={16} color={colors.onPrimary} />
       ) : total > 1 ? (
-        <MyazaText variant="bodySmall" color={colors.primary} style={{ fontWeight: '700' }}>
+        <UiText variant="bodySmall" color={colors.primary} style={{ fontWeight: '700' }}>
           {String(position)}
-        </MyazaText>
+        </UiText>
       ) : (
         <Icon name="file-text" size={14} color={colors.primary} />
       )}
@@ -66,13 +66,13 @@ export function DocumentStatePill({ required }: { required: boolean }): React.Re
         backgroundColor: required ? colors.errorBg : colors.background,
       }}
     >
-      <MyazaText
+      <UiText
         variant="bodySmall"
         color={required ? colors.error : colors.textSecondary}
         style={{ fontWeight: '600' }}
       >
         {t(required ? 'supportingDocuments.card.required' : 'supportingDocuments.card.optional')}
-      </MyazaText>
+      </UiText>
     </View>
   );
 }
@@ -89,13 +89,13 @@ export function DocumentReads({ reads }: { reads: readonly string[] }): React.Re
         backgroundColor: colors.background,
       }}
     >
-      <MyazaText
+      <UiText
         variant="bodySmall"
         color={colors.textSecondary}
         style={{ fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase' }}
       >
         {t('supportingDocuments.card.reads')}
-      </MyazaText>
+      </UiText>
       <View
         style={{
           marginTop: spacing.sm,
@@ -120,7 +120,7 @@ export function DocumentReads({ reads }: { reads: readonly string[] }): React.Re
           >
             <Icon name="check" size={12} color={colors.primary} />
             <View style={{ width: 4 }} />
-            <MyazaText variant="bodySmall">{read}</MyazaText>
+            <UiText variant="bodySmall">{read}</UiText>
           </View>
         ))}
       </View>

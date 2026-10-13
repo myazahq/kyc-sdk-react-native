@@ -6,7 +6,7 @@ import { useTheme } from '../../components/runtime';
 import Svg, { Path } from 'react-native-svg';
 
 import { Icon } from '../../components/Icon';
-import { MyazaText } from '../../components/Typography';
+import { UiText } from '../../components/Typography';
 
 // ---------------------------------------------------------------------------
 // Numbered progress dots with connectors.
@@ -51,9 +51,9 @@ export function ProgressDots({
                   <Path d="M5 13l4 4L19 7" fill="none" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
                 </Svg>
               ) : (
-                <MyazaText variant="bodySmall" color={state === 'active' ? colors.success : colors.textMuted} style={{ fontWeight: '700' }}>
+                <UiText variant="bodySmall" color={state === 'active' ? colors.success : colors.textMuted} style={{ fontWeight: '700' }}>
                   {String(i + 1)}
-                </MyazaText>
+                </UiText>
               )}
             </View>
             {i < total - 1 ? (

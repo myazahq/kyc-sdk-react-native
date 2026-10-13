@@ -18,12 +18,12 @@ import {
 } from './stepHeaderCopy';
 import type { TextFn } from '../i18n/types';
 import type { DocumentCapturePhase } from '../store/state';
-import type { KYCStep, ResolvedKYCConfig, SupportedCountry } from '../types/config';
+import type { VerificationStep, ResolvedVerificationConfig, SupportedCountry } from '../types/config';
 
 // ---------------------------------------------------------------------------
 // The sheet header's title and description, per step.
 //
-// Split from KycFlow.tsx (200-line rule). Each step owns its own copy — the
+// Split from VerificationFlow.tsx (200-line rule). Each step owns its own copy — the
 // screens export their `…Meta` — and this only chooses between them, so adding
 // a step means adding its meta beside the screen, not editing a shell.
 // ---------------------------------------------------------------------------
@@ -34,7 +34,7 @@ function labelFor(country: SupportedCountry, idType: string | null): string {
 }
 
 export interface StepHeaderContext {
-  config: ResolvedKYCConfig;
+  config: ResolvedVerificationConfig;
   country: SupportedCountry;
   selectedIdType: string | null;
   documentCapturePhase: DocumentCapturePhase;
@@ -61,7 +61,7 @@ export interface StepHeaderContext {
 }
 
 export function stepHeaderMeta(
-  currentStep: KYCStep,
+  currentStep: VerificationStep,
   {
     config,
     country,

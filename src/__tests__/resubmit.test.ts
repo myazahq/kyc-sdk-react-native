@@ -9,8 +9,8 @@
 import { applyResubmitSteps, keptIdType } from '../lib/resubmit';
 import { buildStepOrder, type StepOrderOptions } from '../config/stepOrder';
 import { buildVerifyRequest } from '../store/submit';
-import { createKycStore } from '../store/kycStore';
-import type { KYCStep, ResolvedKYCConfig } from '../types/config';
+import { createVerificationStore } from '../store/verificationStore';
+import type { VerificationStep, ResolvedVerificationConfig } from '../types/config';
 
 jest.useFakeTimers();
 
@@ -102,7 +102,7 @@ describe('narrowing without a kept ID', () => {
 });
 
 describe('a business redo', () => {
-  const kyb: KYCStep[] = ['consent', 'business-details', 'business-documents', 'submitted'];
+  const kyb: VerificationStep[] = ['consent', 'business-details', 'business-documents', 'submitted'];
 
   it('is unchanged by an idType it should never be sent', () => {
     const withId = applyResubmitSteps(kyb, { steps: ['business-documents'], idType: 'bvn' });
@@ -114,12 +114,12 @@ describe('a business redo', () => {
 
 describe('the store and the submission for a kept ID', () => {
   function makeStore(resubmit: { steps: string[]; idType?: string | null }) {
-    return createKycStore({
+    return createVerificationStore({
       apiKey: 'pk_test_x',
       country: 'NG',
       metadata: {},
       resubmit,
-    } as unknown as ResolvedKYCConfig);
+    } as unknown as ResolvedVerificationConfig);
   }
 
   it('preselects the kept ID at flow start and after a reset', () => {

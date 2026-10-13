@@ -2,7 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 
 import { spacing } from '../../config/theme';
-import { MyazaButton } from '../../components/MyazaButton';
+import { UiButton } from '../../components/UiButton';
 import { useText } from '../../i18n/useText';
 import type { NfcReadStage } from '../../emrtd';
 
@@ -32,7 +32,7 @@ export function NfcReadActions({
           that restarts it. The retry appears only once there is something to
           retry. */}
       {phase === 'failed' ? (
-        <MyazaButton label="Try scanning the chip again" onPress={onRetry} />
+        <UiButton label="Try scanning the chip again" onPress={onRetry} />
       ) : null}
       {/* Attempt-first: hidden until a failed read (or the reveal timer)
           earns it — see SKIP_REVEAL_MS. Opt-IN, matching Flutter
@@ -46,7 +46,7 @@ export function NfcReadActions({
       {showSkip ? (
         <>
           {phase === 'failed' ? <View style={{ height: spacing.sm }} /> : null}
-          <MyazaButton
+          <UiButton
             label={t('nfc.skip')}
             variant="ghost"
             disabled={phase === 'reading' && stage !== 'waiting'}

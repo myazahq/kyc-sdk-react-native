@@ -2,8 +2,8 @@ import React from 'react';
 import { View } from 'react-native';
 
 import { spacing } from '../../config/theme';
-import { MyazaText } from '../../components/Typography';
-import { MyazaButton } from '../../components/MyazaButton';
+import { UiText } from '../../components/Typography';
+import { UiButton } from '../../components/UiButton';
 import { MrzScanView } from '../MrzScanView';
 import { useText } from '../../i18n/useText';
 import type { MrzScan } from '../../mrz/parse';
@@ -27,15 +27,15 @@ export function NfcMrzPrompt({
   const t = useText();
   return (
     <View>
-      <MyazaText variant="bodyMedium">
+      <UiText variant="bodyMedium">
         Point your camera at the photo page of your document. We’ll read the
         printed code that unlocks its chip.
-      </MyazaText>
+      </UiText>
       <View style={{ height: spacing.md }} />
       <MrzScanView onScanned={onScanned} />
       <View style={{ height: spacing.md }} />
       {onSkip ? (
-        <MyazaButton label={t('nfc.skip')} variant="ghost" onPress={onSkip} />
+        <UiButton label={t('nfc.skip')} variant="ghost" onPress={onSkip} />
       ) : null}
     </View>
   );

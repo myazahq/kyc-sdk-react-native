@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { useTheme } from './runtime';
-import { MyazaText } from './Typography';
+import { UiText } from './Typography';
 
 // ---------------------------------------------------------------------------
 // Live "expires in m:ss" ticker for a one-time code.
@@ -45,8 +45,8 @@ export function ExpiryCountdown({
       : `The code expires in ${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, '0')}`;
 
   return (
-    <MyazaText variant="bodySmall" color={colors.textMuted}>
+    <UiText variant="bodySmall" color={colors.textMuted}>
       {label}
-    </MyazaText>
+    </UiText>
   );
 }
